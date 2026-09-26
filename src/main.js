@@ -73,20 +73,23 @@ async function boot() {
 // ---------- render loop ----------
 let wasPlaying = false;
 let shown = -1;
+const soundBtn = $('#sound');
 function loop() {
   requestAnimationFrame(loop);
+  if (current < 0 && stage.active >= 0 && stage.detail < 0.01) stage.active = -1; // back in its slot
+  stage.playing = player.playing;
+  // layout is read first (the slots), styles are written after: the other way round forces a layout every frame
+  if (!tourOpen && body.classList.contains('ready')) stage.frame(); // hidden behind the loader / the tour page
+  else stage.measure();
   const focus = current >= 0 ? current : stage.centred;
   if (focus !== shown && focus >= 0) {
     shown = focus;
     body.style.setProperty('--accent', products[focus].accent);
     player.play(products[focus]);
   }
-  if (current < 0 && stage.active >= 0 && stage.detail < 0.01) stage.active = -1; // back in its slot
-  stage.playing = player.playing;
   const lv = player.playing ? player.sample() : 0;
-  if (player.playing || wasPlaying) $('#sound').style.setProperty('--lv', lv.toFixed(3));
+  if (player.playing || wasPlaying) soundBtn.style.setProperty('--lv', lv.toFixed(3));
   wasPlaying = player.playing;
-  if (!tourOpen && body.classList.contains('ready')) stage.frame(); // hidden behind the loader / the tour page
 }
 
 // ---------- touch / mouse rotation ----------
@@ -114,7 +117,7 @@ function attachRotate(el, index, onTap) {
     if (pts.size === 1) {
       start = { x: e.clientX, y: e.clientY, t: performance.now() };
       moved = false;
-      lastT = start.t;
+      lastT = e.timeStamp;
       mode = null;
       if (mouse) grab();
     }
@@ -127,9 +130,8 @@ function attachRotate(el, index, onTap) {
     if (!p) return;
     const dx = e.clientX - p.x, dy = e.clientY - p.y;
     p.x = e.clientX; p.y = e.clientY;
-    const now = performance.now();
-    const dt = (now - lastT) / 1000;
-    lastT = now;
+    const dt = (e.timeStamp - lastT) / 1000; // event times: handlers can run late, in a batch, on a busy frame
+    lastT = e.timeStamp;
     const tx = e.clientX - start.x, ty = e.clientY - start.y;
     if (!moved && Math.hypot(tx, ty) > 6) moved = true;
     if (!moved) return;
@@ -153,7 +155,7 @@ function attachRotate(el, index, onTap) {
     pts.delete(e.pointerId);
     twistAngle = pts.size === 2 ? angle() : null;
     if (pts.size) return;
-    if (mode === 'rotate') stage.release(index());
+    if (mode === 'rotate') stage.release(index(), e.timeStamp - lastT > 90); // held still before letting go: no flick
     mode = null;
     cursor.classList.remove('grab');
     const tap = e.type === 'pointerup' && !moved && performance.now() - start.t < 450;
