@@ -1,0 +1,34 @@
+# Obsimo · Shop
+
+Boutique headless pour Obsimo : produits en 3D (Three.js), swipe fluide, page détail, panier, extraits audio.
+Le catalogue et le paiement viennent de Shopify (Storefront API), et le checkout reste hébergé par Shopify.
+
+```bash
+npm install
+npm run dev        # http://localhost:5173 (et sur ton réseau local pour tester sur téléphone)
+npm run build
+```
+
+## Brancher Shopify
+
+1. Admin Shopify → Paramètres → Applications → Développer des applications → créer une app, activer la
+   **Storefront API** (lecture produits + paniers) et copier le jeton public.
+2. `cp .env.example .env.local`, puis renseigner `VITE_SHOPIFY_DOMAIN` et `VITE_SHOPIFY_TOKEN`.
+
+Sans ces variables, le site utilise le catalogue de démo de `src/catalog.js`.
+
+### Conventions dans l'admin
+
+- **Type de produit ou tag** `vinyle` → modèle vinyle, `sauce` → bouteille, sinon une carte simple.
+- **Texte alternatif des images** : `cover`, `back`, `disc` (PNG vu de dessus, fond transparent) ou `label` sont
+  utilisés par la 3D ; toutes les autres images sont les photos de la page détail.
+- **Métachamps** (namespace `custom`) : `preview_audio` (URL d'un mp3 de 30 s), `accent` (couleur hex),
+  `kicker` (ligne courte), `details` (JSON `[{"title","body"}]`), et pour les sauces `liquid`, `label`, `ink`, `heat`.
+
+## Structure
+
+- `src/scene.js` : le canvas WebGL unique, la disposition du carrousel et la transition vers la page détail
+- `src/models.js` : vinyle (pochette + disque qui sort et tourne), bouteille de sauce, carte générique
+- `src/main.js` : swipe, molette, clavier, textes, page détail, galerie, panier
+- `src/audio.js` : extraits audio (fichier ou boucle générative de démo)
+- `src/shopify.js` : requêtes Storefront API et création du panier/checkout
