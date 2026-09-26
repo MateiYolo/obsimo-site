@@ -112,6 +112,28 @@ export const demoCatalog = [
   },
 ];
 
+// 3D look of each Shopify product, keyed by its handle. The visuals live here on purpose, not in Shopify:
+// Shopify gives title, texts, price, stock and photos; this table decides which model is built and how it looks.
+// A product missing from the table is shown as a flat card with its first Shopify photo.
+export const visuals = {
+  'transparent-green-vinyl-life-balance-limited-edition': {
+    kind: 'vinyl',
+    accent: '#2e9a55',
+    model: { sleeve: '#1f8a4c', discFill: '#1d6b3a', discColor: '#2e9a55', edge: '#1f8a4c' },
+  },
+  'life-balance-vinyl-33-transparent-green': {
+    kind: 'vinyl',
+    accent: '#2e9a55',
+    audioSeed: 1,
+    model: { sleeve: '#1f8a4c', discFill: '#1d6b3a', discColor: '#2e9a55', edge: '#1f8a4c' },
+  },
+  'hot-sauce-obsimo-x-piquhans-50ml': {
+    kind: 'sauce',
+    accent: '#b5401f',
+    model: { liquid: '#8f1d0c', label: '#171411', ink: '#efe7da', heat: 3, cap: '#141414' },
+  },
+};
+
 // Placeholder "photos" for products that have none yet: moody gradients drawn on a canvas.
 export function placeholderPhotos(p, n = 3) {
   const out = [];

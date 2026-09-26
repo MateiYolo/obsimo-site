@@ -54,11 +54,11 @@ const grooveRoughness = () =>
     }
   }, false);
 
-function blackDisc(labelUrl) {
+function blackDisc(labelUrl, fill = '#0b0b0b') {
   const img = new Image();
   const t = canvasTex(1024, 1024, (g, w) => {
     const c = w / 2;
-    g.fillStyle = '#0b0b0b';
+    g.fillStyle = fill;
     g.beginPath(); g.arc(c, c, c, 0, Math.PI * 2); g.fill();
   });
   img.onload = () => {
@@ -70,6 +70,7 @@ function blackDisc(labelUrl) {
     g.restore();
     t.needsUpdate = true;
   };
+  if (!labelUrl) return t;
   manager.itemStart(labelUrl);
   img.addEventListener('load', () => manager.itemEnd(labelUrl));
   img.addEventListener('error', () => manager.itemEnd(labelUrl));
@@ -84,13 +85,16 @@ export function buildVinyl(p) {
 
   // sleeve
   const edge = new THREE.MeshStandardMaterial({ color: m.edge || '#e8e6e0', roughness: 0.85 });
-  const front = new THREE.MeshStandardMaterial({ map: tex(m.cover), roughness: 0.62 });
-  const back = new THREE.MeshStandardMaterial({ map: tex(m.back || m.cover), roughness: 0.7 });
+  // no artwork yet: a plain sleeve in m.sleeve
+  const face = (url, roughness) =>
+    new THREE.MeshStandardMaterial(url ? { map: tex(url), roughness } : { color: m.sleeve || '#e8e6e0', roughness });
+  const front = face(m.cover, 0.62);
+  const back = face(m.back || m.cover, 0.7);
   const sleeve = new THREE.Mesh(new THREE.BoxGeometry(W, W, T), [edge, edge, edge, edge, front, back]);
   inner.add(sleeve);
 
   // disc, behind the sleeve; it slides out to the right
-  const discMap = m.disc ? tex(m.disc) : blackDisc(m.label);
+  const discMap = m.disc ? tex(m.disc) : blackDisc(m.label, m.discFill);
   const top = new THREE.MeshPhysicalMaterial({
     map: discMap,
     alphaTest: 0.5,
