@@ -37,10 +37,26 @@ La page Tour (`/#tour`) liste les prochaines dates et se met à jour toute seule
 Sans clé, la page n'affiche aucune date. Chaque ligne (date · ville · lieu) mène à la billetterie Bandsintown ;
 une date marquée sold out s'affiche barrée et n'est plus cliquable.
 
+## Vinyle 3D haute fidélité
+
+Le vinyle reprend le modèle du [mockup-vinyl-generator](https://github.com/MateiYolo/mockup-vinyl-generator)
+(`src/hifi/objects.js` et `src/hifi/textures.js`, copiés tels quels à part un point d'entrée pour les textures) :
+disque avec sillons et reflet anisotrope, étiquettes papier, pochette arrondie avec vernis sélectif.
+
+Ses textures procédurales (sillons, fibres du carton, papier des étiquettes, vernis) prendraient 1 à 2 s de calcul au
+chargement ; elles sont donc précalculées dans `public/assets/hifi/baked/` (~850 Ko). À relancer après un changement
+de `src/hifi/textures.js` ou un nouveau masque de vernis (`varnishFront` / `varnishBack` dans `src/catalog.js`) :
+`npm run dev`, puis ouvrir `/bake.html` et attendre « terminé ». Un masque pas encore baké marche quand même, mais est
+calculé au chargement (avertissement dans la console).
+
+Champs `model` d'un vinyle : `cover`, `back`, `disc` (PNG du disque vu de dessus, fond transparent), `label`, `labelB`,
+`varnishFront`, `varnishBack` (masques du vernis), ou à défaut des couleurs : `sleeve`, `edge`, `discFill`, `discColor`.
+
 ## Structure
 
 - `src/scene.js` : le canvas WebGL unique ; chaque objet suit un emplacement vide de la page (scroll natif), rotation et transition vers la fiche
 - `src/models.js` : vinyle (pochette + disque qui sort et tourne), bouteille de sauce, carte générique
+- `src/hifi/` : modèle du vinyle repris du mockup-vinyl-generator, chargement des textures précalculées (`baked.js`) et leur génération (`bake.js`, page `bake.html`)
 - `src/main.js` : liste, gestes de rotation, menu, page détail, galerie, panier
 - `src/audio.js` : extraits audio (fichier ou boucle générative de démo)
 - `src/shopify.js` : requêtes Storefront API et création du panier/checkout

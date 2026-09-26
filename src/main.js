@@ -36,7 +36,14 @@ async function boot() {
   ]);
 
   manager.onProgress = (_, done, total) => ($('#load-pct').textContent = Math.round((done / total) * 100));
-  const ready = () => body.classList.add('ready');
+  // once the files are in (and applied to the materials by their load callbacks), compile every shader without
+  // blocking the page, behind the loader; nothing is drawn before, so no half-textured variant gets compiled
+  let started = false;
+  const ready = () => {
+    if (started) return;
+    started = true;
+    setTimeout(() => stage.compile().catch(() => {}).then(() => body.classList.add('ready')));
+  };
   manager.onLoad = ready;
   setTimeout(ready, 7000);
 
@@ -79,7 +86,7 @@ function loop() {
   const lv = player.playing ? player.sample() : 0;
   if (player.playing || wasPlaying) $('#sound').style.setProperty('--lv', lv.toFixed(3));
   wasPlaying = player.playing;
-  if (!tourOpen) stage.frame(); // hidden behind the tour page
+  if (!tourOpen && body.classList.contains('ready')) stage.frame(); // hidden behind the loader / the tour page
 }
 
 // ---------- touch / mouse rotation ----------

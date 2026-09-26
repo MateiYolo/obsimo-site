@@ -7,6 +7,16 @@
 //   images   real photos shown in the detail page
 
 const A = (f) => `${import.meta.env.BASE_URL}assets/${f}`;
+// high-resolution artwork for the 3D record (shared with the mockup generator)
+const H = (f) => A(`hifi/${f}`);
+const SLEEVE_8DIS = {
+  cover: H('cover-front.jpg'),
+  back: H('cover-back.jpg'),
+  varnishFront: H('varnish-front.png'),
+  varnishBack: H('varnish-back.png'),
+  label: H('label-a.webp'),
+  labelB: H('label-b.webp'),
+};
 
 export const demoCatalog = [
   {
@@ -24,12 +34,7 @@ export const demoCatalog = [
     accent: '#d9d6cc',
     audio: null,
     audioSeed: 0,
-    model: {
-      cover: A('cover-front.jpg'),
-      back: A('cover-back.jpg'),
-      disc: A('vinyl-marble.png'),
-      edge: '#eceae4',
-    },
+    model: { ...SLEEVE_8DIS, disc: H('vinyl-marble.webp') },
     images: [A('insert-recto.jpg'), A('insert-verso.jpg'), A('cover-front.jpg'), A('cover-back.jpg')],
     details: [
       { title: 'Tracklist', body: 'A1 · Arrivée\nA2 · Glace noire\nA3 · 8 Days\nB1 · Monoko\nB2 · Inkko\nB3 · Retour' },
@@ -74,13 +79,7 @@ export const demoCatalog = [
     accent: '#6f7a86',
     audio: null,
     audioSeed: 1,
-    model: {
-      cover: A('cover-front.jpg'),
-      back: A('cover-back.jpg'),
-      label: A('label-a.png'),
-      discColor: '#0b0b0b',
-      edge: '#eceae4',
-    },
+    model: { ...SLEEVE_8DIS, discColor: '#0b0b0b' },
     images: [A('insert-verso.jpg'), A('insert-recto.jpg'), A('cover-back.jpg')],
     details: [
       { title: 'Tracklist', body: 'A1 · Arrivée\nA2 · Glace noire\nA3 · 8 Days\nB1 · Monoko\nB2 · Inkko\nB3 · Retour' },

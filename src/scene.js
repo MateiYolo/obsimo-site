@@ -20,6 +20,7 @@ export class Stage {
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
     this.renderer.setClearColor(0x000000, 0);
+    this.renderer.localClippingEnabled = true; // records are clipped at their sleeve's opening
 
     this.scene = new THREE.Scene();
     const pmrem = new THREE.PMREMGenerator(this.renderer);
@@ -61,6 +62,11 @@ export class Stage {
 
     this.resize();
     addEventListener('resize', () => this.resize());
+  }
+
+  // Compiles the shaders of everything in the scene in the background (KHR_parallel_shader_compile when available).
+  compile() {
+    return this.renderer.compileAsync(this.scene, this.camera);
   }
 
   resize() {
