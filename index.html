@@ -93,6 +93,16 @@
 
     <div id="toast" role="status"></div>
 
+    <div id="egg-panel" aria-hidden="true">
+      <div class="scrim" id="egg-scrim"></div>
+      <div class="egg-card" role="dialog" aria-label="Piste secrète">
+        <span class="eq egg-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <p class="egg-title">Piste secrète</p>
+        <button class="egg-close" id="egg-close" aria-label="Fermer">Fermer</button>
+      </div>
+      <audio id="egg-audio" src="/assets/secret-track.mp3" loop preload="none"></audio>
+    </div>
+
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

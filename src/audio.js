@@ -42,6 +42,12 @@ export class Player {
     this.emit();
   }
 
+  // Lowers (or restores) the product loop's volume while something else plays over it, e.g. the secret track.
+  duck(on) {
+    if (!this.ctx) return;
+    this.master.gain.setTargetAtTime(this.muted ? 0 : on ? 0.15 : 0.8, this.ctx.currentTime, 0.4);
+  }
+
   // Called whenever the centred product changes.
   play(product) {
     const key = product.audio || (product.kind === 'vinyl' ? `gen-${product.audioSeed ?? 0}` : null);

@@ -15,6 +15,7 @@ const money = (v, c = 'EUR') => new Intl.NumberFormat('fr-FR', { style: 'currenc
 let products = demoCatalog;
 let stage, cart;
 let current = -1; // product open in the detail page
+let eggOpen = false;
 const player = new Player();
 
 // ---------- boot ----------
@@ -44,7 +45,8 @@ async function boot() {
   list.innerHTML = products
     .map((p, i) => `<div class="slot" role="button" tabindex="0" data-i="${i}" aria-label="${p.title}, ${p.kicker}"></div>`)
     .join('');
-  list.insertAdjacentHTML('afterend', `<footer class="foot">Obsimo · ${new Date().getFullYear()}</footer>`);
+  list.insertAdjacentHTML('afterend', `<footer class="foot">Obsimo <button class="egg" id="egg" aria-label="•">·</button> ${new Date().getFullYear()}</footer>`);
+  $('#egg').onclick = () => toggleEgg(true);
   const slots = [...list.children];
   slots.forEach((el, i) => {
     attachRotate(el, () => i, () => openDetail(i));
@@ -156,6 +158,7 @@ for (const ev of ['pointerdown', 'touchend', 'click', 'keydown']) addEventListen
 addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   if ($('#lightbox').classList.contains('open')) return closeLightbox();
+  if (eggOpen) return toggleEgg(false);
   if ($('#cart').classList.contains('open')) return toggleCart(false);
   if (current >= 0 || tourOpen) leaveOverlay();
 });
@@ -405,6 +408,26 @@ player.onChange((pl) => {
   body.classList.toggle('muted', pl.muted);
   $('#sound').setAttribute('aria-label', pl.muted ? 'Activer le son' : 'Couper le son');
 });
+
+// ---------- secret track (found by clicking the middle dot in the footer) ----------
+const eggAudio = $('#egg-audio');
+function toggleEgg(open) {
+  eggOpen = open;
+  $('#egg-panel').classList.toggle('open', open);
+  $('#egg-panel').setAttribute('aria-hidden', String(!open));
+  root.classList.toggle('lock', open);
+  if (open) {
+    player.unlock();
+    player.duck(true);
+    eggAudio.currentTime = 0;
+    eggAudio.play().catch(() => {});
+  } else {
+    eggAudio.pause();
+    player.duck(false);
+  }
+}
+$('#egg-close').onclick = () => toggleEgg(false);
+$('#egg-scrim').onclick = () => toggleEgg(false);
 
 // ---------- toast ----------
 let toastTimer;
