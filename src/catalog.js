@@ -129,7 +129,7 @@ export function placeholderPhotos(p, n = 3) {
     g.fillRect(0, 0, c.width, c.height);
     g.globalAlpha = 1;
     g.fillStyle = 'rgba(255,255,255,.55)';
-    g.font = '500 22px "IBM Plex Mono", monospace';
+    g.font = '500 22px "Space Grotesk", sans-serif';
     g.fillText(`photo ${i + 1}`, 32, 710);
     out.push(c.toDataURL('image/jpeg', 0.8));
   }

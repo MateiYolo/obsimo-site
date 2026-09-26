@@ -154,11 +154,11 @@ function sauceLabel(p) {
     const cx = w / 2;
     g.fillStyle = m.ink;
     g.textAlign = 'center';
-    g.font = '500 30px "IBM Plex Mono", monospace';
+    g.font = '500 30px "Space Grotesk", sans-serif';
     g.fillText('O B S I M O', cx, 78);
-    g.font = `italic ${p.title.length > 10 ? 78 : 92}px "Instrument Serif", Georgia, serif`;
+    g.font = `500 ${p.title.length > 10 ? 58 : 72}px "Space Grotesk", sans-serif`;
     g.fillText(p.title, cx, 250);
-    g.font = '400 26px "IBM Plex Mono", monospace';
+    g.font = '400 26px "Space Grotesk", sans-serif';
     g.fillText('SAUCE PIQUANTE · 150 ML', cx, 312);
     // heat scale
     for (let i = 0; i < 5; i++) {
@@ -171,7 +171,7 @@ function sauceLabel(p) {
     g.fillRect(cx - 170, 440, 340, 2);
     // back of the label: small print
     g.textAlign = 'left';
-    g.font = '400 18px "IBM Plex Mono", monospace';
+    g.font = '400 18px "Space Grotesk", sans-serif';
     g.globalAlpha = 0.7;
     ['INGRÉDIENTS', 'Piment, vinaigre, ail,', 'épices, sel.', '', 'À conserver au frais', 'après ouverture.'].forEach((l, i) => {
       g.fillText(l, 40, 150 + i * 30);
