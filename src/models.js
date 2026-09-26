@@ -120,10 +120,14 @@ export function buildVinyl(p) {
   const opening = new THREE.Plane(new THREE.Vector3(1, 0, 0), -(SLEEVE.w / 2 - 0.05));
   vinyl.setClip(clip);
 
-  // the layout box is computed with the disc a little out, so the object turns about the middle of its silhouette
-  const REST = 5, OUT = 5.5; // cm
+  // the layout box is computed with the disc a little out, so the object turns about the middle of its silhouette.
+  // In the product page it slides out until the middle of the label is at the mouth of the sleeve (half the label
+  // shows); the whole thing is re-centred and scaled down as it gets wider, so it keeps its place and size on screen.
+  const REST = 5, OPEN = SLEEVE.w / 2; // disc centre, cm
   vinyl.group.position.x = REST;
   const root = normalise(inner);
+  const holder = root.children[0];
+  const x0 = inner.position.x, k0 = holder.scale.x, W0 = 1 / k0; // widest side at rest
 
   let spinSpeed = 0;
   return {
@@ -131,7 +135,10 @@ export function buildVinyl(p) {
     kind: 'vinyl',
     update(dt, s) {
       const g = vinyl.group;
-      g.position.x += (REST + s.detail * OUT - g.position.x) * (1 - Math.exp(-dt * 5));
+      g.position.x += (REST + s.detail * (OPEN - REST) - g.position.x) * (1 - Math.exp(-dt * 5));
+      const d = g.position.x - REST;
+      inner.position.x = x0 - d / 2;
+      holder.scale.setScalar(k0 * (W0 / (W0 + d)));
       const target = s.focus > 0.5 ? (s.playing ? 3.49 : 0.6) : 0; // 33 rpm when the music plays
       spinSpeed += (target - spinSpeed) * (1 - Math.exp(-dt * 2));
       vinyl.spin.rotation.y -= spinSpeed * dt;
