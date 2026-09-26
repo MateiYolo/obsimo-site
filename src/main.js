@@ -91,27 +91,36 @@ function loop() {
 
 // ---------- touch / mouse rotation ----------
 // One finger or the mouse turns the object (horizontal = around its vertical axis, vertical = tilts it),
-// two fingers twist it. On phones the slots use `touch-action: pan-y`: a vertical swipe scrolls the page as usual,
-// a gesture that starts sideways turns the object instead.
+// two fingers twist it. On phones the slots use `touch-action: pan-y` and a finger gesture is sorted out on its
+// first pixels: one that starts vertically is a scroll (the browser scrolls, the object is left alone), one that
+// starts sideways turns the object, then freely in every direction.
 function attachRotate(el, index, onTap) {
   const pts = new Map();
   let start = null, moved = false, lastT = 0, twistAngle = null;
+  let mode = null; // null until decided, 'rotate' | 'scroll'
   const angle = () => {
     const [a, b] = [...pts.values()];
     return Math.atan2(b.y - a.y, b.x - a.x);
   };
+  const grab = () => {
+    mode = 'rotate';
+    stage.grab(index());
+  };
   el.addEventListener('pointerdown', (e) => {
     player.unlock();
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (e.pointerType === 'mouse') try { el.setPointerCapture(e.pointerId); } catch {}
+    const mouse = e.pointerType === 'mouse';
+    if (mouse) try { el.setPointerCapture(e.pointerId); } catch {}
     if (pts.size === 1) {
       start = { x: e.clientX, y: e.clientY, t: performance.now() };
       moved = false;
       lastT = start.t;
-      stage.grab(index());
+      mode = null;
+      if (mouse) grab();
     }
+    if (pts.size === 2 && mode !== 'scroll') grab(); // two fingers: a twist
     twistAngle = pts.size === 2 ? angle() : null;
-    cursor.classList.add('grab');
+    if (mouse) cursor.classList.add('grab'); // the round cursor only follows the mouse
   });
   el.addEventListener('pointermove', (e) => {
     const p = pts.get(e.pointerId);
@@ -121,8 +130,14 @@ function attachRotate(el, index, onTap) {
     const now = performance.now();
     const dt = (now - lastT) / 1000;
     lastT = now;
-    if (!moved && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 6) moved = true;
+    const tx = e.clientX - start.x, ty = e.clientY - start.y;
+    if (!moved && Math.hypot(tx, ty) > 6) moved = true;
     if (!moved) return;
+    if (!mode) {
+      if (Math.abs(ty) >= Math.abs(tx)) mode = 'scroll';
+      else grab();
+    }
+    if (mode !== 'rotate') return;
     if (pts.size === 2) {
       const a = angle();
       let d = a - twistAngle;
@@ -138,7 +153,8 @@ function attachRotate(el, index, onTap) {
     pts.delete(e.pointerId);
     twistAngle = pts.size === 2 ? angle() : null;
     if (pts.size) return;
-    stage.release(index());
+    if (mode === 'rotate') stage.release(index());
+    mode = null;
     cursor.classList.remove('grab');
     const tap = e.type === 'pointerup' && !moved && performance.now() - start.t < 450;
     if (tap && onTap) onTap();
