@@ -20,32 +20,25 @@
 
     <header class="bar">
       <a class="logo" href="#" id="logo">Obsimo</a>
+      <nav class="menu" aria-label="Rubriques">
+        <a href="#" class="on" aria-current="page">Shop</a>
+        <a href="#" class="soon" aria-disabled="true" title="Bientôt">Merch</a>
+        <a href="#" class="soon" aria-disabled="true" title="Bientôt">Tour</a>
+      </nav>
       <div class="bar-right">
         <button class="sound" id="sound" aria-label="Couper le son">
           <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-          <span class="sound-label">Son</span>
         </button>
-        <button class="cart-btn" id="cart-btn">Panier <span id="cart-count">0</span></button>
+        <button class="cart-btn" id="cart-btn" aria-label="Panier">
+          <svg viewBox="0 0 20 20" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M4 6.5h12l-1 11H5z"/><path d="M7.2 6.5V5a2.8 2.8 0 0 1 5.6 0v1.5"/></svg>
+          <span id="cart-count">0</span>
+        </button>
       </div>
     </header>
 
-    <main id="home">
-      <div class="home-top">
-        <p class="kicker" id="h-kicker"></p>
-        <h1 class="title" id="h-title"></h1>
-      </div>
-      <button class="arrow prev" id="prev" aria-label="Produit précédent">←</button>
-      <button class="arrow next" id="next" aria-label="Produit suivant">→</button>
-      <div class="home-bottom">
-        <p class="blurb" id="h-blurb"></p>
-        <div class="buy">
-          <span class="price" id="h-price"></span>
-          <button class="add" id="h-add"><span>Ajouter</span><b>+</b></button>
-        </div>
-        <button class="more" id="h-more">Voir le produit</button>
-        <div class="dots" id="dots"></div>
-      </div>
-    </main>
+    <main id="list"></main>
+
+    <div class="cursor" id="cursor" aria-hidden="true"><span>Voir</span></div>
 
     <section id="detail" aria-hidden="true">
       <div class="d-drag" id="d-drag" aria-hidden="true"></div>

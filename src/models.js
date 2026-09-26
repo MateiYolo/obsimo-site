@@ -106,11 +106,10 @@ export function buildVinyl(p) {
   const spin = new THREE.Group();
   spin.add(disc);
   slide.add(spin);
-  slide.position.z = -T / 2 - 0.02;
-  inner.add(slide);
+  inner.add(slide); // inside the jacket: the board hides what has not slid out yet
 
-  // the layout box is computed with the disc half out so the object stays centred while it moves
-  slide.position.x = 0.9;
+  // the layout box is computed with the disc a little out, so the object turns about the middle of its silhouette
+  slide.position.x = 0.5;
   const root = normalise(inner);
 
   let spinSpeed = 0;
@@ -118,7 +117,7 @@ export function buildVinyl(p) {
     root,
     kind: 'vinyl',
     update(dt, s) {
-      const out = 0.55 + s.focus * 0.35 + s.detail * 0.45;
+      const out = 0.5 + s.detail * 0.55;
       slide.position.x += (out - slide.position.x) * (1 - Math.exp(-dt * 5));
       const target = s.focus > 0.5 ? (s.playing ? 3.49 : 0.6) : 0; // 33 rpm when the music plays
       spinSpeed += (target - spinSpeed) * (1 - Math.exp(-dt * 2));

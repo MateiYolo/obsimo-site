@@ -1,6 +1,7 @@
 # Obsimo · Shop
 
-Boutique headless pour Obsimo : produits en 3D (Three.js), swipe fluide, page détail, panier, extraits audio.
+Boutique headless pour Obsimo : une seule page qui défile, avec uniquement les produits en 3D qui tournent sur eux-mêmes
+(rotation au doigt ou à la souris, torsion à deux doigts). Un clic ouvre la fiche : infos, prix, photos, panier, extraits audio.
 Le catalogue et le paiement viennent de Shopify (Storefront API), et le checkout reste hébergé par Shopify.
 
 ```bash
@@ -27,8 +28,8 @@ Sans ces variables, le site utilise le catalogue de démo de `src/catalog.js`.
 
 ## Structure
 
-- `src/scene.js` : le canvas WebGL unique, la disposition du carrousel et la transition vers la page détail
+- `src/scene.js` : le canvas WebGL unique ; chaque objet suit un emplacement vide de la page (scroll natif), rotation et transition vers la fiche
 - `src/models.js` : vinyle (pochette + disque qui sort et tourne), bouteille de sauce, carte générique
-- `src/main.js` : swipe, molette, clavier, textes, page détail, galerie, panier
+- `src/main.js` : liste, gestes de rotation, menu, page détail, galerie, panier
 - `src/audio.js` : extraits audio (fichier ou boucle générative de démo)
 - `src/shopify.js` : requêtes Storefront API et création du panier/checkout

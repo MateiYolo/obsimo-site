@@ -7,10 +7,12 @@ import { Player } from './audio.js';
 
 const $ = (s) => document.querySelector(s);
 const body = document.body;
+const root = document.documentElement;
 const money = (v, c = 'EUR') => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: c, maximumFractionDigits: v % 1 ? 2 : 0 }).format(v);
 
 let products = demoCatalog;
-let stage, cart, index = 0;
+let stage, cart;
+let current = -1; // product open in the detail page
 const player = new Player();
 
 // ---------- boot ----------
@@ -36,29 +38,40 @@ async function boot() {
   manager.onLoad = ready;
   setTimeout(ready, 7000);
 
-  stage = new Stage($('#gl'), products);
+  const list = $('#list');
+  list.innerHTML = products
+    .map((p, i) => `<div class="slot" role="button" tabindex="0" data-i="${i}" aria-label="${p.title}, ${p.kicker}"></div>`)
+    .join('');
+  list.insertAdjacentHTML('afterend', `<footer class="foot">Obsimo · ${new Date().getFullYear()}</footer>`);
+  const slots = [...list.children];
+  slots.forEach((el, i) => {
+    attachRotate(el, () => i, () => openDetail(i));
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(i); } });
+  });
+
+  stage = new Stage($('#gl'), products, slots);
   cart = new Cart(products);
   cart.onChange(renderCart);
   renderCart();
 
-  $('#dots').innerHTML = products.map((p, i) => `<button aria-label="${p.title}" data-i="${i}"></button>`).join('');
-  $('#dots').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) goTo(+b.dataset.i); });
-
-  const fromHash = products.findIndex((p) => `#${p.handle}` === location.hash);
-  index = Math.max(0, fromHash);
-  stage.pos = target = index;
-  showInfo(index, 1, true);
-  if (fromHash >= 0) openDetail(false);
-
   body.classList.toggle('muted', player.muted);
+  const fromHash = products.findIndex((p) => `#${p.handle}` === location.hash);
+  if (fromHash >= 0) openDetail(fromHash, false);
   loop();
 }
 
 // ---------- render loop ----------
 let wasPlaying = false;
+let shown = -1;
 function loop() {
   requestAnimationFrame(loop);
-  carouselStep();
+  const focus = current >= 0 ? current : stage.centred;
+  if (focus !== shown && focus >= 0) {
+    shown = focus;
+    body.style.setProperty('--accent', products[focus].accent);
+    player.play(products[focus]);
+  }
+  if (current < 0 && stage.active >= 0 && stage.detail < 0.01) stage.active = -1; // back in its slot
   stage.playing = player.playing;
   const lv = player.playing ? player.sample() : 0;
   if (player.playing || wasPlaying) $('#sound').style.setProperty('--lv', lv.toFixed(3));
@@ -66,162 +79,152 @@ function loop() {
   stage.frame();
 }
 
-// ---------- carousel physics ----------
-let target = 0;
-let dragging = false;
-function carouselStep() {
-  if (!dragging) {
-    const k = 1 - Math.exp(-1 / 60 * 9);
-    stage.pos += (target - stage.pos) * k;
-    if (Math.abs(target - stage.pos) < 1e-4) stage.pos = target;
-  }
-  const i = Math.round(Math.min(products.length - 1, Math.max(0, stage.pos)));
-  if (i !== index) {
-    const dir = i > index ? 1 : -1;
-    index = i;
-    showInfo(i, dir);
-  }
-}
-
-function goTo(i) {
-  target = Math.max(0, Math.min(products.length - 1, i));
-}
-
-// ---------- product info ----------
-function splitTitle(el, text, dir) {
-  let n = 0;
-  el.innerHTML = text
-    .split(' ')
-    .map((w) => `<span class="w">${[...w].map((c) => `<span class="c" style="--i:${n++}">${c}</span>`).join('')}</span>`)
-    .join(' ');
-  el.style.setProperty('--dir', dir);
-}
-
-let infoTimer;
-function showInfo(i, dir, instant = false) {
-  const p = products[i];
-  body.style.setProperty('--accent', p.accent);
-  document.querySelectorAll('#dots button').forEach((b, j) => b.classList.toggle('on', j === i));
-  player.play(p);
-
-  const title = $('#h-title');
-  const swaps = [$('#h-kicker'), $('#h-blurb'), $('#h-price')];
-  const apply = () => {
-    const cur = products[index];
-    splitTitle(title, cur.title, dir);
-    title.classList.remove('out');
-    title.classList.add('in');
-    $('#h-kicker').textContent = cur.kicker;
-    $('#h-blurb').textContent = cur.blurb;
-    $('#h-price').textContent = money(cur.price, cur.currency);
-    swaps.forEach((s) => s.classList.remove('out'));
+// ---------- touch / mouse rotation ----------
+// One finger or the mouse turns the object (horizontal = around its vertical axis, vertical = tilts it),
+// two fingers twist it. On phones the slots use `touch-action: pan-y`: a vertical swipe scrolls the page as usual,
+// a gesture that starts sideways turns the object instead.
+function attachRotate(el, index, onTap) {
+  const pts = new Map();
+  let start = null, moved = false, lastT = 0, twistAngle = null;
+  const angle = () => {
+    const [a, b] = [...pts.values()];
+    return Math.atan2(b.y - a.y, b.x - a.x);
   };
-  clearTimeout(infoTimer);
-  if (instant) return apply();
-  title.style.setProperty('--dir', dir);
-  title.classList.remove('in');
-  title.classList.add('out');
-  swaps.forEach((s) => s.classList.add('swap', 'out'));
-  infoTimer = setTimeout(apply, 260);
+  el.addEventListener('pointerdown', (e) => {
+    player.unlock();
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (e.pointerType === 'mouse') try { el.setPointerCapture(e.pointerId); } catch {}
+    if (pts.size === 1) {
+      start = { x: e.clientX, y: e.clientY, t: performance.now() };
+      moved = false;
+      lastT = start.t;
+      stage.grab(index());
+    }
+    twistAngle = pts.size === 2 ? angle() : null;
+    cursor.classList.add('grab');
+  });
+  el.addEventListener('pointermove', (e) => {
+    const p = pts.get(e.pointerId);
+    if (!p) return;
+    const dx = e.clientX - p.x, dy = e.clientY - p.y;
+    p.x = e.clientX; p.y = e.clientY;
+    const now = performance.now();
+    const dt = (now - lastT) / 1000;
+    lastT = now;
+    if (!moved && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 6) moved = true;
+    if (!moved) return;
+    if (pts.size === 2) {
+      const a = angle();
+      let d = a - twistAngle;
+      d = Math.atan2(Math.sin(d), Math.cos(d));
+      twistAngle = a;
+      stage.rotate(index(), 0, 0, d, dt);
+    } else {
+      stage.rotate(index(), dx, dy, 0, dt);
+    }
+  });
+  const end = (e) => {
+    if (!pts.has(e.pointerId)) return;
+    pts.delete(e.pointerId);
+    twistAngle = pts.size === 2 ? angle() : null;
+    if (pts.size) return;
+    stage.release(index());
+    cursor.classList.remove('grab');
+    const tap = e.type === 'pointerup' && !moved && performance.now() - start.t < 450;
+    if (tap && onTap) onTap();
+  };
+  el.addEventListener('pointerup', end);
+  el.addEventListener('pointercancel', end); // the browser took over to scroll
 }
 
-// ---------- pointer: swipe, tap, tilt ----------
-const gl = $('#gl');
-let down = null;
-let samples = [];
-
-gl.addEventListener('pointerdown', (e) => {
-  player.unlock();
-  if (body.classList.contains('detail')) return;
-  down = { x: e.clientX, y: e.clientY, t: performance.now(), pos: stage.pos, moved: false };
-  samples = [{ x: e.clientX, t: down.t }];
-  gl.setPointerCapture(e.pointerId);
+// ---------- custom cursor (desktop) ----------
+const cursor = $('#cursor');
+addEventListener('pointermove', (e) => {
+  if (e.pointerType !== 'mouse') return;
+  cursor.style.setProperty('--x', `${e.clientX}px`);
+  cursor.style.setProperty('--y', `${e.clientY}px`);
+  const onSlot = !!e.target.closest?.('.slot') && current < 0;
+  cursor.classList.toggle('on', onSlot || cursor.classList.contains('grab'));
 });
 
-gl.addEventListener('pointermove', (e) => {
-  if (e.pointerType === 'mouse') {
-    stage.pointer.set((e.clientX / innerWidth) * 2 - 1, (e.clientY / innerHeight) * 2 - 1);
-  }
-  if (!down) return;
-  const dx = e.clientX - down.x;
-  if (!down.moved && Math.abs(dx) > 6) { down.moved = true; dragging = true; }
-  if (!dragging) return;
-  let p = down.pos - dx / stage.stepPx;
-  const max = products.length - 1;
-  if (p < 0) p = -rubber(-p); // resist past the ends
-  if (p > max) p = max + rubber(p - max);
-  stage.pos = p;
-  samples.push({ x: e.clientX, t: performance.now() });
-  if (samples.length > 6) samples.shift();
-});
-
-const rubber = (o) => 0.35 * (1 - 1 / (o * 2 + 1));
-
-function endDrag(e) {
-  if (!down) return;
-  const wasDrag = down.moved;
-  const tap = !wasDrag && performance.now() - down.t < 400;
-  if (wasDrag) {
-    const a = samples[0], b = samples[samples.length - 1];
-    const v = (b.x - a.x) / Math.max(1, b.t - a.t); // px per ms
-    const projected = stage.pos - (v * 180) / stage.stepPx; // flick carries on a little
-    const from = Math.round(down.pos);
-    goTo(Math.max(from - 1, Math.min(from + 1, Math.round(projected))));
-  }
-  dragging = false;
-  down = null;
-  if (tap && e.type === 'pointerup') {
-    const hit = stage.pick(e.clientX, e.clientY);
-    if (hit === index && Math.abs(stage.pos - index) < 0.3) openDetail();
-    else if (hit >= 0) goTo(hit);
-  }
-}
-gl.addEventListener('pointerup', endDrag);
-gl.addEventListener('pointercancel', endDrag);
-addEventListener('pointerdown', () => player.unlock(), { once: true });
-
-// wheel / trackpad
-let wheelAcc = 0, wheelLock = 0;
-addEventListener('wheel', (e) => {
-  if (body.classList.contains('detail') || $('#cart').classList.contains('open')) return;
-  const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-  const now = performance.now();
-  if (now < wheelLock) return;
-  wheelAcc += d;
-  if (Math.abs(wheelAcc) > 40) {
-    goTo(Math.round(target) + Math.sign(wheelAcc));
-    wheelAcc = 0;
-    wheelLock = now + 520;
-  }
-}, { passive: true });
+// sound needs a gesture; iOS only counts some of them
+for (const ev of ['pointerdown', 'touchend', 'click', 'keydown']) addEventListener(ev, () => player.unlock(), { passive: true });
 
 addEventListener('keydown', (e) => {
-  if ($('#lightbox').classList.contains('open')) {
-    if (e.key === 'Escape') closeLightbox();
-    return;
-  }
-  if (e.key === 'Escape') {
-    if ($('#cart').classList.contains('open')) return toggleCart(false);
-    if (body.classList.contains('detail')) return history.back();
-  }
-  if (body.classList.contains('detail')) return;
-  if (e.key === 'ArrowRight') goTo(Math.round(target) + 1);
-  if (e.key === 'ArrowLeft') goTo(Math.round(target) - 1);
-  if (e.key === 'Enter' && document.activeElement === document.body) openDetail();
+  if (e.key !== 'Escape') return;
+  if ($('#lightbox').classList.contains('open')) return closeLightbox();
+  if ($('#cart').classList.contains('open')) return toggleCart(false);
+  if (current >= 0) history.back();
 });
 
-$('#prev').onclick = () => goTo(Math.round(target) - 1);
-$('#next').onclick = () => goTo(Math.round(target) + 1);
-$('#h-more').onclick = () => openDetail();
 $('#logo').onclick = (e) => {
   e.preventDefault();
-  if (body.classList.contains('detail')) history.back();
-  else goTo(0);
+  if (current >= 0) history.back();
+  else scrollTo({ top: 0, behavior: 'smooth' });
 };
+document.querySelectorAll('.menu a').forEach((a) => {
+  a.onclick = (e) => {
+    e.preventDefault();
+    if (a.classList.contains('soon')) toast(`${a.textContent} · bientôt`);
+    else if (current >= 0) history.back();
+    else scrollTo({ top: 0, behavior: 'smooth' });
+  };
+});
 
-// ---------- add to cart ----------
+// ---------- detail page ----------
+const scroller = $('#d-scroll');
+
+function openDetail(i, push = true) {
+  const p = products[i];
+  current = i;
+  $('#d-kicker').textContent = p.kicker;
+  $('#d-title').textContent = p.title;
+  $('#d-lead').textContent = p.blurb;
+  $('#d-desc').textContent = p.description;
+  $('#d-price').textContent = money(p.price, p.currency);
+  $('#gallery').innerHTML = p.images
+    .slice(0, 5)
+    .map((src, j) => `<button data-i="${j}" aria-label="Photo ${j + 1}"><img src="${src}" alt="" loading="lazy" decoding="async"></button>`)
+    .join('');
+  $('#acc').innerHTML = p.details
+    .map((d, j) => `<details${j === 0 ? ' open' : ''}><summary>${d.title}</summary><div class="acc-body">${d.body}</div></details>`)
+    .join('');
+  document.querySelectorAll('#detail .reveal').forEach((el, j) => el.style.setProperty('--i', j));
+
+  scroller.scrollTop = 0;
+  stage.detailScroll = 0;
+  stage.active = i;
+  stage.detailTarget = 1;
+  root.classList.add('lock');
+  body.classList.add('detail');
+  cursor.classList.remove('on');
+  $('#detail').setAttribute('aria-hidden', 'false');
+  if (push) history.pushState({ detail: p.handle }, '', `#${p.handle}`);
+}
+
+function closeDetail() {
+  current = -1;
+  stage.detailTarget = 0;
+  root.classList.remove('lock');
+  body.classList.remove('detail');
+  $('#detail').setAttribute('aria-hidden', 'true');
+}
+
+$('#back').onclick = () => (history.state?.detail ? history.back() : (closeDetail(), history.replaceState(null, '', location.pathname)));
+addEventListener('popstate', () => {
+  const i = products.findIndex((p) => `#${p.handle}` === location.hash);
+  if (i >= 0) openDetail(i, false);
+  else closeDetail();
+});
+
+scroller.addEventListener('scroll', () => { stage.detailScroll = stage.portrait ? scroller.scrollTop : 0; }, { passive: true });
+
+// in the detail page the object can still be turned: hero area on phones, left column on desktop
+attachRotate($('#d-hero'), () => current);
+attachRotate($('#d-drag'), () => current);
+
 function addToCart(btn) {
-  const p = products[index];
+  const p = products[current];
   cart.add(p);
   const label = btn.querySelector('span');
   const old = label.textContent;
@@ -239,71 +242,7 @@ function addToCart(btn) {
     btn.querySelector('b').textContent = '+';
   }, 1400);
 }
-$('#h-add').onclick = (e) => { player.unlock(); addToCart(e.currentTarget); };
 $('#d-add').onclick = (e) => addToCart(e.currentTarget);
-
-// ---------- detail page ----------
-const scroller = $('#d-scroll');
-
-function openDetail(push = true) {
-  const p = products[index];
-  target = index;
-  $('#d-kicker').textContent = p.kicker;
-  $('#d-title').textContent = p.title;
-  $('#d-lead').textContent = p.blurb;
-  $('#d-desc').textContent = p.description;
-  $('#d-price').textContent = money(p.price, p.currency);
-  $('#gallery').innerHTML = p.images
-    .slice(0, 5)
-    .map((src, i) => `<button data-i="${i}" aria-label="Photo ${i + 1}"><img src="${src}" alt="" loading="lazy" decoding="async"></button>`)
-    .join('');
-  $('#acc').innerHTML = p.details
-    .map((d, i) => `<details${i === 0 ? ' open' : ''}><summary>${d.title}</summary><div class="acc-body">${d.body}</div></details>`)
-    .join('');
-  document.querySelectorAll('#detail .reveal').forEach((el, i) => el.style.setProperty('--i', i));
-
-  scroller.scrollTop = 0;
-  stage.scrollPx = 0;
-  stage.detailTarget = 1;
-  body.classList.add('detail');
-  $('#detail').setAttribute('aria-hidden', 'false');
-  if (push) history.pushState({ detail: p.handle }, '', `#${p.handle}`);
-}
-
-function closeDetail() {
-  stage.detailTarget = 0;
-  body.classList.remove('detail');
-  $('#detail').setAttribute('aria-hidden', 'true');
-}
-
-$('#back').onclick = () => (history.state?.detail ? history.back() : (closeDetail(), history.replaceState(null, '', location.pathname)));
-addEventListener('popstate', () => {
-  const i = products.findIndex((p) => `#${p.handle}` === location.hash);
-  if (i >= 0) {
-    goTo(i);
-    stage.pos = i;
-    index = i;
-    showInfo(i, 1, true);
-    openDetail(false);
-  } else closeDetail();
-});
-
-scroller.addEventListener('scroll', () => { stage.scrollPx = stage.portrait ? scroller.scrollTop : 0; }, { passive: true });
-
-// drag to turn the product in the detail page (hero area on phones, left column on desktop)
-for (const el of [$('#d-hero'), $('#d-drag')]) {
-  let last = null;
-  el.addEventListener('pointerdown', (e) => { last = e.clientX; stage.dragging = true; if (e.pointerType === 'mouse') el.setPointerCapture(e.pointerId); });
-  el.addEventListener('pointermove', (e) => {
-    if (last === null) return;
-    stage.spinBy(e.clientX - last);
-    last = e.clientX;
-  });
-  const up = () => { last = null; stage.dragging = false; };
-  el.addEventListener('pointerup', up);
-  el.addEventListener('pointercancel', up);
-}
-$('#d-hero').style.touchAction = 'pan-y';
 
 // ---------- gallery lightbox ----------
 $('#gallery').addEventListener('click', (e) => {
@@ -312,14 +251,12 @@ $('#gallery').addEventListener('click', (e) => {
 });
 const track = $('#lb-track');
 function openLightbox(i) {
-  const imgs = products[index].images;
-  track.innerHTML = imgs.map((src) => `<figure><img src="${src}" alt=""></figure>`).join('');
+  track.innerHTML = products[current].images.map((src) => `<figure><img src="${src}" alt=""></figure>`).join('');
   $('#lightbox').classList.add('open');
   requestAnimationFrame(() => { track.scrollLeft = i * track.clientWidth; updateCount(); });
 }
 function updateCount() {
-  const n = products[index].images.length;
-  $('#lb-count').textContent = `${Math.round(track.scrollLeft / track.clientWidth) + 1} / ${n}`;
+  $('#lb-count').textContent = `${Math.round(track.scrollLeft / track.clientWidth) + 1} / ${products[current].images.length}`;
 }
 track.addEventListener('scroll', updateCount, { passive: true });
 const closeLightbox = () => $('#lightbox').classList.remove('open');
@@ -330,6 +267,7 @@ track.addEventListener('click', (e) => { if (e.target.tagName !== 'IMG') closeLi
 function toggleCart(open) {
   $('#cart').classList.toggle('open', open);
   $('#cart').setAttribute('aria-hidden', String(!open));
+  root.classList.toggle('lock', open || current >= 0);
 }
 $('#cart-btn').onclick = () => toggleCart(true);
 $('#cart-close').onclick = () => toggleCart(false);
