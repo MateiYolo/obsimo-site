@@ -26,6 +26,17 @@ Sans ces variables, le site utilise le catalogue de démo de `src/catalog.js`.
 - **Métachamps** (namespace `custom`) : `preview_audio` (URL d'un mp3 de 30 s), `accent` (couleur hex),
   `kicker` (ligne courte), `details` (JSON `[{"title","body"}]`), et pour les sauces `liquid`, `label`, `ink`, `heat`.
 
+## Brancher Bandsintown (page Tour)
+
+La page Tour (`/#tour`) liste les prochaines dates et se met à jour toute seule à partir de ton compte Bandsintown.
+
+1. [Bandsintown for Artists](https://artists.bandsintown.com) → Settings → General → **Get API key**.
+2. Dans `.env.local` : `VITE_BANDSINTOWN_APP_ID=` suivi de la clé. L'artiste est `Obsimo` par défaut
+   (`VITE_BANDSINTOWN_ARTIST` permet d'en changer, avec un nom ou `id_<identifiant>`).
+
+Sans clé, la page n'affiche aucune date. Chaque ligne (date · ville · lieu) mène à la billetterie Bandsintown ;
+une date marquée sold out s'affiche barrée et n'est plus cliquable.
+
 ## Structure
 
 - `src/scene.js` : le canvas WebGL unique ; chaque objet suit un emplacement vide de la page (scroll natif), rotation et transition vers la fiche
@@ -33,3 +44,4 @@ Sans ces variables, le site utilise le catalogue de démo de `src/catalog.js`.
 - `src/main.js` : liste, gestes de rotation, menu, page détail, galerie, panier
 - `src/audio.js` : extraits audio (fichier ou boucle générative de démo)
 - `src/shopify.js` : requêtes Storefront API et création du panier/checkout
+- `src/tour.js` : dates de concert depuis l'API Bandsintown 

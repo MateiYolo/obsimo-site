@@ -1,0 +1,39 @@
+// Tour dates from Bandsintown. Configure VITE_BANDSINTOWN_APP_ID (Bandsintown for Artists → Settings → General →
+// Get API key) in .env.local. VITE_BANDSINTOWN_ARTIST can override the artist: a name, or "id_<artist id>".
+// Without a key no dates are shown.
+
+const ARTIST = import.meta.env.VITE_BANDSINTOWN_ARTIST || 'Obsimo';
+const APP_ID = import.meta.env.VITE_BANDSINTOWN_APP_ID;
+
+export const bandsintownEnabled = !!(ARTIST && APP_ID);
+
+const toEvent = (e) => {
+  const offer = e.offers?.find((o) => o.type === 'Tickets') || e.offers?.[0];
+  return {
+    id: e.id,
+    datetime: e.datetime,
+    // events without a real venue on Bandsintown get the event title as venue name: show the address instead
+    venue: (e.venue?.name && e.venue.name !== e.title ? e.venue.name : e.venue?.street_address) || e.venue?.name || '',
+    city: e.venue?.city || '',
+    country: e.venue?.country || '',
+    tickets: offer?.url || null,
+    soldOut: offer?.status === 'sold out' || e.sold_out === true,
+    url: e.url,
+  };
+};
+
+let cache;
+export function fetchDates() {
+  if (!bandsintownEnabled) return Promise.resolve([]);
+  cache ??= fetch(`https://rest.bandsintown.com/artists/${encodeURIComponent(ARTIST)}/events?app_id=${APP_ID}&date=upcoming`)
+    .then((res) => {
+      if (!res.ok) throw new Error(`Bandsintown ${res.status}`);
+      return res.json();
+    })
+    .then((list) => (Array.isArray(list) ? list.map(toEvent) : []))
+    .catch((e) => {
+      cache = null; // retry next time the page opens
+      throw e;
+    });
+  return cache;
+}

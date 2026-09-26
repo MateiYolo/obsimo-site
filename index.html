@@ -8,7 +8,7 @@
     <meta name="description" content="Vinyles, sauces piquantes et objets d'Obsimo." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
@@ -21,9 +21,8 @@
     <header class="bar">
       <a class="logo" href="#" id="logo">Obsimo</a>
       <nav class="menu" aria-label="Rubriques">
-        <a href="#" class="on" aria-current="page">Shop</a>
-        <a href="#" class="soon" aria-disabled="true" title="Bientôt">Merch</a>
-        <a href="#" class="soon" aria-disabled="true" title="Bientôt">Tour</a>
+        <a href="#" class="on" aria-current="page" data-view="shop">Shop</a>
+        <a href="#tour" data-view="tour">Tour</a>
       </nav>
       <div class="bar-right">
         <button class="sound" id="sound" aria-label="Couper le son">
@@ -57,6 +56,16 @@
       <div class="d-buy">
         <span class="price" id="d-price"></span>
         <button class="add" id="d-add"><span>Ajouter au panier</span><b>+</b></button>
+      </div>
+    </section>
+
+    <section id="tour" aria-hidden="true" aria-labelledby="tour-title">
+      <div class="t-scroll" id="t-scroll">
+        <header class="t-head">
+          <h2 class="t-title" id="tour-title">Tour</h2>
+          <canvas class="t-3d" id="t-3d" aria-hidden="true"></canvas>
+        </header>
+        <ol class="dates" id="dates"></ol>
       </div>
     </section>
 

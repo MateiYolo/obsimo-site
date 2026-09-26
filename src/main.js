@@ -4,6 +4,8 @@ import { demoCatalog, placeholderPhotos } from './catalog.js';
 import { shopifyEnabled, fetchProducts, checkout } from './shopify.js';
 import { Cart } from './cart.js';
 import { Player } from './audio.js';
+import { fetchDates } from './tour.js';
+import { TourTitle } from './tourTitle.js';
 
 const $ = (s) => document.querySelector(s);
 const body = document.body;
@@ -29,7 +31,7 @@ async function boot() {
 
   // canvas labels need the web fonts
   await Promise.race([
-    Promise.all([document.fonts.load('104px "Instrument Serif"'), document.fonts.load('italic 104px "Instrument Serif"'), document.fonts.load('30px "IBM Plex Mono"')]),
+    Promise.all([document.fonts.load('500 72px "Space Grotesk"'), document.fonts.load('400 30px "Space Grotesk"')]),
     new Promise((r) => setTimeout(r, 2500)),
   ]);
 
@@ -57,6 +59,7 @@ async function boot() {
   body.classList.toggle('muted', player.muted);
   const fromHash = products.findIndex((p) => `#${p.handle}` === location.hash);
   if (fromHash >= 0) openDetail(fromHash, false);
+  else if (location.hash === '#tour') openTour(false);
   loop();
 }
 
@@ -76,7 +79,7 @@ function loop() {
   const lv = player.playing ? player.sample() : 0;
   if (player.playing || wasPlaying) $('#sound').style.setProperty('--lv', lv.toFixed(3));
   wasPlaying = player.playing;
-  stage.frame();
+  if (!tourOpen) stage.frame(); // hidden behind the tour page
 }
 
 // ---------- touch / mouse rotation ----------
@@ -154,22 +157,31 @@ addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   if ($('#lightbox').classList.contains('open')) return closeLightbox();
   if ($('#cart').classList.contains('open')) return toggleCart(false);
-  if (current >= 0) history.back();
+  if (current >= 0 || tourOpen) leaveOverlay();
 });
 
 $('#logo').onclick = (e) => {
   e.preventDefault();
-  if (current >= 0) history.back();
+  if (current >= 0 || tourOpen) leaveOverlay();
   else scrollTo({ top: 0, behavior: 'smooth' });
 };
 document.querySelectorAll('.menu a').forEach((a) => {
   a.onclick = (e) => {
     e.preventDefault();
     if (a.classList.contains('soon')) toast(`${a.textContent} · bientôt`);
-    else if (current >= 0) history.back();
+    else if (a.dataset.view === 'tour') tourOpen ? tourScroller.scrollTo({ top: 0, behavior: 'smooth' }) : openTour();
+    else if (current >= 0 || tourOpen) leaveOverlay();
     else scrollTo({ top: 0, behavior: 'smooth' });
   };
 });
+
+// back to the shop list: pop our own history entry, or clear the hash if the page was opened on it
+function leaveOverlay() {
+  if (history.state?.detail || history.state?.tour) return history.back();
+  closeDetail();
+  closeTour();
+  history.replaceState(null, '', location.pathname);
+}
 
 // ---------- detail page ----------
 const scroller = $('#d-scroll');
@@ -215,6 +227,8 @@ addEventListener('popstate', () => {
   const i = products.findIndex((p) => `#${p.handle}` === location.hash);
   if (i >= 0) openDetail(i, false);
   else closeDetail();
+  if (location.hash === '#tour') openTour(false);
+  else closeTour();
 });
 
 scroller.addEventListener('scroll', () => { stage.detailScroll = stage.portrait ? scroller.scrollTop : 0; }, { passive: true });
@@ -244,6 +258,79 @@ function addToCart(btn) {
 }
 $('#d-add').onclick = (e) => addToCart(e.currentTarget);
 
+// ---------- tour ----------
+const tourScroller = $('#t-scroll');
+let tourOpen = false;
+let tourTitle;
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+const dayFmt = new Intl.DateTimeFormat('fr-FR', { day: '2-digit' });
+const monthFmt = new Intl.DateTimeFormat('fr-FR', { month: 'short' });
+
+function setMenu(view) {
+  document.querySelectorAll('.menu a[data-view]').forEach((a) => {
+    const on = a.dataset.view === view;
+    a.classList.toggle('on', on);
+    if (on) a.setAttribute('aria-current', 'page');
+    else a.removeAttribute('aria-current');
+  });
+}
+
+function openTour(push = true) {
+  if (!tourOpen) {
+    tourOpen = true;
+    tourScroller.scrollTop = 0;
+    root.classList.add('lock');
+    body.classList.add('tour');
+    cursor.classList.remove('on');
+    $('#tour').setAttribute('aria-hidden', 'false');
+    setMenu('tour');
+    (tourTitle ??= new TourTitle($('#t-3d'))).start();
+    renderTour();
+  }
+  if (push) history.pushState({ tour: true }, '', '#tour');
+}
+
+function closeTour() {
+  if (!tourOpen) return;
+  tourOpen = false;
+  body.classList.remove('tour');
+  root.classList.toggle('lock', current >= 0);
+  $('#tour').setAttribute('aria-hidden', 'true');
+  setMenu('shop');
+  setTimeout(() => { if (!tourOpen) tourTitle?.stop(); }, 600); // after the fade out
+}
+
+async function renderTour() {
+  const list = $('#dates');
+  if (!list.children.length) list.innerHTML = '<li class="t-empty">Chargement des dates…</li>';
+  let dates;
+  try {
+    dates = await fetchDates();
+  } catch (err) {
+    console.error(err);
+    list.innerHTML = '<li class="t-empty">Les dates sont indisponibles pour le moment.</li>';
+    return;
+  }
+  const upcoming = dates
+    .filter((d) => new Date(d.datetime) >= new Date(new Date().toDateString()))
+    .sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+  let year = new Date().getFullYear();
+  list.innerHTML = upcoming.length
+    ? upcoming
+        .map((d, i) => {
+          const at = new Date(d.datetime);
+          const sep = at.getFullYear() !== year ? `<li class="t-year">${(year = at.getFullYear())}</li>` : '';
+          const link = d.tickets || d.url;
+          const row = `<time datetime="${esc(d.datetime)}">${dayFmt.format(at)} ${monthFmt.format(at).replace('.', '')}</time>
+            <span class="city">${esc(d.city)}</span><span class="venue">${esc(d.venue)}</span>`;
+          return `${sep}<li class="date${d.soldOut ? ' out' : ''}" style="--i:${Math.min(i, 12)}">${
+            link && !d.soldOut ? `<a href="${esc(link)}" target="_blank" rel="noopener">${row}</a>` : `<div>${row}</div>`
+          }</li>`;
+        })
+        .join('')
+    : '<li class="t-empty">Pas de date annoncée pour le moment. Reviens bientôt.</li>';
+}
+
 // ---------- gallery lightbox ----------
 $('#gallery').addEventListener('click', (e) => {
   const b = e.target.closest('button');
@@ -267,7 +354,7 @@ track.addEventListener('click', (e) => { if (e.target.tagName !== 'IMG') closeLi
 function toggleCart(open) {
   $('#cart').classList.toggle('open', open);
   $('#cart').setAttribute('aria-hidden', String(!open));
-  root.classList.toggle('lock', open || current >= 0);
+  root.classList.toggle('lock', open || current >= 0 || tourOpen);
 }
 $('#cart-btn').onclick = () => toggleCart(true);
 $('#cart-close').onclick = () => toggleCart(false);
