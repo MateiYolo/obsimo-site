@@ -23,4 +23,11 @@ const bake = {
   },
 };
 
-export default defineConfig({ plugins: [bake] });
+export default defineConfig({
+  plugins: [bake],
+  build: {
+    // three.js in its own file: it changes far less often than the site, so browsers keep it cached across deploys
+    rolldownOptions: { output: { codeSplitting: { groups: [{ name: 'three', test: /node_modules[\\/]three[\\/]/ }] } } },
+    chunkSizeWarningLimit: 700, // three.js alone is ~580 kB minified (~150 kB gzip)
+  },
+});

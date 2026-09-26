@@ -71,6 +71,17 @@ let baked = null;
 const shared = new Map(); // key -> Promise<texture>: printed sleeves, pressings and labels, built once per release
 const once = (key, make) => (shared.has(key) || shared.set(key, make()), shared.get(key));
 
+// Starts downloading the files of the records right away (while the page waits for its web fonts); buildVinyl then
+// picks up the same promises.
+export function prefetch(products) {
+  for (const { kind, model: m } of products) {
+    if (kind !== 'vinyl') continue;
+    baked ||= loadBakedMaps(image);
+    for (const url of [m.cover, m.back, m.disc, m.label, m.labelB]) if (url) image(url);
+    for (const mask of [m.varnishFront, m.varnishBack]) if (mask) loadVarnish(mask, image, baked);
+  }
+}
+
 export function buildVinyl(p) {
   const m = p.model;
   baked ||= loadBakedMaps(image);

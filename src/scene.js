@@ -64,6 +64,7 @@ export class Stage {
     this.rects = [];
     this.centred = -1; // which product is closest to the middle of the screen
     this.slow = [];
+    this.inView = 1; // objects drawn last frame (the first frame always draws: it replaces the warm-up render)
 
     this.resize();
     addEventListener('resize', () => this.resize());
@@ -175,6 +176,7 @@ export class Stage {
     const detailX = this.portrait ? 0 : -this.visW * 0.25;
     const detailY = this.portrait ? (this.h / 2 - 0.245 * this.vh + this.detailScroll) * wpp : 0;
     const centred = this.centred;
+    let inView = 0;
 
     this.items.forEach((it, i) => {
       const r = this.rects[i];
@@ -201,6 +203,7 @@ export class Stage {
       if (!it.pivot.visible) return;
       it.pivot.position.set(x, y, 0);
       it.pivot.scale.setScalar(size);
+      if (Math.abs(x) < this.visW / 2 + size && Math.abs(y) < this.visH / 2 + size) inView++;
 
       // rotation: idle turn + user tilt, flick inertia, then back to upright
       const idle = now - it.lastTouch > 1400;
@@ -222,6 +225,9 @@ export class Stage {
       it.m.update(dt, { focus: it.focus, detail: isActive ? ease : 0, playing: this.playing });
     });
 
-    this.renderer.render(this.scene, this.camera);
+    // nothing on screen (a product page scrolled past its object): the canvas is left as it is, one last draw clears
+    // it, then the GPU rests and so does the compositor (no blur to redo behind the buy bar every frame)
+    if (inView || this.inView) this.renderer.render(this.scene, this.camera);
+    this.inView = inView;
   }
 }

@@ -1,5 +1,5 @@
 import { Stage } from './scene.js';
-import { manager } from './models.js';
+import { manager, prefetch } from './models.js';
 import { demoCatalog, placeholderPhotos } from './catalog.js';
 import { shopifyEnabled, fetchProducts, checkout } from './shopify.js';
 import { Cart } from './cart.js';
@@ -29,23 +29,28 @@ async function boot() {
   }
   products.forEach((p) => { if (!p.images.length) p.images = placeholderPhotos(p); });
 
+  manager.onProgress = (_, done, total) => ($('#load-pct').textContent = Math.round((done / total) * 100));
+  // once the files are in (and applied to the materials by their load callbacks), compile every shader without
+  // blocking the page, behind the loader; nothing is drawn before, so no half-textured variant gets compiled
+  let started = false, loading = false;
+  const ready = () => {
+    if (started || !stage) return;
+    started = true;
+    setTimeout(() => stage.compile().catch(() => {}).then(() => body.classList.add('ready')));
+  };
+  manager.onStart = () => (loading = true);
+  manager.onLoad = () => {
+    loading = false;
+    ready();
+  };
+  prefetch(products); // the records' files download while the fonts load
+
   // canvas labels need the web fonts
   await Promise.race([
     Promise.all([document.fonts.load('500 72px "Space Grotesk"'), document.fonts.load('400 30px "Space Grotesk"')]),
     new Promise((r) => setTimeout(r, 2500)),
   ]);
-
-  manager.onProgress = (_, done, total) => ($('#load-pct').textContent = Math.round((done / total) * 100));
-  // once the files are in (and applied to the materials by their load callbacks), compile every shader without
-  // blocking the page, behind the loader; nothing is drawn before, so no half-textured variant gets compiled
-  let started = false;
-  const ready = () => {
-    if (started) return;
-    started = true;
-    setTimeout(() => stage.compile().catch(() => {}).then(() => body.classList.add('ready')));
-  };
-  manager.onLoad = ready;
-  setTimeout(ready, 7000);
+  setTimeout(() => { if (stage) ready(); }, 7000);
 
   const list = $('#list');
   list.innerHTML = products
@@ -59,6 +64,7 @@ async function boot() {
   });
 
   stage = new Stage($('#gl'), products, slots);
+  if (!loading) setTimeout(ready); // every file already came in during the font wait
   cart = new Cart(products);
   cart.onChange(renderCart);
   renderCart();
