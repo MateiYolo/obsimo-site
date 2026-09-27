@@ -11,8 +11,10 @@ const Z = new THREE.Vector3(0, 0, 1);
 const qTmp = new THREE.Quaternion();
 const vTmp = new THREE.Vector3();
 
-// One fixed WebGL canvas for the whole site. Every product follows an empty DOM "slot" in the scrolling page,
-// so scrolling stays native (and silky on phones) while the 3D is drawn behind it.
+// One WebGL canvas for the whole site. Every product follows an empty DOM "slot" in the scrolling page, so scrolling
+// stays native. The canvas scrolls with the page and is put back around the screen on each drawn frame: between two
+// frames (iOS Safari scrolls on its own thread, and a frame can come late) the objects move with the page, in step
+// with the finger, instead of trailing behind it.
 export class Stage {
   constructor(canvas, products, slots) {
     const mobile = matchMedia('(pointer: coarse)').matches;
@@ -58,7 +60,8 @@ export class Stage {
     this.detailTarget = 0;
     this.detailScroll = 0;
     this.scrollVel = 0;
-    this.lastScroll = scrollY;
+    this.scroll = this.lastScroll = scrollY;
+    this.canvasTop = null;
     this.playing = false;
     this.clock = new THREE.Timer();
     this.rects = [];
@@ -86,20 +89,25 @@ export class Stage {
     this.renderer.render(this.scene, this.camera); // everything at once, behind the loader: uploads the geometries
   }
 
-  // The canvas covers the large viewport (CSS 100lvh): the toolbar of mobile browsers comes and goes as the page
-  // scrolls, which only changes the visible height (vh), not the drawing buffer, so nothing is reallocated mid-scroll.
+  // The canvas is sized on the large viewport (CSS 150lvh, the screen plus 25lvh above and below): the toolbar of
+  // mobile browsers comes and goes as the page scrolls, which only changes the visible height (vh), not the drawing
+  // buffer, so nothing is reallocated mid-scroll.
   resize() {
     this.vh = innerHeight;
     this.portrait = innerWidth < 820 || innerHeight > innerWidth;
     const c = this.renderer.domElement;
-    const w = c.clientWidth || innerWidth, h = c.clientHeight || innerHeight;
+    const w = c.clientWidth || innerWidth, h = c.clientHeight || innerHeight * 1.5;
     if (w === this.w && h === this.h) return;
     this.w = w; this.h = h;
+    this.ov = h / 6; // overscan above (and below) the screen, in CSS pixels
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
+    // wider field for the taller canvas: the screen part keeps the 30° framing and perspective it had when fixed
+    this.camera.fov = 2 * THREE.MathUtils.radToDeg(Math.atan(Math.tan(THREE.MathUtils.degToRad(15)) * h / (h - 2 * this.ov)));
     this.camera.updateProjectionMatrix();
     this.visH = 2 * this.camera.position.z * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2));
     this.visW = this.visH * this.camera.aspect;
+    this.screenH = this.visH * (h - 2 * this.ov) / h; // the screen's height, in world units
   }
 
   // Safety net for slow GPUs: when frames keep taking over 40 ms (under 25 fps), draw at a lower resolution, a step
@@ -145,6 +153,7 @@ export class Stage {
 
   // Reads where the slots are (the only layout read of a frame) and which one is closest to the middle of the screen.
   measure() {
+    this.scroll = scrollY; // read with the rects: the frame is drawn for this scroll position
     let bd = Infinity;
     this.items.forEach((it, i) => {
       const r = (this.rects[i] = it.slot.getBoundingClientRect());
@@ -166,26 +175,27 @@ export class Stage {
     const ease = d * d * (3 - 2 * d);
 
     // a little tilt from scroll speed makes the list feel physical
-    const sv = (scrollY - this.lastScroll) / Math.max(dt, 1e-3);
-    this.lastScroll = scrollY;
+    const sv = (this.scroll - this.lastScroll) / Math.max(dt, 1e-3);
+    this.lastScroll = this.scroll;
     this.scrollVel = damp(this.scrollVel, clamp(sv / 3000, -0.25, 0.25), 6, dt);
 
     const wpp = this.visH / this.h; // world units per CSS pixel
+    const ov = this.ov; // the screen's top, in canvas pixels
     // phones: in the hero, a quarter of the way down the visible screen
-    const detailSize = this.portrait ? Math.min(this.vh * wpp * 0.26, this.visW * 0.62) : Math.min(this.visH * 0.52, this.visW * 0.3);
+    const detailSize = this.portrait ? Math.min(this.vh * wpp * 0.26, this.visW * 0.62) : Math.min(this.screenH * 0.52, this.visW * 0.3);
     const detailX = this.portrait ? 0 : -this.visW * 0.25;
-    const detailY = this.portrait ? (this.h / 2 - 0.245 * this.vh + this.detailScroll) * wpp : 0;
+    const detailY = this.portrait ? (this.h / 2 - ov - 0.245 * this.vh + this.detailScroll) * wpp : 0;
     const centred = this.centred;
     let inView = 0;
 
     this.items.forEach((it, i) => {
       const r = this.rects[i];
-      const onScreen = r.bottom > -r.height * 0.5 && r.top < this.h + r.height * 0.5;
+      const onScreen = r.bottom > -ov - r.height * 0.5 && r.top < this.h - ov + r.height * 0.5; // or in the overscan
       const isActive = i === this.active;
 
       // position from the DOM slot
       let x = (r.left + r.width / 2 - this.w / 2) * wpp;
-      let y = -(r.top + r.height / 2 - this.h / 2) * wpp;
+      let y = -(r.top + ov + r.height / 2 - this.h / 2) * wpp;
       let size = Math.min(r.width, r.height) * wpp;
       // grows a little as it reaches the middle of the screen
       const mid = 1 - clamp(Math.abs(r.top + r.height / 2 - this.vh / 2) / this.vh, 0, 1);
@@ -197,7 +207,7 @@ export class Stage {
         size += (detailSize - size) * ease;
       } else {
         size *= 1 - ease; // the others shrink away
-        y -= ease * this.visH * 0.15;
+        y -= ease * this.screenH * 0.15;
       }
       it.pivot.visible = (onScreen || isActive) && size > 0.01;
       if (!it.pivot.visible) return;
@@ -227,7 +237,15 @@ export class Stage {
 
     // nothing on screen (a product page scrolled past its object): the canvas is left as it is, one last draw clears
     // it, then the GPU rests and so does the compositor (no blur to redo behind the buy bar every frame)
-    if (inView || this.inView) this.renderer.render(this.scene, this.camera);
+    if (inView || this.inView) {
+      this.renderer.render(this.scene, this.camera);
+      // moved in the same frame as it is drawn, so the browser shows both together
+      const top = this.scroll - ov;
+      if (top !== this.canvasTop) {
+        this.canvasTop = top;
+        this.renderer.domElement.style.transform = `translate3d(0, ${top}px, 0)`;
+      }
+    }
     this.inView = inView;
   }
 }
