@@ -56,6 +56,14 @@ Champs `model` d'un vinyle : `cover`, `back`, `disc` (PNG du disque vu de dessus
 
 - `src/scene.js` : le canvas WebGL unique ; chaque objet suit un emplacement vide de la page (scroll natif), rotation et transition vers la fiche
 - `src/models.js` : vinyle (pochette + disque qui sort et tourne), bouteille de sauce, carte générique
+
+## Bouteille de sauce
+
+La bouteille reprend les proportions de la vraie (50 ml, corps droit, épaule ronde, long goulot, bouchon à vis).
+Champs `model` d'une sauce : `art` (l'étiquette à plat, encre noire sur blanc, 104 × 67 mm), `holo` (le blanc devient
+un sticker holographique dont les reflets arc-en-ciel bougent avec l'angle), `liquid`, `cap`, `capMetal`, ou à défaut
+d'`art` une étiquette dessinée dans le code : `label`, `ink`, `heat`. L'étiquette de La Sauce Piqu'hans est
+`public/assets/sauce/piquhans-label.webp`, rendue depuis le PDF d'impression.
 - `src/hifi/` : modèle du vinyle repris du mockup-vinyl-generator, chargement des textures précalculées (`baked.js`) et leur génération (`bake.js`, page `bake.html`)
 - `src/main.js` : liste, gestes de rotation, menu, page détail, galerie, panier
 - `src/audio.js` : extraits audio (fichier ou boucle générative de démo)
