@@ -179,9 +179,57 @@ function bottleProfile(inset = 0, maxY = Infinity) {
       out.push(new THREE.Vector2(Math.max(0, p.x - inset), maxY), new THREE.Vector2(0, maxY));
       break;
     }
-    out.push(new THREE.Vector2(p.x > 0 ? Math.max(0, p.x - inset) : 0, p.y + (p.y === 0 ? inset : 0)));
+    out.push(new THREE.Vector2(p.x > 0 ? Math.max(0, p.x - inset) : 0, inset ? Math.max(p.y, inset) : p.y));
   }
   return out;
+}
+
+// Height of the sauce's surface along its tilted "up" so that the amount of sauce stays the same: a table over the
+// angle between up and the bottle's axis, computed once from the inside of the bottle sampled on a coarse grid
+// (about 10k cells, a few ms). Returns a function of cos(angle).
+let levelTable = null;
+function sauceLevels(inside) {
+  const N = 32;
+  if (!levelTable) {
+    const rAt = (y) => {
+      for (let i = 1; i < inside.length; i++) {
+        const a = inside[i - 1], b = inside[i];
+        if (b.y > a.y && y <= b.y) return y < a.y ? 0 : a.x + ((b.x - a.x) * (y - a.y)) / (b.y - a.y);
+      }
+      return 0;
+    };
+    const xs = [], ys = [], ws = [];
+    let full = 0;
+    const top = inside.at(-1).y, DY = 1.5, RINGS = 8, TURNS = 16;
+    for (let y = inside[0].y + DY / 2; y < top; y += DY) {
+      const R = rAt(y);
+      for (let j = 0; j < RINGS; j++) {
+        const r = ((j + 0.5) / RINGS) * R;
+        for (let k = 0; k < TURNS; k++) {
+          xs.push(r * Math.cos((k / TURNS) * Math.PI * 2));
+          ys.push(y);
+          ws.push(r * R);
+          if (y <= LIQUID_TOP) full += r * R;
+        }
+      }
+    }
+    levelTable = new Float32Array(N + 1);
+    for (let i = 0; i <= N; i++) {
+      const a = (i / N) * Math.PI, sa = Math.sin(a), ca = Math.cos(a);
+      let lo = -100, hi = 200;
+      for (let it = 0; it < 24; it++) {
+        const d = (lo + hi) / 2;
+        let v = 0;
+        for (let n = 0; n < xs.length; n++) if (xs[n] * sa + ys[n] * ca <= d) v += ws[n];
+        if (v < full) lo = d; else hi = d;
+      }
+      levelTable[i] = (lo + hi) / 2;
+    }
+  }
+  return (cos) => {
+    const f = (Math.acos(Math.min(1, Math.max(-1, cos))) / Math.PI) * N, i = Math.min(N - 1, Math.floor(f));
+    return levelTable[i] + (levelTable[i + 1] - levelTable[i]) * (f - i);
+  };
 }
 
 // Label drawn in code, for a sauce without printed artwork (the front is the middle of the texture).
@@ -269,20 +317,44 @@ export function buildSauce(p) {
   const bottle = new THREE.Mesh(new THREE.LatheGeometry(bottleProfile(), 96), glass);
   bottle.renderOrder = 2;
 
-  const liquid = new THREE.Mesh(
-    new THREE.LatheGeometry(bottleProfile(GLASS, LIQUID_TOP), 64),
-    new THREE.MeshPhysicalMaterial({
-      color: m.liquid,
-      roughness: 0.3,
-      clearcoat: 1,
-      clearcoatRoughness: 0.1,
-      sheen: 0.2,
-      sheenColor: new THREE.Color(m.liquid).offsetHSL(0, 0, 0.2),
-      emissive: new THREE.Color(m.liquid),
-      emissiveIntensity: 0.05,
-    })
-  );
+  // The sauce fills the whole inside of the bottle and a clipping plane is its surface; the inside faces seen through
+  // that cut are shaded as the flat top of the sauce. The plane leans with gravity, a little late since the sauce
+  // is thick, at the height that keeps the same amount of sauce (see sauceLevels).
+  const surface = new THREE.Plane();
+  const liquidMat = new THREE.MeshPhysicalMaterial({
+    color: m.liquid,
+    roughness: 0.3,
+    clearcoat: 1,
+    clearcoatRoughness: 0.1,
+    sheen: 0.2,
+    sheenColor: new THREE.Color(m.liquid).offsetHSL(0, 0, 0.2),
+    emissive: new THREE.Color(m.liquid),
+    emissiveIntensity: 0.05,
+    side: THREE.DoubleSide,
+    clippingPlanes: [surface],
+  });
+  const surfaceUp = { value: new THREE.Vector3(0, 1, 0) }; // world space
+  liquidMat.onBeforeCompile = (sh) => {
+    sh.uniforms.surfaceUp = surfaceUp;
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform vec3 surfaceUp;')
+      .replace(
+        '#include <lights_fragment_begin>',
+        /* glsl */ `
+        if ( ! gl_FrontFacing ) {
+          normal = normalize( ( viewMatrix * vec4( surfaceUp, 0.0 ) ).xyz );
+          #ifdef USE_CLEARCOAT
+            clearcoatNormal = normal;
+          #endif
+        }
+        #include <lights_fragment_begin>`
+      );
+  };
+  const inside = bottleProfile(GLASS).slice(0, -1);
+  inside.push(new THREE.Vector2(0, inside.at(-1).y));
+  const liquid = new THREE.Mesh(new THREE.LatheGeometry(inside, 64), liquidMat);
   liquid.renderOrder = 1;
+  const level = sauceLevels(inside);
 
   // the sticker wraps most of the body, centred on the front (+z); the gap between its two ends is at the back
   const r = BODY_R + 0.12, around = LABEL.w / r;
@@ -306,6 +378,7 @@ export function buildSauce(p) {
   const root = normalise(inner);
 
   let t = Math.random() * 10;
+  const up = new THREE.Vector3(0, 1, 0), upVel = new THREE.Vector3(), target = new THREE.Vector3(), q = new THREE.Quaternion();
   return {
     root,
     kind: 'sauce',
@@ -313,6 +386,15 @@ export function buildSauce(p) {
       t += dt;
       // the sauce sways a little, more when it is the product in focus
       inner.rotation.z = Math.sin(t * 1.3) * 0.02 * (0.4 + s.focus);
+      // "up" seen from the bottle; the surface follows it on a soft, well damped spring: a thick sauce slides, it
+      // doesn't slosh
+      liquid.updateWorldMatrix(true, false);
+      liquid.getWorldQuaternion(q);
+      target.set(0, 1, 0).applyQuaternion(q.invert());
+      upVel.addScaledVector(target.sub(up), 14 * dt).multiplyScalar(Math.exp(-6.5 * dt));
+      up.addScaledVector(upVel, dt).normalize();
+      surface.set(target.copy(up).negate(), level(up.y)).applyMatrix4(liquid.matrixWorld);
+      surfaceUp.value.copy(surface.normal).negate();
     },
   };
 }
