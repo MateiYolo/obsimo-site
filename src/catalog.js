@@ -18,6 +18,20 @@ const SLEEVE_8DIS = {
   labelB: H('label-b.webp'),
 };
 
+// Life Balance: green board sleeve with a die-cut window onto the label, a tall holographic sticker down the left side
+// (black ink on foil, like the sauce label), green/cream swirl pressing. Side A (hands) shows through the window.
+const L = (f) => A(`life-balance/${f}`);
+const SLEEVE_LB = {
+  cover: L('cover-front.jpg'),
+  back: L('cover-back.jpg'),
+  label: L('label-a.webp'),
+  labelB: L('label-b.webp'),
+  dieCut: true,
+  rest: 0, // record fully in: the window shows the whole label
+  // cm on the 31.4 cm front face, measured on the product photo
+  sticker: { art: L('sticker.webp'), x: -12.49, y: 0, h: 29.4 },
+};
+
 // La Sauce Piqu'hans: green sauce, gold screw cap, label printed in black on a holographic sticker
 const PIQUHANS = {
   kind: 'sauce',
@@ -71,48 +85,29 @@ export const demoCatalog = [
     ],
   },
   {
-    id: 'demo-8dis-black',
-    handle: '8-days-in-sweden-black',
+    id: 'demo-life-balance-swirl',
+    handle: 'life-balance-swirl',
     kind: 'vinyl',
-    title: '8 Days in Sweden',
-    kicker: 'Vinyle 12" · Noir classique',
-    blurb: 'La même session, en noir 140 g. Pour celles et ceux qui écoutent plus qu\'ils ne regardent.',
+    title: 'Life Balance',
+    kicker: 'Vinyle 12" · Swirl vert',
+    blurb: 'Life Balance Extended : douze titres, avec Shuttle et Monoko, pressés sur un swirl vert et crème.',
     description:
-      "L'édition standard du disque : vinyle noir 140 g, même pochette, même poster. Six titres enregistrés pendant huit jours en Suède avec Monoko et Inkko.",
-    price: 26,
+      "La version longue de Life Balance : douze titres, dont BDXBXL avec Shuttle et I Fall avec Monoko. Pochette carton verte à fenêtre découpée sur le macaron, sticker holographique, et un vinyle swirl vert et crème : chaque exemplaire a ses propres taches.",
+    price: 30,
     currency: 'EUR',
     variantId: null,
-    accent: '#6f7a86',
+    accent: '#3dbb6c',
     audio: null,
     audioSeed: 1,
-    model: { ...SLEEVE_8DIS, discColor: '#0b0b0b' },
-    images: [A('insert-verso.jpg'), A('insert-recto.jpg'), A('cover-back.jpg')],
+    model: { ...SLEEVE_LB, disc: L('disc.webp') },
+    images: [L('photo-disc.webp'), L('photo-sleeve.webp')],
     details: [
-      { title: 'Tracklist', body: 'A1 · Arrivée\nA2 · Glace noire\nA3 · 8 Days\nB1 · Monoko\nB2 · Inkko\nB3 · Retour' },
-      { title: 'Le pressage', body: 'Vinyle noir 140 g, 33 tours. Pochette carton avec rond central découpé, poster A2 inclus.' },
+      {
+        title: 'Tracklist',
+        body: "A1 · He Needs Me\nA2 · Love Balance\nA3 · U\nA4 · BDXBXL (ft Shuttle)\nA5 · Off Track\nA6 · It Won't Be Long\nB1 · Call Center\nB2 · Dreamer\nB3 · Stay In A Loop\nB4 · I Fall (ft Monoko)\nB5 · B4D MOOD\nB6 · I Don't Mind",
+      },
+      { title: 'Le pressage', body: 'Vinyle swirl vert et crème, 33 tours. Pochette carton avec fenêtre ronde découpée sur le macaron, sticker holographique. OSR Records.' },
       { title: 'Livraison', body: 'Expédié sous 3 jours ouvrés dans un carton renforcé. France 5 €, Europe 12 €, monde 18 €.' },
-    ],
-  },
-  {
-    id: 'demo-sauce-glace',
-    handle: 'sauce-lac-gele',
-    kind: 'sauce',
-    title: 'Lac gelé',
-    kicker: 'Sauce piquante · 150 ml',
-    blurb: 'Habanero, citron vert et gingembre. Froide au nez, brûlante ensuite. Chaleur 5/5.',
-    description:
-      'La plus sauvage de la gamme. Habanero frais, citron vert, gingembre et une touche d\'aneth en clin d\'œil à la Suède. Quelques gouttes suffisent.',
-    price: 13,
-    currency: 'EUR',
-    variantId: null,
-    accent: '#c99a1a',
-    audio: null,
-    model: { liquid: '#d98a06', label: '#e9e5dc', ink: '#161514', heat: 5, cap: '#e9e5dc' },
-    images: [],
-    details: [
-      { title: 'Ingrédients', body: 'Habanero, vinaigre blanc, citron vert, gingembre, carotte, aneth, sel.' },
-      { title: 'Conservation', body: 'Au frais après ouverture, à consommer dans les 3 mois.' },
-      { title: 'Livraison', body: 'Bouteille en verre calée dans un étui carton. Expédiée sous 3 jours ouvrés.' },
     ],
   },
 ];
@@ -124,13 +119,13 @@ export const visuals = {
   'transparent-green-vinyl-life-balance-limited-edition': {
     kind: 'vinyl',
     accent: '#2e9a55',
-    model: { sleeve: '#1f8a4c', discFill: '#1d6b3a', discColor: '#2e9a55', edge: '#1f8a4c' },
+    model: { ...SLEEVE_LB, discFill: '#1d6b3a', discColor: '#2e9a55' },
   },
   'life-balance-vinyl-33-transparent-green': {
     kind: 'vinyl',
     accent: '#2e9a55',
     audioSeed: 1,
-    model: { sleeve: '#1f8a4c', discFill: '#1d6b3a', discColor: '#2e9a55', edge: '#1f8a4c' },
+    model: { ...SLEEVE_LB, discFill: '#1d6b3a', discColor: '#2e9a55' },
   },
   'hot-sauce-obsimo-x-piquhans-50ml': PIQUHANS,
 };
