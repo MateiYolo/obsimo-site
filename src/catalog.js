@@ -115,19 +115,19 @@ export const demoCatalog = [
 // 3D look of each Shopify product, keyed by its handle. The visuals live here on purpose, not in Shopify:
 // Shopify gives title, texts, price, stock and photos; this table decides which model is built and how it looks.
 // A product missing from the table is shown as a flat card with its first Shopify photo.
+const lookOf = (handle) => {
+  const { kind, accent, audioSeed, model } = demoCatalog.find((p) => p.handle === handle);
+  return { kind, accent, audioSeed, model };
+};
+const LIFE_BALANCE = lookOf('life-balance-swirl');
+
 export const visuals = {
-  'transparent-green-vinyl-life-balance-limited-edition': {
-    kind: 'vinyl',
-    accent: '#2e9a55',
-    model: { ...SLEEVE_LB, discFill: '#1d6b3a', discColor: '#2e9a55' },
-  },
-  'life-balance-vinyl-33-transparent-green': {
-    kind: 'vinyl',
-    accent: '#2e9a55',
-    audioSeed: 1,
-    model: { ...SLEEVE_LB, discFill: '#1d6b3a', discColor: '#2e9a55' },
-  },
+  // the two Life Balance listings on Shopify are the same green/cream swirl pressing
+  'transparent-green-vinyl-life-balance-limited-edition': LIFE_BALANCE,
+  'life-balance-vinyl-33-transparent-green': LIFE_BALANCE,
   'hot-sauce-obsimo-x-piquhans-50ml': PIQUHANS,
+  // not on Shopify yet: create the product with this handle and it gets its 3D record automatically
+  '8-days-in-sweden-marble': lookOf('8-days-in-sweden-marble'),
 };
 
 // Placeholder "photos" for products that have none yet: moody gradients drawn on a canvas.
