@@ -9,6 +9,7 @@ const Y = new THREE.Vector3(0, 1, 0);
 const X = new THREE.Vector3(1, 0, 0);
 const Z = new THREE.Vector3(0, 0, 1);
 const qTmp = new THREE.Quaternion();
+const vTmp = new THREE.Vector3();
 
 // One fixed WebGL canvas for the whole site. Every product follows an empty DOM "slot" in the scrolling page,
 // so scrolling stays native (and silky on phones) while the 3D is drawn behind it.
@@ -16,10 +17,12 @@ export class Stage {
   constructor(canvas, products, slots) {
     const mobile = matchMedia('(pointer: coarse)').matches;
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? 2 : 1.75));
+    this.dpr = Math.min(devicePixelRatio, mobile ? 2 : 1.75);
+    this.renderer.setPixelRatio(this.dpr);
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.05;
     this.renderer.setClearColor(0x000000, 0);
+    this.renderer.localClippingEnabled = true; // records are clipped at their sleeve's opening
 
     this.scene = new THREE.Scene();
     const pmrem = new THREE.PMREMGenerator(this.renderer);
@@ -58,20 +61,58 @@ export class Stage {
     this.lastScroll = scrollY;
     this.playing = false;
     this.clock = new THREE.Timer();
+    this.rects = [];
+    this.centred = -1; // which product is closest to the middle of the screen
+    this.slow = [];
+    this.inView = 1; // objects drawn last frame (the first frame always draws: it replaces the warm-up render)
 
     this.resize();
     addEventListener('resize', () => this.resize());
   }
 
+  // Uploads every texture to the GPU, then compiles the shaders of everything in the scene in the background
+  // (KHR_parallel_shader_compile when available). Without this, each object would stall the page for its textures
+  // and geometry the first time it is drawn: on the first frame, or while scrolling for the ones further down.
+  async compile() {
+    const textures = new Set();
+    this.scene.traverse((o) => {
+      for (const m of [o.material].flat()) if (m) for (const v of Object.values(m)) if (v?.isTexture && v.image) textures.add(v);
+    });
+    for (const t of textures) {
+      this.renderer.initTexture(t);
+      await new Promise((r) => setTimeout(r)); // one upload per task: the page stays responsive
+    }
+    await this.renderer.compileAsync(this.scene, this.camera);
+    this.renderer.render(this.scene, this.camera); // everything at once, behind the loader: uploads the geometries
+  }
+
+  // The canvas covers the large viewport (CSS 100lvh): the toolbar of mobile browsers comes and goes as the page
+  // scrolls, which only changes the visible height (vh), not the drawing buffer, so nothing is reallocated mid-scroll.
   resize() {
-    const w = innerWidth, h = innerHeight;
+    this.vh = innerHeight;
+    this.portrait = innerWidth < 820 || innerHeight > innerWidth;
+    const c = this.renderer.domElement;
+    const w = c.clientWidth || innerWidth, h = c.clientHeight || innerHeight;
+    if (w === this.w && h === this.h) return;
     this.w = w; this.h = h;
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
     this.visH = 2 * this.camera.position.z * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2));
     this.visW = this.visH * this.camera.aspect;
-    this.portrait = w < 820 || h > w;
+  }
+
+  // Safety net for slow GPUs: when frames keep taking over 40 ms (under 25 fps), draw at a lower resolution, a step
+  // at a time, never below 1. A browser capping at 30 fps (iOS low power mode) stays above the threshold.
+  adapt(dt) {
+    if (this.dpr <= 1 || dt > 0.25) return; // a tab switch or a one-off hitch says nothing about the GPU
+    this.slow.push(dt);
+    if (this.slow.length < 90) return;
+    const median = this.slow.sort((a, b) => a - b)[45];
+    this.slow.length = 0;
+    if (median < 0.04) return;
+    this.dpr = Math.max(1, this.dpr - 0.25);
+    this.renderer.setPixelRatio(this.dpr);
   }
 
   // ---- interaction: called by main.js with pixel deltas ----
@@ -89,31 +130,35 @@ export class Stage {
     qTmp.setFromAxisAngle(X, dy * k);
     it.tilt.premultiply(qTmp);
     if (twist) it.tilt.premultiply(qTmp.setFromAxisAngle(Z, -twist));
-    it.vel.set(dy * k, dx * k, -twist).divideScalar(Math.max(dt, 1 / 120));
+    // smoothed: with fast touch screens a single noisy event would otherwise decide the flick
+    it.vel.lerp(vTmp.set(dy * k, dx * k, -twist).divideScalar(Math.max(dt, 1 / 120)), 0.5);
     it.lastTouch = performance.now();
   }
-  release(i) {
+  release(i, still = false) {
     const it = this.items[i];
     if (!it) return;
     it.held = false;
+    if (still) it.vel.set(0, 0, 0);
     it.lastTouch = performance.now();
     it.vel.clampLength(0, 9);
   }
 
-  // Which product is closest to the middle of the screen.
-  get centred() {
-    let best = -1, bd = Infinity;
+  // Reads where the slots are (the only layout read of a frame) and which one is closest to the middle of the screen.
+  measure() {
+    let bd = Infinity;
     this.items.forEach((it, i) => {
-      const r = it.slot.getBoundingClientRect();
-      const d = Math.abs(r.top + r.height / 2 - this.h / 2);
-      if (d < bd) { bd = d; best = i; }
+      const r = (this.rects[i] = it.slot.getBoundingClientRect());
+      const d = Math.abs(r.top + r.height / 2 - this.vh / 2);
+      if (d < bd) { bd = d; this.centred = i; }
     });
-    return best;
   }
 
   frame() {
+    this.measure();
     this.clock.update();
-    const dt = Math.min(this.clock.getDelta(), 1 / 20);
+    const raw = this.clock.getDelta();
+    this.adapt(raw);
+    const dt = Math.min(raw, 1 / 20);
     const t = this.clock.getElapsed();
     const now = performance.now();
     this.detail = damp(this.detail, this.detailTarget, 5.5, dt);
@@ -126,13 +171,15 @@ export class Stage {
     this.scrollVel = damp(this.scrollVel, clamp(sv / 3000, -0.25, 0.25), 6, dt);
 
     const wpp = this.visH / this.h; // world units per CSS pixel
-    const detailSize = this.portrait ? Math.min(this.visH * 0.26, this.visW * 0.62) : Math.min(this.visH * 0.52, this.visW * 0.3);
+    // phones: in the hero, a quarter of the way down the visible screen
+    const detailSize = this.portrait ? Math.min(this.vh * wpp * 0.26, this.visW * 0.62) : Math.min(this.visH * 0.52, this.visW * 0.3);
     const detailX = this.portrait ? 0 : -this.visW * 0.25;
-    const detailY = this.portrait ? (0.5 - 0.245) * this.visH + this.detailScroll * wpp : 0;
+    const detailY = this.portrait ? (this.h / 2 - 0.245 * this.vh + this.detailScroll) * wpp : 0;
     const centred = this.centred;
+    let inView = 0;
 
     this.items.forEach((it, i) => {
-      const r = it.slot.getBoundingClientRect();
+      const r = this.rects[i];
       const onScreen = r.bottom > -r.height * 0.5 && r.top < this.h + r.height * 0.5;
       const isActive = i === this.active;
 
@@ -141,7 +188,7 @@ export class Stage {
       let y = -(r.top + r.height / 2 - this.h / 2) * wpp;
       let size = Math.min(r.width, r.height) * wpp;
       // grows a little as it reaches the middle of the screen
-      const mid = 1 - clamp(Math.abs(r.top + r.height / 2 - this.h / 2) / this.h, 0, 1);
+      const mid = 1 - clamp(Math.abs(r.top + r.height / 2 - this.vh / 2) / this.vh, 0, 1);
       size *= 0.82 + 0.18 * mid;
 
       if (isActive) {
@@ -156,6 +203,7 @@ export class Stage {
       if (!it.pivot.visible) return;
       it.pivot.position.set(x, y, 0);
       it.pivot.scale.setScalar(size);
+      if (Math.abs(x) < this.visW / 2 + size && Math.abs(y) < this.visH / 2 + size) inView++;
 
       // rotation: idle turn + user tilt, flick inertia, then back to upright
       const idle = now - it.lastTouch > 1400;
@@ -177,6 +225,9 @@ export class Stage {
       it.m.update(dt, { focus: it.focus, detail: isActive ? ease : 0, playing: this.playing });
     });
 
-    this.renderer.render(this.scene, this.camera);
+    // nothing on screen (a product page scrolled past its object): the canvas is left as it is, one last draw clears
+    // it, then the GPU rests and so does the compositor (no blur to redo behind the buy bar every frame)
+    if (inView || this.inView) this.renderer.render(this.scene, this.camera);
+    this.inView = inView;
   }
 }

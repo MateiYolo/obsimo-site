@@ -1,5 +1,5 @@
 import { Stage } from './scene.js';
-import { manager } from './models.js';
+import { manager, prefetch } from './models.js';
 import { demoCatalog, placeholderPhotos } from './catalog.js';
 import { shopifyEnabled, fetchProducts, checkout } from './shopify.js';
 import { Cart } from './cart.js';
@@ -29,16 +29,28 @@ async function boot() {
   }
   products.forEach((p) => { if (!p.images.length) p.images = placeholderPhotos(p); });
 
+  manager.onProgress = (_, done, total) => ($('#load-pct').textContent = Math.round((done / total) * 100));
+  // once the files are in (and applied to the materials by their load callbacks), compile every shader without
+  // blocking the page, behind the loader; nothing is drawn before, so no half-textured variant gets compiled
+  let started = false, loading = false;
+  const ready = () => {
+    if (started || !stage) return;
+    started = true;
+    setTimeout(() => stage.compile().catch(() => {}).then(() => body.classList.add('ready')));
+  };
+  manager.onStart = () => (loading = true);
+  manager.onLoad = () => {
+    loading = false;
+    ready();
+  };
+  prefetch(products); // the records' files download while the fonts load
+
   // canvas labels need the web fonts
   await Promise.race([
     Promise.all([document.fonts.load('500 72px "Space Grotesk"'), document.fonts.load('400 30px "Space Grotesk"')]),
     new Promise((r) => setTimeout(r, 2500)),
   ]);
-
-  manager.onProgress = (_, done, total) => ($('#load-pct').textContent = Math.round((done / total) * 100));
-  const ready = () => body.classList.add('ready');
-  manager.onLoad = ready;
-  setTimeout(ready, 7000);
+  setTimeout(() => { if (stage) ready(); }, 7000);
 
   const list = $('#list');
   list.innerHTML = products
@@ -52,6 +64,7 @@ async function boot() {
   });
 
   stage = new Stage($('#gl'), products, slots);
+  if (!loading) setTimeout(ready); // every file already came in during the font wait
   cart = new Cart(products);
   cart.onChange(renderCart);
   renderCart();
@@ -66,56 +79,73 @@ async function boot() {
 // ---------- render loop ----------
 let wasPlaying = false;
 let shown = -1;
+const soundBtn = $('#sound');
 function loop() {
   requestAnimationFrame(loop);
+  if (current < 0 && stage.active >= 0 && stage.detail < 0.01) stage.active = -1; // back in its slot
+  stage.playing = player.playing;
+  // layout is read first (the slots), styles are written after: the other way round forces a layout every frame
+  if (!tourOpen && body.classList.contains('ready')) stage.frame(); // hidden behind the loader / the tour page
+  else stage.measure();
   const focus = current >= 0 ? current : stage.centred;
   if (focus !== shown && focus >= 0) {
     shown = focus;
     body.style.setProperty('--accent', products[focus].accent);
     player.play(products[focus]);
   }
-  if (current < 0 && stage.active >= 0 && stage.detail < 0.01) stage.active = -1; // back in its slot
-  stage.playing = player.playing;
   const lv = player.playing ? player.sample() : 0;
-  if (player.playing || wasPlaying) $('#sound').style.setProperty('--lv', lv.toFixed(3));
+  if (player.playing || wasPlaying) soundBtn.style.setProperty('--lv', lv.toFixed(3));
   wasPlaying = player.playing;
-  if (!tourOpen) stage.frame(); // hidden behind the tour page
 }
 
 // ---------- touch / mouse rotation ----------
 // One finger or the mouse turns the object (horizontal = around its vertical axis, vertical = tilts it),
-// two fingers twist it. On phones the slots use `touch-action: pan-y`: a vertical swipe scrolls the page as usual,
-// a gesture that starts sideways turns the object instead.
+// two fingers twist it. On phones the slots use `touch-action: pan-y` and a finger gesture is sorted out on its
+// first pixels: one that starts vertically is a scroll (the browser scrolls, the object is left alone), one that
+// starts sideways turns the object, then freely in every direction.
 function attachRotate(el, index, onTap) {
   const pts = new Map();
   let start = null, moved = false, lastT = 0, twistAngle = null;
+  let mode = null; // null until decided, 'rotate' | 'scroll'
   const angle = () => {
     const [a, b] = [...pts.values()];
     return Math.atan2(b.y - a.y, b.x - a.x);
   };
+  const grab = () => {
+    mode = 'rotate';
+    stage.grab(index());
+  };
   el.addEventListener('pointerdown', (e) => {
     player.unlock();
     pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (e.pointerType === 'mouse') try { el.setPointerCapture(e.pointerId); } catch {}
+    const mouse = e.pointerType === 'mouse';
+    if (mouse) try { el.setPointerCapture(e.pointerId); } catch {}
     if (pts.size === 1) {
       start = { x: e.clientX, y: e.clientY, t: performance.now() };
       moved = false;
-      lastT = start.t;
-      stage.grab(index());
+      lastT = e.timeStamp;
+      mode = null;
+      if (mouse) grab();
     }
+    if (pts.size === 2 && mode !== 'scroll') grab(); // two fingers: a twist
     twistAngle = pts.size === 2 ? angle() : null;
-    cursor.classList.add('grab');
+    if (mouse) cursor.classList.add('grab'); // the round cursor only follows the mouse
   });
   el.addEventListener('pointermove', (e) => {
     const p = pts.get(e.pointerId);
     if (!p) return;
     const dx = e.clientX - p.x, dy = e.clientY - p.y;
     p.x = e.clientX; p.y = e.clientY;
-    const now = performance.now();
-    const dt = (now - lastT) / 1000;
-    lastT = now;
-    if (!moved && Math.hypot(e.clientX - start.x, e.clientY - start.y) > 6) moved = true;
+    const dt = (e.timeStamp - lastT) / 1000; // event times: handlers can run late, in a batch, on a busy frame
+    lastT = e.timeStamp;
+    const tx = e.clientX - start.x, ty = e.clientY - start.y;
+    if (!moved && Math.hypot(tx, ty) > 6) moved = true;
     if (!moved) return;
+    if (!mode) {
+      if (Math.abs(ty) >= Math.abs(tx)) mode = 'scroll';
+      else grab();
+    }
+    if (mode !== 'rotate') return;
     if (pts.size === 2) {
       const a = angle();
       let d = a - twistAngle;
@@ -131,7 +161,8 @@ function attachRotate(el, index, onTap) {
     pts.delete(e.pointerId);
     twistAngle = pts.size === 2 ? angle() : null;
     if (pts.size) return;
-    stage.release(index());
+    if (mode === 'rotate') stage.release(index(), e.timeStamp - lastT > 90); // held still before letting go: no flick
+    mode = null;
     cursor.classList.remove('grab');
     const tap = e.type === 'pointerup' && !moved && performance.now() - start.t < 450;
     if (tap && onTap) onTap();

@@ -1,4 +1,7 @@
 import * as THREE from 'three';
+import { Vinyl, Sleeve, SLEEVE } from './hifi/objects.js';
+import { discTextureFromImage, borderColor } from './hifi/textures.js';
+import { loadBakedMaps, loadVarnish } from './hifi/baked.js';
 
 // Every model is built at real-ish proportions, then normalised so its tallest/widest side is 1 unit.
 // Each returns { root, update(dt, state) } where state = { focus 0..1, detail 0..1, playing bool }.
@@ -38,94 +41,120 @@ function normalise(inner) {
 }
 
 // ---------- vinyl ----------
-// Concentric grooves as a roughness map: the sheen breaks into rings like a real record.
-const grooveRoughness = () =>
-  canvasTex(1024, 1024, (g, w) => {
-    g.fillStyle = '#6a6a6a';
-    g.fillRect(0, 0, w, w);
-    const c = w / 2;
-    for (let r = 0.36 * c; r < 0.985 * c; r += 1.6) {
-      const band = Math.sin(r * 0.045) > 0.93 ? 150 : 60 + Math.random() * 40; // track gaps are smoother
-      g.strokeStyle = `rgb(${band},${band},${band})`;
-      g.lineWidth = 1;
-      g.beginPath();
-      g.arc(c, c, r, 0, Math.PI * 2);
-      g.stroke();
-    }
-  }, false);
-
-function blackDisc(labelUrl, fill = '#0b0b0b') {
-  const img = new Image();
-  const t = canvasTex(1024, 1024, (g, w) => {
-    const c = w / 2;
-    g.fillStyle = fill;
-    g.beginPath(); g.arc(c, c, c, 0, Math.PI * 2); g.fill();
+// The high-fidelity record and sleeve of the mockup generator (src/hifi, in cm): lathed disc with grooves and
+// anisotropic sheen, paper labels, a rounded fibre-bumped sleeve with spot varnish. Its procedural maps are baked to
+// files (src/hifi/baked.js), so building a record costs almost nothing on the main thread.
+// Model fields: cover, back, disc (top-down PNG of the pressing), label, labelB, varnishFront, varnishBack
+// (masks), or plain colours: sleeve, edge, discFill (disc surface), discColor.
+const images = new Map(); // url -> Promise<HTMLImageElement | null>, records of the same release share their files
+function image(url) {
+  if (images.has(url)) return images.get(url);
+  const load = new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous'; // Shopify CDN: the canvases read these pixels back
+    manager.itemStart(url);
+    img.onload = () => { manager.itemEnd(url); resolve(img); };
+    img.onerror = () => { manager.itemEnd(url); resolve(null); };
+    img.src = url;
   });
-  img.onload = () => {
-    const g = t.image.getContext('2d');
-    const c = 512, lr = 512 * (5 / 15);
-    g.save();
-    g.beginPath(); g.arc(c, c, lr, 0, Math.PI * 2); g.clip();
-    g.drawImage(img, c - lr, c - lr, lr * 2, lr * 2);
-    g.restore();
-    t.needsUpdate = true;
-  };
-  if (!labelUrl) return t;
-  manager.itemStart(labelUrl);
-  img.addEventListener('load', () => manager.itemEnd(labelUrl));
-  img.addEventListener('error', () => manager.itemEnd(labelUrl));
-  img.src = labelUrl;
+  images.set(url, load);
+  return load;
+}
+const imgTex = (img) => {
+  const t = new THREE.Texture(img);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  t.needsUpdate = true;
   return t;
+};
+let baked = null;
+const shared = new Map(); // key -> Promise<texture>: printed sleeves, pressings and labels, built once per release
+const once = (key, make) => (shared.has(key) || shared.set(key, make()), shared.get(key));
+
+// Starts downloading the files of the records right away (while the page waits for its web fonts); buildVinyl then
+// picks up the same promises.
+export function prefetch(products) {
+  for (const { kind, model: m } of products) {
+    if (kind !== 'vinyl') continue;
+    baked ||= loadBakedMaps(image);
+    for (const url of [m.cover, m.back, m.disc, m.label, m.labelB]) if (url) image(url);
+    for (const mask of [m.varnishFront, m.varnishBack]) if (mask) loadVarnish(mask, image, baked);
+  }
 }
 
 export function buildVinyl(p) {
   const m = p.model;
-  const W = 3.14, T = 0.04, R = 1.5;
+  baked ||= loadBakedMaps(image);
   const inner = new THREE.Group();
 
-  // sleeve
-  const edge = new THREE.MeshStandardMaterial({ color: m.edge || '#e8e6e0', roughness: 0.85 });
-  // no artwork yet: a plain sleeve in m.sleeve
-  const face = (url, roughness) =>
-    new THREE.MeshStandardMaterial(url ? { map: tex(url), roughness } : { color: m.sleeve || '#e8e6e0', roughness });
-  const front = face(m.cover, 0.62);
-  const back = face(m.back || m.cover, 0.7);
-  const sleeve = new THREE.Mesh(new THREE.BoxGeometry(W, W, T), [edge, edge, edge, edge, front, back]);
-  inner.add(sleeve);
+  // sleeve, front face towards the camera (+z)
+  const sleeve = new Sleeve({ maxAniso: 8 });
+  sleeve.wear = 0.12; // new stock: barely handled
+  sleeve.setWarp(0.12);
+  if (m.edge || m.sleeve) sleeve.setEdge(m.edge || m.sleeve);
+  if (!m.cover) for (const f of [sleeve.front, sleeve.back]) f.color.set(m.sleeve || '#e8e6e0');
+  inner.add(sleeve.mesh);
+  // printed artwork (+ its spot varnish): what Sleeve.setArt / setVarnishMask do, sharing the result
+  const sides = [['front', m.cover, m.varnishFront, 1], ['back', m.back || m.cover, m.varnishBack, 2]];
+  for (const [side, url, mask, seed] of sides) {
+    if (!url) continue;
+    const varnish = mask ? loadVarnish(mask, image, baked) : null;
+    Promise.all([image(url), varnish]).then(async ([img, v]) => {
+      if (!img) return;
+      sleeve.images[side] = img;
+      sleeve.varnish.maps[side] = v;
+      const mat = side === 'front' ? sleeve.front : sleeve.back;
+      mat.map = await once(`art|${url}|${mask}|${seed}`, () => sleeve.makeTex(img, seed, v));
+      sleeve.applySurface();
+      if (side === 'front' && !m.edge) sleeve.setEdge(borderColor(img));
+    });
+  }
 
-  // disc, behind the sleeve; it slides out to the right
-  const discMap = m.disc ? tex(m.disc) : blackDisc(m.label, m.discFill);
-  const top = new THREE.MeshPhysicalMaterial({
-    map: discMap,
-    alphaTest: 0.5,
-    roughness: 0.55,
-    roughnessMap: grooveRoughness(),
-    clearcoat: 0.6,
-    clearcoatRoughness: 0.25,
-  });
-  const side = new THREE.MeshStandardMaterial({ color: m.discColor || '#dcdad4', roughness: 0.4 });
-  const disc = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.018, 128, 1), [side, top, top]);
-  disc.rotation.x = Math.PI / 2; // caps face the camera
-  const slide = new THREE.Group();
-  const spin = new THREE.Group();
-  spin.add(disc);
-  slide.add(spin);
-  inner.add(slide); // inside the jacket: the board hides what has not slid out yet
+  // record, inside the jacket; it slides out to the right, turning on its spindle
+  const vinyl = new Vinyl(baked.grooves);
+  vinyl.setDust(0);
+  vinyl.group.rotation.x = Math.PI / 2; // side A faces the camera
+  vinyl.setStyle({ mode: 'solid', color: m.discFill || m.discColor || '#0b0b0b' });
+  if (m.disc)
+    image(m.disc).then(async (img) => {
+      if (img) vinyl.setStyle({ mode: 'texture', map: await once(`disc|${m.disc}`, () => discTextureFromImage(img)) });
+    });
+  vinyl.labelA.visible = vinyl.labelB.visible = !!m.label;
+  if (m.label) {
+    const label = (url) => once(`label|${url}`, () => image(url).then((img) => img && imgTex(img)));
+    Promise.all([label(m.label), label(m.labelB || m.label)]).then(([a, b]) => vinyl.setLabels(a, b));
+  }
+  inner.add(vinyl.group);
 
-  // the layout box is computed with the disc a little out, so the object turns about the middle of its silhouette
-  slide.position.x = 0.5;
+  // the part of the record still in the sleeve is clipped away, so it can't poke through the warped board
+  const clip = new THREE.Plane();
+  const opening = new THREE.Plane(new THREE.Vector3(1, 0, 0), -(SLEEVE.w / 2 - 0.05));
+  vinyl.setClip(clip);
+
+  // the layout box is computed with the disc a little out, so the object turns about the middle of its silhouette.
+  // In the product page it slides out until the middle of the label is at the mouth of the sleeve (half the label
+  // shows); the whole thing is re-centred and scaled down as it gets wider, so it keeps its place and size on screen.
+  const REST = 5, OPEN = SLEEVE.w / 2; // disc centre, cm
+  vinyl.group.position.x = REST;
   const root = normalise(inner);
+  const holder = root.children[0];
+  const x0 = inner.position.x, k0 = holder.scale.x, W0 = 1 / k0; // widest side at rest
 
   let spinSpeed = 0;
   return {
     root,
     kind: 'vinyl',
     update(dt, s) {
-      const out = 0.5 + s.detail * 0.55;
-      slide.position.x += (out - slide.position.x) * (1 - Math.exp(-dt * 5));
+      const g = vinyl.group;
+      g.position.x += (REST + s.detail * (OPEN - REST) - g.position.x) * (1 - Math.exp(-dt * 5));
+      const d = g.position.x - REST;
+      inner.position.x = x0 - d / 2;
+      holder.scale.setScalar(k0 * (W0 / (W0 + d)));
       const target = s.focus > 0.5 ? (s.playing ? 3.49 : 0.6) : 0; // 33 rpm when the music plays
       spinSpeed += (target - spinSpeed) * (1 - Math.exp(-dt * 2));
-      spin.rotation.z -= spinSpeed * dt;
+      vinyl.spin.rotation.y -= spinSpeed * dt;
+      sleeve.mesh.updateWorldMatrix(true, false);
+      clip.copy(opening).applyMatrix4(sleeve.mesh.matrixWorld);
     },
   };
 }
