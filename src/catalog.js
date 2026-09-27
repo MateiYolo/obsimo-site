@@ -18,6 +18,13 @@ const SLEEVE_8DIS = {
   labelB: H('label-b.webp'),
 };
 
+// La Sauce Piqu'hans: green sauce, gold screw cap, label printed in black on a holographic sticker
+const PIQUHANS = {
+  kind: 'sauce',
+  accent: '#9aa33a',
+  model: { art: A('sauce/piquhans-label.webp'), holo: true, liquid: '#3a3f0e', cap: '#d2bb82', capMetal: true },
+};
+
 export const demoCatalog = [
   {
     id: 'demo-8dis-marble',
@@ -43,24 +50,23 @@ export const demoCatalog = [
     ],
   },
   {
-    id: 'demo-sauce-feu',
-    handle: 'sauce-feu-de-camp',
+    id: 'demo-sauce-piquhans',
+    handle: 'hot-sauce-obsimo-x-piquhans-50ml',
     kind: 'sauce',
-    title: 'Feu de camp',
-    kicker: 'Sauce piquante · 150 ml',
-    blurb: 'Piment chipotle fumé, ail rôti et une pointe d\'érable. Chaleur 3/5.',
+    title: "Obsimo × La Sauce Piqu'hans",
+    kicker: 'Sauce piquante · 50 ml',
+    blurb: 'Piment vert, citronnelle et kaffir, aux notes de curry vert. Faite à Nantes avec amour.',
     description:
-      'Une sauce douce-amère, fumée au bois de hêtre, pensée pour les longues soirées. Chipotle, ail rôti, vinaigre de cidre et sirop d\'érable. Parfaite sur des œufs, un burger ou juste une tranche de pain grillé.',
-    price: 12,
+      "Née d'une amitié, cette sauce piquante aux notes de curry vert se savoure en écoutant la musique électronique d'Obsimo. Une pause piquante et sonore à partager. 100 % naturelle et végane.",
+    price: 8,
     currency: 'EUR',
     variantId: null,
-    accent: '#b5401f',
+    ...PIQUHANS,
     audio: null,
-    model: { liquid: '#8f1d0c', label: '#171411', ink: '#efe7da', heat: 3, cap: '#141414' },
     images: [],
     details: [
-      { title: 'Ingrédients', body: 'Piment chipotle, vinaigre de cidre, ail rôti, oignon, sirop d\'érable, sel, épices.' },
-      { title: 'Conservation', body: 'Au frais après ouverture, à consommer dans les 3 mois.' },
+      { title: 'Ingrédients', body: 'Piment vert (jalapeño et oiseau), eau, vinaigre de cidre, citron vert, sucre de canne, oignon, galanga, citronnelle, feuille de kaffir, sel, gomme naturelle de xanthane.' },
+      { title: 'Conservation', body: 'Au réfrigérateur après ouverture. À consommer de préférence avant la date inscrite sous la bouteille.' },
       { title: 'Livraison', body: 'Bouteille en verre calée dans un étui carton. Expédiée sous 3 jours ouvrés.' },
     ],
   },
@@ -126,11 +132,7 @@ export const visuals = {
     audioSeed: 1,
     model: { sleeve: '#1f8a4c', discFill: '#1d6b3a', discColor: '#2e9a55', edge: '#1f8a4c' },
   },
-  'hot-sauce-obsimo-x-piquhans-50ml': {
-    kind: 'sauce',
-    accent: '#b5401f',
-    model: { liquid: '#8f1d0c', label: '#171411', ink: '#efe7da', heat: 3, cap: '#141414' },
-  },
+  'hot-sauce-obsimo-x-piquhans-50ml': PIQUHANS,
 };
 
 // Placeholder "photos" for products that have none yet: moody gradients drawn on a canvas.
