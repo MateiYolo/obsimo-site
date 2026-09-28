@@ -1,7 +1,7 @@
 // Demo catalogue used until the Shopify Storefront API is configured (see .env.example).
 // Every product has the same shape as what src/shopify.js returns, so the UI does not care where it comes from.
 //
-//   kind     'vinyl' | 'sauce' | 'merch'  → which 3D model is built
+//   kind     'vinyl' | 'bundle' | 'sauce' | 'merch'  → which 3D model is built (bundle: several records)
 //   model    textures / colours for that model
 //   audio    URL of a 30 s preview (null = generative placeholder for vinyls, nothing for other products)
 //   images   real photos shown in the detail page
@@ -110,6 +110,27 @@ export const demoCatalog = [
       { title: 'Livraison', body: 'Expédié sous 3 jours ouvrés dans un carton renforcé. France 5 €, Europe 12 €, monde 18 €.' },
     ],
   },
+  {
+    id: 'demo-bundle-vinyls',
+    handle: 'bundle-8-days-in-sweden-life-balance',
+    kind: 'bundle',
+    title: 'Bundle vinyles',
+    kicker: '2 vinyles 12" · Swirl vert + Marbre blanc',
+    blurb: 'Life Balance et 8 Days in Sweden, les deux pressages ensemble.',
+    description: 'Le swirl vert et crème de Life Balance et le marbre blanc de 8 Days in Sweden, expédiés ensemble dans un seul carton renforcé.',
+    price: 55,
+    currency: 'EUR',
+    variantId: null,
+    accent: '#8fc9a0',
+    audio: null,
+    audioSeed: 1,
+    model: { cover: SLEEVE_8DIS.cover, records: [{ ...SLEEVE_LB, disc: L('disc.webp') }, { ...SLEEVE_8DIS, disc: H('vinyl-marble.webp') }] },
+    images: [L('photo-sleeve.webp'), L('photo-disc.webp')],
+    details: [
+      { title: 'Contenu', body: 'Life Balance · vinyle swirl vert et crème, pochette à fenêtre\n8 Days in Sweden · vinyle marbre blanc, vernis sélectif' },
+      { title: 'Livraison', body: 'Expédié sous 3 jours ouvrés dans un carton renforcé. France 5 €, Europe 12 €, monde 18 €.' },
+    ],
+  },
 ];
 
 // 3D look of each Shopify product, keyed by its handle. The visuals live here on purpose, not in Shopify:
@@ -120,15 +141,28 @@ const lookOf = (handle) => {
   return { kind, accent, audioSeed, model };
 };
 const LIFE_BALANCE = lookOf('life-balance-swirl');
+const BUNDLE = lookOf('bundle-8-days-in-sweden-life-balance');
 
 export const visuals = {
   // the two Life Balance listings on Shopify are the same green/cream swirl pressing
   'transparent-green-vinyl-life-balance-limited-edition': LIFE_BALANCE,
   'life-balance-vinyl-33-transparent-green': LIFE_BALANCE,
   'hot-sauce-obsimo-x-piquhans-50ml': PIQUHANS,
-  // not on Shopify yet: create the product with this handle and it gets its 3D record automatically
   '8-days-in-sweden-marble': lookOf('8-days-in-sweden-marble'),
+  'bundle-8-days-in-sweden-life-balance': BUNDLE,
 };
+
+// When the Shopify handle isn't in the table above (a listing renamed, or created with another handle), the title
+// decides: a bundle (or a listing naming both records) gets the two records, then any "8 Days in Sweden" or
+// "Life Balance" listing gets its record.
+const has8dis = (t) => /8\s*days\s*in\s*sweden/i.test(t);
+const hasLb = (t) => /life\s*balance/i.test(t);
+const byTitle = [
+  [(t) => (has8dis(t) && hasLb(t)) || (/bundle|coffret|pack|lot de/i.test(t) && /vinyl|8\s*days|life\s*balance/i.test(t)), BUNDLE],
+  [has8dis, lookOf('8-days-in-sweden-marble')],
+  [hasLb, LIFE_BALANCE],
+];
+export const lookFor = (handle, title = '') => visuals[handle] || byTitle.find(([test]) => test(title))?.[1] || {};
 
 // Placeholder "photos" for products that have none yet: moody gradients drawn on a canvas.
 export function placeholderPhotos(p, n = 3) {

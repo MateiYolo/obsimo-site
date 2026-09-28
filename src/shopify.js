@@ -2,11 +2,11 @@
 // (public Storefront token, safe to ship to the browser). Without them the demo catalogue is used.
 //
 // The 3D look of each product (model kind, textures, colours) comes from `visuals` in src/catalog.js, keyed by
-// the Shopify handle. Every Shopify image is a photo in the detail page.
+// the Shopify handle, or failing that by its title (`lookFor`). Every Shopify image is a photo in the detail page.
 // Optional metafields (namespace "custom"): preview_audio (URL, 30 s mp3), kicker (short line),
 // details (JSON list of {title, body}).
 
-import { visuals } from './catalog.js';
+import { lookFor } from './catalog.js';
 
 const DOMAIN = import.meta.env.VITE_SHOPIFY_DOMAIN;
 const TOKEN = import.meta.env.VITE_SHOPIFY_TOKEN;
@@ -48,7 +48,7 @@ export async function fetchProducts() {
 
 function toProduct(n) {
   const meta = Object.fromEntries((n.metafields || []).filter(Boolean).map((m) => [m.key, m.value]));
-  const look = visuals[n.handle] || {};
+  const look = lookFor(n.handle, n.title);
   const v = n.variants.nodes[0];
   const [first, ...rest] = n.description.split(/(?<=[.!?])\s+/);
 

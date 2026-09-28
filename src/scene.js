@@ -48,7 +48,7 @@ export class Stage {
       this.scene.add(pivot);
       return {
         p, m, pivot, orient, slot: slots[i],
-        spin: i * 1.3, // idle turn angle (vertical axis)
+        spin: m.faceFront ? 0 : i * 1.3, // idle turn angle (vertical axis)
         tilt: new THREE.Quaternion(), // what the user added on top (x / z), eases back to upright
         vel: new THREE.Vector3(), // angular velocity after a flick (x, y, z) in rad/s
         held: false, lastTouch: -1e9, focus: 0,
@@ -223,7 +223,9 @@ export class Stage {
         it.tilt.premultiply(qTmp);
         if (it.vel.z) it.tilt.premultiply(qTmp.setFromAxisAngle(Z, it.vel.z * dt));
         it.vel.multiplyScalar(Math.exp(-2.4 * dt));
-        it.spin += AUTO_SPIN * dt * clamp((now - it.lastTouch - 600) / 1500, 0, 1);
+        if (!it.m.faceFront) it.spin += AUTO_SPIN * dt * clamp((now - it.lastTouch - 600) / 1500, 0, 1);
+        // wide objects (the bundle) don't turn on their own: left alone, they come back to face the viewer
+        else if (idle) it.spin = damp(it.spin, Math.round(it.spin / (2 * Math.PI)) * 2 * Math.PI, 1.6, dt);
         if (idle) it.tilt.slerp(qTmp.identity(), 1 - Math.exp(-1.6 * dt));
       }
       it.orient.quaternion.setFromAxisAngle(Y, it.spin).premultiply(it.tilt);
