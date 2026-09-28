@@ -238,6 +238,7 @@ function openDetail(i, push = true) {
   scroller.scrollTop = 0;
   stage.detailScroll = 0;
   stage.active = i;
+  stage.home(i);
   stage.detailTarget = 1;
   root.classList.add('lock');
   body.classList.add('detail');
