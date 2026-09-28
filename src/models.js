@@ -75,8 +75,8 @@ const once = (key, make) => (shared.has(key) || shared.set(key, make()), shared.
 // Starts downloading the files of the records right away (while the page waits for its web fonts); buildVinyl then
 // picks up the same promises.
 export function prefetch(products) {
-  for (const { kind, model: m } of products) {
-    if (kind !== 'vinyl') continue;
+  const records = products.flatMap(({ kind, model }) => (kind === 'vinyl' ? [model] : kind === 'bundle' ? model.records : []));
+  for (const m of records) {
     baked ||= loadBakedMaps(image);
     for (const url of [m.cover, m.back, m.disc, m.label, m.labelB, m.sticker?.art]) if (url) image(url);
     for (const mask of [m.varnishFront, m.varnishBack]) if (mask) loadVarnish(mask, image, baked);
@@ -179,6 +179,8 @@ export function buildVinyl(p) {
   return {
     root,
     kind: 'vinyl',
+    sleeveX: x0 * k0, // where the sleeve's centre sits in root units, and root units per cm (see buildBundle)
+    perCm: k0,
     update(dt, s) {
       const g = vinyl.group;
       g.position.x += (REST + s.detail * (OPEN - REST) - g.position.x) * (1 - Math.exp(-dt * 5));
@@ -461,8 +463,54 @@ export function buildCard(p) {
   return { root: normalise(inner), kind: 'card', update() {} };
 }
 
+// ---------- bundle ----------
+// Two records side by side, fanned like cards in a hand: the first on the left and a little behind, the second
+// overlapping it in front, its disc peeking out to the right. Both sleeves are drawn at the same size and each sways
+// gently on its own; the pair keeps facing the viewer (faceFront: no idle turn in scene.js). In the product page they
+// open up side by side. Model field: records (the model of each vinyl).
+export function buildBundle(p) {
+  const inner = new THREE.Group();
+  const LAYOUT = [
+    { x: -0.34, y: 0.05, z: -0.14, turn: 0.3, phase: 0 },
+    { x: 0.34, y: -0.05, z: 0.14, turn: -0.3, phase: 2.2 },
+  ];
+  const parts = p.model.records.map((model, i) => {
+    const rec = buildVinyl({ ...p, model });
+    const f = 1 / (SLEEVE.w * rec.perCm); // sleeve width = 1
+    rec.root.scale.setScalar(f);
+    const pivot = new THREE.Group(); // turns about the sleeve's centre
+    rec.root.position.x = -rec.sleeveX * f;
+    pivot.add(rec.root);
+    inner.add(pivot);
+    return { rec, pivot, at: LAYOUT[i % 2] };
+  });
+  let t = 0;
+  const place = (open, sway = 0) => {
+    for (const { pivot, at } of parts) {
+      // closed: overlapping fan; open: side by side, a little apart
+      pivot.position.set(at.x * (1 + 0.62 * open), at.y * (1 - open), at.z * (1 - open));
+      pivot.rotation.y = at.turn * (1 - 0.6 * open) + sway * 0.12 * Math.sin(t * 0.7 + at.phase);
+      pivot.rotation.z = sway * 0.025 * Math.sin(t * 0.5 + at.phase);
+    }
+  };
+  place(0);
+  const root = normalise(inner);
+  return {
+    root,
+    kind: 'bundle',
+    faceFront: true,
+    update(dt, s) {
+      t += dt;
+      place(s.detail, 1 - s.detail * 0.7);
+      // the records stay in their sleeves: sliding out, they would run into each other
+      for (const { rec } of parts) rec.update(dt, { ...s, detail: 0 });
+    },
+  };
+}
+
 export function buildModel(p) {
   if (p.kind === 'vinyl') return buildVinyl(p);
+  if (p.kind === 'bundle') return buildBundle(p);
   if (p.kind === 'sauce') return buildSauce(p);
   return buildCard(p);
 }
