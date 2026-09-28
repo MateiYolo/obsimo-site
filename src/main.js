@@ -1,6 +1,6 @@
 import { Stage } from './scene.js';
 import { manager, prefetch } from './models.js';
-import { demoCatalog, placeholderPhotos } from './catalog.js';
+import { demoCatalog, placeholderPhotos, sortProducts } from './catalog.js';
 import { shopifyEnabled, fetchProducts, checkout } from './shopify.js';
 import { Cart } from './cart.js';
 import { Player } from './audio.js';
@@ -27,6 +27,7 @@ async function boot() {
       console.warn('Shopify indisponible, catalogue de démo utilisé', e);
     }
   }
+  products = sortProducts(products);
   products.forEach((p) => { if (!p.images.length) p.images = placeholderPhotos(p); });
 
   manager.onProgress = (_, done, total) => ($('#load-pct').textContent = Math.round((done / total) * 100));
@@ -237,6 +238,7 @@ function openDetail(i, push = true) {
   scroller.scrollTop = 0;
   stage.detailScroll = 0;
   stage.active = i;
+  stage.home(i);
   stage.detailTarget = 1;
   root.classList.add('lock');
   body.classList.add('detail');

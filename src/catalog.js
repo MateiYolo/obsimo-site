@@ -124,7 +124,7 @@ export const demoCatalog = [
     accent: '#8fc9a0',
     audio: null,
     audioSeed: 1,
-    model: { cover: SLEEVE_8DIS.cover, records: [{ ...SLEEVE_LB, disc: L('disc.webp') }, { ...SLEEVE_8DIS, disc: H('vinyl-marble.webp') }] },
+    model: { cover: SLEEVE_8DIS.cover, records: [{ ...SLEEVE_LB, disc: L('disc.webp') }, { ...SLEEVE_8DIS, disc: H('vinyl-marble.webp'), rest: 0 }] },
     images: [L('photo-sleeve.webp'), L('photo-disc.webp')],
     details: [
       { title: 'Contenu', body: 'Life Balance · vinyle swirl vert et crème, pochette à fenêtre\n8 Days in Sweden · vinyle marbre blanc, vernis sélectif' },
@@ -163,6 +163,23 @@ const byTitle = [
   [hasLb, LIFE_BALANCE],
 ];
 export const lookFor = (handle, title = '') => visuals[handle] || byTitle.find(([test]) => test(title))?.[1] || {};
+
+// Order of the shop, whatever order Shopify returns: 8 Days in Sweden, Life Balance, the hot sauce, the bundle,
+// the postcard, then anything else. Matched on the title so renamed handles keep their place.
+const isBundle = (t) => /bundle|coffret|pack|lot de/i.test(t) || (has8dis(t) && hasLb(t));
+const isCard = (t) => /carte|postcard|post card/i.test(t);
+const ORDER = [
+  (t) => has8dis(t) && !isBundle(t) && !isCard(t),
+  (t) => hasLb(t) && !isBundle(t) && !isCard(t),
+  (t) => /sauce|piqu/i.test(t),
+  isBundle,
+  isCard,
+];
+const rank = (p) => {
+  const i = ORDER.findIndex((test) => test(p.title));
+  return i < 0 ? ORDER.length : i;
+};
+export const sortProducts = (list) => [...list].sort((a, b) => rank(a) - rank(b));
 
 // Placeholder "photos" for products that have none yet: moody gradients drawn on a canvas.
 export function placeholderPhotos(p, n = 3) {

@@ -465,7 +465,7 @@ export function buildCard(p) {
 
 // ---------- bundle ----------
 // Two records side by side, fanned like cards in a hand: the first on the left and a little behind, the second
-// overlapping it in front, its disc peeking out to the right. Both sleeves are drawn at the same size and each sways
+// overlapping it in front, both records all the way in their sleeves (rest: 0 in the catalogue). Both sleeves are drawn at the same size and each sways
 // gently on its own; the pair keeps facing the viewer (faceFront: no idle turn in scene.js). In the product page they
 // open up side by side. Model field: records (the model of each vinyl).
 export function buildBundle(p) {

@@ -128,6 +128,15 @@ export class Stage {
     const it = this.items[i];
     if (!it) return;
     it.held = true;
+    it.home = false;
+    it.vel.set(0, 0, 0);
+  }
+  // Product opened: the object glides back to its default pose (front towards the viewer, upright) and waits there
+  // until the user turns it again.
+  home(i) {
+    const it = this.items[i];
+    if (!it) return;
+    it.home = true;
     it.vel.set(0, 0, 0);
   }
   rotate(i, dx, dy, twist = 0, dt = 1 / 60) {
@@ -217,7 +226,11 @@ export class Stage {
 
       // rotation: idle turn + user tilt, flick inertia, then back to upright
       const idle = now - it.lastTouch > 1400;
-      if (!it.held) {
+      if (!isActive) it.home = false;
+      if (it.home) {
+        it.spin = damp(it.spin, Math.round(it.spin / (2 * Math.PI)) * 2 * Math.PI, 5, dt);
+        it.tilt.slerp(qTmp.identity(), 1 - Math.exp(-5 * dt));
+      } else if (!it.held) {
         it.spin += it.vel.y * dt;
         qTmp.setFromAxisAngle(X, it.vel.x * dt);
         it.tilt.premultiply(qTmp);
