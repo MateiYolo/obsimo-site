@@ -126,9 +126,16 @@ export const visuals = {
   'transparent-green-vinyl-life-balance-limited-edition': LIFE_BALANCE,
   'life-balance-vinyl-33-transparent-green': LIFE_BALANCE,
   'hot-sauce-obsimo-x-piquhans-50ml': PIQUHANS,
-  // not on Shopify yet: create the product with this handle and it gets its 3D record automatically
   '8-days-in-sweden-marble': lookOf('8-days-in-sweden-marble'),
 };
+
+// When the Shopify handle isn't in the table above (a listing renamed, or created with another handle), the title
+// decides: any "8 Days in Sweden" or "Life Balance" listing gets its record.
+const byTitle = [
+  [/8\s*days\s*in\s*sweden/i, lookOf('8-days-in-sweden-marble')],
+  [/life\s*balance/i, LIFE_BALANCE],
+];
+export const lookFor = (handle, title = '') => visuals[handle] || byTitle.find(([re]) => re.test(title))?.[1] || {};
 
 // Placeholder "photos" for products that have none yet: moody gradients drawn on a canvas.
 export function placeholderPhotos(p, n = 3) {
