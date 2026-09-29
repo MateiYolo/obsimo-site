@@ -44,6 +44,16 @@ const PIQUHANS = {
 // pre-ordered copy).
 const PREORDER_8DIS = { release: '2026-11-27T00:00:00+01:00', goldenTicket: true };
 
+// The record postcard: the printed front under a grooved film (it plays on a turntable, centre hole on the spindle),
+// a plain postcard on the back with the holographic Obsimo sticker as its stamp.
+const P = (f) => A(`postcard/${f}`);
+const POSTCARD = {
+  kind: 'postcard',
+  accent: '#7fc4d8',
+  audioSeed: 2,
+  model: { recto: P('recto.jpg'), sticker: P('sticker.webp') },
+};
+
 export const demoCatalog = [
   {
     id: 'demo-8dis-marble',
@@ -138,6 +148,25 @@ export const demoCatalog = [
       { title: 'Livraison', body: 'Expédié sous 3 jours ouvrés dans un carton renforcé. France 5 €, Europe 12 €, monde 18 €.' },
     ],
   },
+  {
+    id: 'demo-postcard',
+    handle: 'carte-postale-vinyle',
+    title: 'Carte postale vinyle',
+    kicker: 'Carte postale · se joue sur platine',
+    blurb: 'Une carte postale gravée comme un disque : pose-la sur la platine, le trou central sur l’axe.',
+    description:
+      "Au recto, le visuel sous un film transparent gravé de sillons : elle se joue comme un vinyle. Au dos, une vraie carte postale à écrire et à envoyer, avec le sticker holographique Obsimo en guise de timbre.",
+    price: 10,
+    currency: 'EUR',
+    variantId: null,
+    ...POSTCARD,
+    audio: null,
+    images: [P('photo-verso.webp')],
+    details: [
+      { title: 'La carte', body: 'Recto imprimé sous film gravé, lisible en 33 tours. Verso carte postale avec sticker holographique.' },
+      { title: 'Livraison', body: 'Expédiée à plat sous enveloppe rigide, sous 3 jours ouvrés.' },
+    ],
+  },
 ];
 
 // 3D look of each Shopify product, keyed by its handle. The visuals live here on purpose, not in Shopify:
@@ -157,14 +186,16 @@ export const visuals = {
   'hot-sauce-obsimo-x-piquhans-50ml': PIQUHANS,
   '8-days-in-sweden-marble': lookOf('8-days-in-sweden-marble'),
   'bundle-8-days-in-sweden-life-balance': BUNDLE,
+  'carte-postale-vinyle': POSTCARD,
 };
 
 // When the Shopify handle isn't in the table above (a listing renamed, or created with another handle), the title
-// decides: a bundle (or a listing naming both records) gets the two records, then any "8 Days in Sweden" or
-// "Life Balance" listing gets its record.
+// decides: a postcard gets the postcard (even one named after a record), a bundle (or a listing naming both records)
+// gets the two records, then any "8 Days in Sweden" or "Life Balance" listing gets its record.
 const has8dis = (t) => /8\s*days\s*in\s*sweden/i.test(t);
 const hasLb = (t) => /life\s*balance/i.test(t);
 const byTitle = [
+  [(t) => /carte\s*postale|post\s*-?\s*card/i.test(t), POSTCARD],
   [(t) => (has8dis(t) && hasLb(t)) || (/bundle|coffret|pack|lot de/i.test(t) && /vinyl|8\s*days|life\s*balance/i.test(t)), BUNDLE],
   [has8dis, lookOf('8-days-in-sweden-marble')],
   [hasLb, LIFE_BALANCE],

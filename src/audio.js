@@ -44,7 +44,7 @@ export class Player {
 
   // Called whenever the centred product changes.
   play(product) {
-    const key = product.audio || ((product.kind === 'vinyl' || product.kind === 'bundle') ? `gen-${product.audioSeed ?? 0}` : null);
+    const key = product.audio || (['vinyl', 'bundle', 'postcard'].includes(product.kind) ? `gen-${product.audioSeed ?? 0}` : null);
     if (!key) return; // sauces etc. keep what is playing
     if (!this.ctx || this.ctx.state !== 'running') { this.pending = product; return; }
     if (this.current?.key === key) return;
