@@ -33,12 +33,12 @@ Le site s'affiche en français si la première langue du navigateur est le fran�
 le choix est gardé dans le navigateur. Les textes de l'interface sont dans `src/i18n.js` (les éléments de
 `index.html` portent un attribut `data-i18n*`, leur version française reste dans le HTML pour Google).
 
-**Fiches produits** : les textes viennent de Shopify, demandés dans la langue du visiteur (`@inContext`). Pour
-qu'une fiche existe dans les deux langues, il faut l'anglais (ou le français) activé dans Shopify (Paramètres →
-Langues) et la traduction de chaque produit saisie avec l'app gratuite **Translate & Adapt** : titre, description,
-et les métachamps `kicker` et `details`. Sans traduction, Shopify renvoie la langue par défaut de la boutique.
-Le checkout Shopify s'ouvre aussi dans la langue du visiteur. Le catalogue de démo (`src/catalog.js`) a ses
-textes dans les deux langues (`TEXT`).
+**Fiches produits** : le titre, l'accroche et la description des 5 produits sont dans `src/catalog.js` (`COPY`),
+en français et en anglais (l'anglais reprend le texte de la fiche Shopify, le français est sa traduction). Ils
+remplacent ceux de Shopify champ par champ : **modifier le texte d'une fiche se fait donc là**, dans les deux
+langues ; Shopify garde le prix, le stock, les photos et les champs absents de `COPY`. Un produit absent de `COPY`
+affiche le texte Shopify, demandé dans la langue du visiteur (`@inContext`, traductions de l'app Translate & Adapt).
+Le checkout Shopify s'ouvre aussi dans la langue du visiteur.
 
 ## Brancher Bandsintown (page Tour)
 

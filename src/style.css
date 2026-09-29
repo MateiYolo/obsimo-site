@@ -232,7 +232,7 @@ body.detail #detail { visibility: visible; }
 .g-dots i { display: block; height: 2px; border-radius: 2px; background: var(--line); transition: background 0.4s var(--ease); }
 .g-dots button[aria-current] i { background: var(--fg); }
 .g-count, .lb-count { font-size: 11px; letter-spacing: 0.14em; color: var(--muted); font-variant-numeric: tabular-nums; }
-.d-desc { margin: 28px 0 0; font-size: 13.5px; color: color-mix(in srgb, var(--fg) 78%, transparent); }
+.d-desc { margin: 28px 0 0; white-space: pre-line; font-size: 13.5px; color: color-mix(in srgb, var(--fg) 78%, transparent); }
 .acc { margin: 28px 0 0; border-top: 1px solid var(--line); }
 .acc details { border-bottom: 1px solid var(--line); }
 .acc summary {
