@@ -389,10 +389,20 @@ $('#d-add').onclick = (e) => addToCart(e.currentTarget);
 // ---------- tour & contact pages ----------
 // Full-screen pages over the shop, each with a spinnable 3D object at the top.
 const pages = {
-  tour: { el: $('#tour'), scroller: $('#t-scroll'), make: () => new TourTitle($('#t-3d')), render: () => renderTour() },
+  tour: { el: $('#tour'), scroller: $('#t-scroll'), make: () => makeTourTitle(), render: () => renderTour() },
   contact: { el: $('#contact'), scroller: $('#c-scroll'), make: () => new OsrLogo($('#c-3d')) },
 };
 let page = null; // name of the open page
+
+// Easter egg: spinning the 3D "TOUR" fast for a while unlocks an unreleased track
+function makeTourTitle() {
+  const t = new TourTitle($('#t-3d'));
+  t.onSecret = () => {
+    player.play({ audio: SECRET, loop: false });
+    toast('Morceau secret débloqué');
+  };
+  return t;
+}
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const dayFmt = new Intl.DateTimeFormat('fr-FR', { day: '2-digit' });
 const monthFmt = new Intl.DateTimeFormat('fr-FR', { month: 'short' });
@@ -563,6 +573,31 @@ $('#checkout').onclick = async () => {
     console.error(err);
   }
 };
+
+// ---------- secret track (mini player) ----------
+// Shown while the unreleased track unlocked on the tour page is the one loaded; hidden when a product preview
+// replaces it or when closed.
+const SECRET = '/assets/tour/unreleased.mp3';
+const mini = $('#mini');
+let miniEl = null;
+function syncMini() {
+  const el = player.current?.key === SECRET ? player.current.el : null;
+  mini.classList.toggle('show', !!el);
+  mini.setAttribute('aria-hidden', el ? 'false' : 'true');
+  if (el && el !== miniEl) for (const ev of ['play', 'pause', 'ended', 'timeupdate']) el.addEventListener(ev, () => el === miniEl && renderMini());
+  miniEl = el;
+  renderMini();
+}
+function renderMini() {
+  const paused = !miniEl || miniEl.paused;
+  mini.classList.toggle('paused', paused);
+  $('#mini-play').setAttribute('aria-label', paused ? 'Lecture' : 'Pause');
+  mini.style.setProperty('--p', miniEl?.duration ? (miniEl.currentTime / miniEl.duration).toFixed(4) : 0);
+  if (pages.tour.spinner) pages.tour.spinner.lit = !paused;
+}
+player.changed = syncMini;
+$('#mini-play').onclick = () => { if (miniEl) miniEl.paused ? miniEl.play() : miniEl.pause(); };
+$('#mini-close').onclick = () => player.stop();
 
 // ---------- toast ----------
 let toastTimer;

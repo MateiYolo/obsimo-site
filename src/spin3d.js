@@ -5,7 +5,8 @@ export const damp = (a, b, k, dt) => a + (b - a) * (1 - Math.exp(-k * dt));
 
 // A small 3D object in its own canvas that can be spun with a finger or the mouse and keeps some inertia.
 // Subclasses add their mesh to `this.pivot`, call `this.ready(size)` once built, and say what happens when
-// left alone in `settle(dt, t)`. Rendered only between start() and stop().
+// left alone in `settle(dt, t)`. Optional hooks: `released()` when the finger lifts, `update(dt, t)` every frame.
+// Rendered only between start() and stop().
 export class Spin3D {
   // fit: share of the canvas width / height the object's bounding box takes
   constructor(canvas, fit = { w: 0.94, h: 0.62 }) {
@@ -83,6 +84,7 @@ export class Spin3D {
       last = null;
       this.held = false;
       this.vel.clampLength(0, 14);
+      this.released();
     };
     el.addEventListener('pointerup', end);
     el.addEventListener('pointercancel', end);
@@ -102,6 +104,8 @@ export class Spin3D {
   stop() { this.running = false; }
 
   settle() {}
+  released() {}
+  update() {}
 
   frame() {
     this.clock.update();
@@ -113,6 +117,7 @@ export class Spin3D {
       this.vel.multiplyScalar(Math.exp(-2.2 * dt));
       if (this.vel.length() < 1.2) this.settle(dt, t);
     }
+    this.update(dt, t);
     // a slow breathing sway so it looks alive
     this.pivot.rotation.set(this.rot.x + Math.sin(t * 0.7) * 0.06, this.rot.y + Math.sin(t * 0.5) * 0.14, 0);
     this.renderer.render(this.scene, this.camera);

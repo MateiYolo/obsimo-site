@@ -42,7 +42,7 @@ const PIQUHANS = {
 // 8 Days in Sweden (and the bundle that holds it) is sold as a pre-order until its release (midnight, Paris time):
 // the detail page shows a countdown and the golden ticket (one of the 5 test pressings slipped into a random
 // pre-ordered copy).
-const PREORDER_8DIS = { release: '2026-11-27T00:00:00+01:00', goldenTicket: true };
+const PREORDER_8DIS = { release: '2026-12-03T00:00:00+01:00', goldenTicket: true };
 
 // The record postcard: the printed front under a grooved film (it plays on a turntable, centre hole on the spindle),
 // a plain postcard on the back with the holographic Obsimo sticker as its stamp.
