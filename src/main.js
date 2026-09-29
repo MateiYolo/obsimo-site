@@ -406,7 +406,7 @@ let page = null; // name of the open page
 function makeTourTitle() {
   const title = new TourTitle($('#t-3d'));
   title.onSecret = () => {
-    player.play({ audio: SECRET, loop: false });
+    player.play({ audio: SECRET, loop: false }, true);
     toast(t('secret.unlocked'));
   };
   return title;
@@ -596,15 +596,22 @@ function syncMini() {
   miniEl = el;
   renderMini();
 }
+// paused also when the phone hasn't let sound start yet (the element may run while the AudioContext is suspended)
+const miniPaused = () => !miniEl || miniEl.paused || player.ctx?.state !== 'running';
 function renderMini() {
-  const paused = !miniEl || miniEl.paused;
+  const paused = miniPaused();
   mini.classList.toggle('paused', paused);
   $('#mini-play').setAttribute('aria-label', t(paused ? 'mini.play' : 'mini.pause'));
   mini.style.setProperty('--p', miniEl?.duration ? (miniEl.currentTime / miniEl.duration).toFixed(4) : 0);
   if (pages.tour.spinner) pages.tour.spinner.lit = !paused;
 }
 player.changed = syncMini;
-$('#mini-play').onclick = () => { if (miniEl) miniEl.paused ? miniEl.play() : miniEl.pause(); };
+$('#mini-play').onclick = () => {
+  if (!miniEl) return;
+  if (!miniPaused()) return miniEl.pause();
+  player.unlock(); // this tap is a real gesture: phones allow sound from here
+  miniEl.play().catch(() => {});
+};
 $('#mini-close').onclick = () => player.stop();
 
 // ---------- toast ----------

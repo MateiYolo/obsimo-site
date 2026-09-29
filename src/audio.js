@@ -18,22 +18,31 @@ export class Player {
     this.changed?.();
   }
 
-  unlock() {
+  // the AudioContext may start (or fall back to) suspended until a real gesture resumes it
+  audio() {
     if (!this.ctx) {
       this.ctx = new AudioContext();
       this.master = this.ctx.createGain();
       this.master.gain.value = 0.8;
       this.master.connect(this.ctx.destination);
+      this.ctx.onstatechange = () => this.changed?.();
     }
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    return this.ctx;
+  }
+
+  unlock() {
+    const ctx = this.audio();
+    if (ctx.state !== 'running') ctx.resume().catch(() => {});
     if (this.pending) { const p = this.pending; this.pending = null; this.play(p); }
   }
 
-  // Called whenever the centred product changes.
-  play(product) {
+  // Called whenever the centred product changes. `now` loads the track even if sound is still locked (outside a
+  // gesture, e.g. the secret track): it then waits paused for a tap on the mini player instead of being queued.
+  play(product, now = false) {
     const key = product.audio;
     if (!key) return; // products without a preview keep what is playing
-    if (!this.ctx || this.ctx.state !== 'running') { this.pending = product; return; }
+    if (now) { this.audio(); this.pending = null; }
+    else if (!this.ctx || this.ctx.state !== 'running') { this.pending = product; return; }
     if (this.current?.key === key) return;
     this.current?.stop(0.8);
     this.current = this.file(key, product.loop ?? true);
