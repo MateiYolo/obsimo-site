@@ -3,6 +3,6 @@
     { "source": "/rider", "destination": "/rider/", "permanent": true }
   ],
   "rewrites": [
-    { "source": "/rider/:path*", "destination": "https://obsimo-rider.vercel.app/:path*" }
+    { "source": "/rider/(.*)", "destination": "https://obsimo-rider.vercel.app/$1" }
   ]
 }
