@@ -94,6 +94,8 @@ body.ready #loader { opacity: 0; visibility: hidden; }
 .menu a.on::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: currentColor; }
 .menu a.soon { cursor: default; }
 .bar-right { display: flex; gap: 16px; align-items: center; }
+.contact-link { display: flex; align-items: center; padding: 4px; color: var(--muted); transition: color 0.3s; }
+.contact-link:hover, .contact-link.on { color: var(--fg); }
 .cart-btn { display: flex; align-items: center; gap: 5px; }
 .cart-btn span { display: inline-block; min-width: 1.4em; text-align: center; }
 .cart-btn.bump span { animation: bump 0.5s var(--ease); }
@@ -280,13 +282,13 @@ body.detail .back { opacity: 1; }
 }
 body.detail .d-buy { transform: none; transition-delay: 0.35s; }
 
-/* ---------- tour ---------- */
-#tour { position: fixed; inset: 0; z-index: 15; visibility: hidden; opacity: 0; transition: opacity 0.5s var(--ease), visibility 0.5s; }
-body.tour #tour { visibility: visible; opacity: 1; }
-body.tour #list, body.tour .foot { opacity: 0; pointer-events: none; }
+/* ---------- tour & contact pages ---------- */
+.page { position: fixed; inset: 0; z-index: 15; visibility: hidden; opacity: 0; transition: opacity 0.5s var(--ease), visibility 0.5s; }
+body.tour #tour, body.contact #contact { visibility: visible; opacity: 1; }
+body.on-page #list, body.on-page .foot { opacity: 0; pointer-events: none; }
 #gl { transition: opacity 0.6s var(--ease); }
-body.tour #gl { opacity: 0; }
-body.tour #glow { opacity: 0.4; }
+body.on-page #gl { opacity: 0; }
+body.on-page #glow { opacity: 0.4; }
 .t-scroll {
   position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
   padding: calc(var(--top) + 110px) var(--gutter) calc(var(--bot) + 60px);
@@ -323,6 +325,22 @@ body.tour .date { opacity: 1; transform: none; transition: opacity 0.6s var(--ea
 }
 .t-year { color: var(--muted); padding: 34px 0 12px; border-bottom: 1px solid var(--line); }
 .t-empty { color: var(--muted); padding: 40px 0; text-align: center; border-bottom: 1px solid var(--line); }
+.c-3d { height: clamp(200px, 38vw, 320px); }
+.c-body { max-width: 880px; margin: 8px auto 0; }
+.c-intro { margin: 0 0 40px; font: 400 clamp(21px, 3vw, 30px)/1.3 var(--font); letter-spacing: -0.015em; max-width: 26ch; }
+.c-block { border-top: 1px solid var(--line); padding: 22px 0 30px; opacity: 0; transform: translateY(16px); }
+body.contact .c-block { opacity: 1; transform: none; transition: opacity 0.6s var(--ease), transform 0.8s var(--ease); transition-delay: calc(0.15s + var(--i, 0) * 80ms); }
+.c-block h3 { margin-bottom: 14px; font-weight: 400; }
+.c-mail { display: inline-flex; align-items: center; gap: 12px; font-size: clamp(19px, 2.6vw, 24px); letter-spacing: -0.01em; text-align: left; overflow-wrap: anywhere; }
+.c-mail svg { flex: none; color: var(--muted); transition: color 0.3s, transform 0.4s var(--ease); }
+.c-mail:hover .i-copy { color: var(--fg); }
+.c-mail:active svg { transform: scale(0.85); }
+.c-mail .i-done, .c-mail.done .i-copy { display: none; }
+.c-mail.done .i-done { display: block; color: var(--fg); }
+.c-links { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; row-gap: 6px; font-size: clamp(17px, 2.2vw, 21px); letter-spacing: -0.01em; }
+.c-links li:not(:last-child)::after { content: '·'; color: var(--muted); margin: 0 0.6em; }
+.c-links a { color: var(--muted); transition: color 0.3s; }
+.c-links a:hover { color: var(--fg); }
 @media (max-width: 520px) {
   .date > a, .date > div { grid-template-columns: 7ch 1fr; row-gap: 2px; padding: 18px 0; }
   .venue { grid-column: 2; text-align: left; font-size: 14px; }
