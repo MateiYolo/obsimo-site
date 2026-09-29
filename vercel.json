@@ -4,5 +4,12 @@
   ],
   "rewrites": [
     { "source": "/rider/(.*)", "destination": "https://obsimo-rider.vercel.app/$1" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "missing": [{ "type": "host", "value": "www.obsimo.com" }],
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+    }
   ]
 }

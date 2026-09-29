@@ -78,3 +78,12 @@ transparent, tiré du PDF d'impression). Fichiers dans `public/assets/postcard/`
 - `src/audio.js` : extraits audio (fichier ou boucle générative de démo)
 - `src/shopify.js` : requêtes Storefront API et création du panier/checkout
 - `src/tour.js` : dates de concert depuis l'API Bandsintown 
+
+## SEO
+
+- `index.html` : titre, description, canonical `https://www.obsimo.com/`, balises Open Graph (`public/og-image.jpg`),
+  favicons, et un JSON-LD `MusicGroup` dont `sameAs` liste les profils officiels (Spotify, Bandcamp, Instagram…) :
+  à tenir à jour avec les liens du footer.
+- Les dates Bandsintown sont ajoutées en JSON-LD `MusicEvent` (`eventsLd` dans `src/main.js`).
+- `public/robots.txt`, `public/sitemap.xml`. `vercel.json` renvoie `X-Robots-Tag: noindex` sur tout autre domaine que
+  `www.obsimo.com` (URLs `*.vercel.app`), pour que Google n'indexe qu'une seule version du site.
