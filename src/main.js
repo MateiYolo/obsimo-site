@@ -454,7 +454,7 @@ async function renderTour() {
           const sep = at.getFullYear() !== year ? `<li class="t-year">${(year = at.getFullYear())}</li>` : '';
           const link = d.tickets || d.url;
           const row = `<time datetime="${esc(d.datetime)}">${dayFmt.format(at)} ${monthFmt.format(at).replace('.', '')}</time>
-            <span class="city">${esc(d.city)}</span><span class="venue">${esc(d.venue)}</span>`;
+            <span class="city">${esc(d.city)}${d.soldOut ? ' <span class="tag">Sold out</span>' : ''}</span><span class="venue">${esc(d.venue)}</span>`;
           return `${sep}<li class="date${d.soldOut ? ' out' : ''}" style="--i:${Math.min(i, 12)}">${
             link && !d.soldOut ? `<a href="${esc(link)}" target="_blank" rel="noopener">${row}</a>` : `<div>${row}</div>`
           }</li>`;

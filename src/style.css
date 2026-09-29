@@ -313,7 +313,11 @@ body.tour .date { opacity: 1; transform: none; transition: opacity 0.6s var(--ea
   .dates:has(a:hover) .date > * { opacity: 0.4; }
   .dates .date > a:hover { opacity: 1; padding-left: 8px; }
 }
-.date.out .city, .date.out .venue { text-decoration: line-through; color: var(--muted); }
+.tag {
+  display: inline-block; margin-left: 10px; padding: 3px 7px 2px; vertical-align: 0.2em;
+  border: 1px solid currentColor; border-radius: 3px;
+  font-size: 10px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+}
 .t-year { color: var(--muted); padding: 34px 0 12px; border-bottom: 1px solid var(--line); }
 .t-empty { color: var(--muted); padding: 40px 0; text-align: center; border-bottom: 1px solid var(--line); }
 @media (max-width: 520px) {
