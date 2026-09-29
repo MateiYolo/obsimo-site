@@ -1,0 +1,8 @@
+{
+  "redirects": [
+    { "source": "/rider", "destination": "/rider/", "permanent": true }
+  ],
+  "rewrites": [
+    { "source": "/rider/:path*", "destination": "https://obsimo-rider.vercel.app/:path*" }
+  ]
+}
