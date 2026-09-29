@@ -250,6 +250,7 @@ function openDetail(i, push = true) {
   $('#d-lead').textContent = p.blurb;
   $('#d-desc').textContent = p.description;
   $('#d-price').textContent = money(p.price, p.currency);
+  showPreorder(p);
   $('#gallery').innerHTML = p.images
     .slice(0, 5)
     .map((src, j) => `<button data-i="${j}" aria-label="Photo ${j + 1}"><img src="${src}" alt="" loading="lazy" decoding="async"></button>`)
@@ -271,7 +272,44 @@ function openDetail(i, push = true) {
   if (push) history.pushState({ detail: p.handle }, '', `#${p.handle}`);
 }
 
+// ---------- pre-order: countdown to the release + golden ticket ----------
+let preTimer = 0;
+const isPreorder = (p) => !!p?.preorder && Date.now() < Date.parse(p.preorder.release);
+const pad = (n) => String(n).padStart(2, '0');
+
+function showPreorder(p) {
+  clearInterval(preTimer);
+  const box = $('#d-pre');
+  const on = isPreorder(p);
+  box.hidden = !on;
+  $('#d-add span').textContent = on ? 'Précommander' : 'Ajouter au panier';
+  if (!on) return;
+  const release = Date.parse(p.preorder.release);
+  const day = new Date(release).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'Europe/Paris' });
+  const units = ['jours', 'heures', 'min', 'sec'];
+  box.innerHTML = `
+    <p class="kicker">Précommande · sortie le ${day}</p>
+    <div class="count" role="timer" aria-live="off">${units.map((u) => `<div><b>00</b><span>${u}</span></div>`).join('')}</div>
+    ${p.preorder.goldenTicket ? `
+    <div class="ticket">
+      <p class="t-head"><span class="t-star" aria-hidden="true">✦</span>Ticket d'or</p>
+      <p>Un des vinyles précommandés cache un <b>test pressing</b> en plus. Seulement 5 exemplaires pressés, un seul glissé au hasard dans une précommande.</p>
+    </div>` : ''}`;
+  const cells = box.querySelectorAll('.count b');
+  const tick = () => {
+    const left = Math.max(0, release - Date.now());
+    if (!left) return showPreorder(p); // released: back to a normal product
+    const s = Math.floor(left / 1000);
+    [Math.floor(s / 86400), Math.floor(s / 3600) % 24, Math.floor(s / 60) % 60, s % 60].forEach((v, j) => {
+      cells[j].textContent = pad(v);
+    });
+  };
+  tick();
+  preTimer = setInterval(tick, 1000);
+}
+
 function closeDetail() {
+  clearInterval(preTimer);
   current = -1;
   stage.detailTarget = 0;
   root.classList.remove('lock');
@@ -300,13 +338,13 @@ function addToCart(btn) {
   const label = btn.querySelector('span');
   const old = label.textContent;
   btn.classList.add('done');
-  label.textContent = 'Ajouté';
+  label.textContent = isPreorder(p) ? 'Précommandé' : 'Ajouté';
   btn.querySelector('b').textContent = '✓';
   const cb = $('#cart-btn');
   cb.classList.remove('bump');
   void cb.offsetWidth;
   cb.classList.add('bump');
-  toast(`${p.title} ajouté au panier`);
+  toast(`${p.title} ${isPreorder(p) ? 'précommandé' : 'ajouté au panier'}`);
   setTimeout(() => {
     btn.classList.remove('done');
     label.textContent = old;

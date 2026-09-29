@@ -39,6 +39,10 @@ const PIQUHANS = {
   model: { art: A('sauce/piquhans-label.webp'), holo: true, liquid: '#3a3f0e', cap: '#d2bb82', capMetal: true },
 };
 
+// 8 Days in Sweden is sold as a pre-order until its release (midnight, Paris time): the detail page shows a
+// countdown and the golden ticket (one of the 5 test pressings slipped into a random pre-ordered copy).
+const PREORDER_8DIS = { release: '2026-11-27T00:00:00+01:00', goldenTicket: true };
+
 export const demoCatalog = [
   {
     id: 'demo-8dis-marble',
@@ -56,6 +60,7 @@ export const demoCatalog = [
     audio: null,
     audioSeed: 0,
     model: { ...SLEEVE_8DIS, disc: H('vinyl-marble.webp') },
+    preorder: PREORDER_8DIS,
     images: [A('insert-recto.jpg'), A('insert-verso.jpg'), A('cover-front.jpg'), A('cover-back.jpg')],
     details: [
       { title: 'Tracklist', body: 'A1 · Arrivée\nA2 · Glace noire\nA3 · 8 Days\nB1 · Monoko\nB2 · Inkko\nB3 · Retour' },
@@ -137,8 +142,8 @@ export const demoCatalog = [
 // Shopify gives title, texts, price, stock and photos; this table decides which model is built and how it looks.
 // A product missing from the table is shown as a flat card with its first Shopify photo.
 const lookOf = (handle) => {
-  const { kind, accent, audioSeed, model } = demoCatalog.find((p) => p.handle === handle);
-  return { kind, accent, audioSeed, model };
+  const { kind, accent, audioSeed, model, preorder } = demoCatalog.find((p) => p.handle === handle);
+  return { kind, accent, audioSeed, model, preorder };
 };
 const LIFE_BALANCE = lookOf('life-balance-swirl');
 const BUNDLE = lookOf('bundle-8-days-in-sweden-life-balance');
