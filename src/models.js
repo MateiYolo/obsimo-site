@@ -518,8 +518,159 @@ export function buildBundle(p) {
   };
 }
 
+// ---------- record postcard ----------
+// A postcard that plays on a turntable, in mm: the printed front is covered by a clear film cut with a groove around
+// the centre hole, the back is a plain postcard (divider through the hole, address lines, a holographic Obsimo sticker
+// as the stamp). Model fields: recto (the printed front, centred on the hole), sticker (the sticker cut out: black ink
+// on white, white = bare foil, transparent around it).
+const CARD = { w: 152, h: 105.7, t: 0.6, hole: 2.5, corner: 1, grooveIn: 14, grooveOut: 51 };
+const STICKER = { h: 28, margin: 2.5, turn: 0.02 };
+
+// The back, drawn as seen from behind (canvas left = the card's left when it is turned over).
+function postcardVerso() {
+  const W = 2048, H = Math.round(W * CARD.h / CARD.w), mm = W / CARD.w;
+  return canvasTex(W, H, (g) => {
+    g.fillStyle = '#f4f3ef';
+    g.fillRect(0, 0, W, H);
+    // divider, through the hole
+    const line = g.createLinearGradient(0, 0.07 * H, 0, 0.93 * H);
+    line.addColorStop(0, '#1f3f44');
+    line.addColorStop(1, '#2c6b66');
+    g.fillStyle = line;
+    g.fillRect(W / 2 - 0.18 * mm, 0.07 * H, 0.36 * mm, 0.86 * H);
+    // address lines
+    g.fillStyle = '#9db2b0';
+    for (const y of [0.385, 0.46, 0.54, 0.62, 0.7]) g.fillRect(0.55 * W, y * H, 0.39 * W, 0.24 * mm);
+    g.fillStyle = '#8f9d9b';
+    g.font = `500 ${1.5 * mm}px "Space Grotesk", sans-serif`;
+    g.textAlign = 'center';
+    g.letterSpacing = `${0.25 * mm}px`;
+    g.fillText('MANUFACTURED BY VINYLPOST.CO', 0.72 * W, 0.955 * H);
+  });
+}
+
+// The groove, computed in the shader from the position on the card: the film's anisotropic sheen runs along circles
+// around the hole (a radial streak of light, like on a record), with a few track gaps where the sheen fades.
+function grooveFilm(material) {
+  material.anisotropyMap = new THREE.DataTexture(new Uint8Array([255, 128, 255, 255]), 1, 1); // only switches the map path on
+  material.anisotropyMap.needsUpdate = true;
+  material.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader
+      .replace(
+        'void main() {',
+        /* glsl */ `
+        float grooveBand( float r ) {
+          float w = fwidth( r ) + 0.05;
+          float band = smoothstep( ${CARD.grooveIn.toFixed(1)} - w, ${CARD.grooveIn.toFixed(1)} + w, r )
+            * ( 1.0 - smoothstep( ${CARD.grooveOut.toFixed(1)} - w, ${CARD.grooveOut.toFixed(1)} + w, r ) );
+          float gap = 0.0;
+          for ( int i = 0; i < 4; i ++ ) gap = max( gap, 1.0 - smoothstep( 0.12, 0.3 + w, abs( r - ( 20.0 + 8.0 * float( i ) ) ) ) );
+          // louder passages are cut wider: the sheen swells and fades across the band
+          float loud = 0.78 + 0.22 * sin( r * 1.7 ) * sin( r * 0.61 + 1.3 );
+          return band * loud * ( 1.0 - 0.75 * gap );
+        }
+        vec3 grooveAniso( vec2 uv ) {
+          vec2 p = ( uv - 0.5 ) * vec2( ${CARD.w.toFixed(1)}, ${CARD.h.toFixed(1)} );
+          float r = max( length( p ), 1e-3 );
+          return vec3( vec2( - p.y, p.x ) / r * 0.5 + 0.5, grooveBand( r ) );
+        }
+        void main() {`
+      )
+      .replace(
+        '#include <roughnessmap_fragment>',
+        // the cut film is glossier than the bare laminate around it
+        `#include <roughnessmap_fragment>
+        roughnessFactor = mix( roughnessFactor, 0.14, grooveAniso( vAnisotropyMapUv ).b );`
+      )
+      .replace('texture2D( anisotropyMap, vAnisotropyMapUv ).rgb', 'grooveAniso( vAnisotropyMapUv )')
+      .replace(
+        '#include <lights_physical_fragment>',
+        // the cut grooves catch more light than the flat film, and split it a little like a grating: the streak
+        // shifts through the rainbow with the angle
+        /* glsl */ `#include <lights_physical_fragment>
+        {
+          float gb = grooveAniso( vAnisotropyMapUv ).b;
+          float h = 1.6 * dot( normal, normalize( vViewPosition ) ) + 0.012 * length( ( vAnisotropyMapUv - 0.5 ) * vec2( ${CARD.w.toFixed(1)}, ${CARD.h.toFixed(1)} ) );
+          vec3 rainbow = 0.5 + 0.5 * cos( 6.28318 * ( h + vec3( 0.0, 0.33, 0.67 ) ) );
+          vec3 boost = ( 1.0 + 1.2 * gb ) * mix( vec3( 1.0 ), 1.5 * rainbow, 0.3 * gb );
+          material.specularColor *= boost;
+          material.specularColorBlended *= boost;
+        }`
+      );
+  };
+  return material;
+}
+
+export function buildPostcard(p) {
+  const m = p.model;
+  const { w: W, h: H, t: T, hole, corner: c } = CARD;
+  const shape = new THREE.Shape();
+  shape.moveTo(-W / 2 + c, -H / 2);
+  shape.lineTo(W / 2 - c, -H / 2);
+  shape.quadraticCurveTo(W / 2, -H / 2, W / 2, -H / 2 + c);
+  shape.lineTo(W / 2, H / 2 - c);
+  shape.quadraticCurveTo(W / 2, H / 2, W / 2 - c, H / 2);
+  shape.lineTo(-W / 2 + c, H / 2);
+  shape.quadraticCurveTo(-W / 2, H / 2, -W / 2, H / 2 - c);
+  shape.lineTo(-W / 2, -H / 2 + c);
+  shape.quadraticCurveTo(-W / 2, -H / 2, -W / 2 + c, -H / 2);
+  const spindle = new THREE.Path();
+  spindle.absarc(0, 0, hole, 0, Math.PI * 2, true);
+  shape.holes.push(spindle);
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: T, bevelEnabled: false, curveSegments: 24 });
+  geo.translate(0, 0, -T / 2);
+  // ExtrudeGeometry puts both faces in group 0 (back half, then front half) and the edge in group 1: one material each
+  const [lids, sides] = geo.groups;
+  const half = lids.count / 2;
+  geo.clearGroups();
+  geo.addGroup(lids.start, half, 0); // back
+  geo.addGroup(lids.start + half, half, 1); // front
+  geo.addGroup(sides.start, sides.count, 2);
+  // card UVs on both faces; the back is read from behind, so mirrored
+  const pos = geo.attributes.position, uv = geo.attributes.uv;
+  for (let i = lids.start; i < lids.start + lids.count; i++) {
+    const x = pos.getX(i) / W, y = pos.getY(i) / H + 0.5;
+    uv.setXY(i, i < lids.start + half ? 0.5 - x : 0.5 + x, y);
+  }
+
+  const verso = new THREE.MeshPhysicalMaterial({ map: uploadOnce(postcardVerso()), roughness: 0.85, sheen: 0.3, sheenRoughness: 0.7, sheenColor: 0xffffff });
+  const recto = grooveFilm(
+    new THREE.MeshPhysicalMaterial({ map: tex(m.recto), color: 0xe0e0e0, roughness: 0.3, anisotropy: 0.9, ior: 1.5, specularIntensity: 0.8, envMapIntensity: 0.7 })
+  );
+  const edge = new THREE.MeshStandardMaterial({ color: '#efede8', roughness: 0.9 });
+  const card = new THREE.Mesh(geo, [verso, recto, edge]);
+
+  const inner = new THREE.Group();
+  inner.add(card);
+  // the stamp: holographic sticker in the top right corner of the back
+  if (m.sticker) {
+    const mat = holoLabel(m.sticker, { flat: true });
+    mat.alphaTest = 0.5; // die-cut outline
+    mat.polygonOffset = true;
+    mat.polygonOffsetFactor = -2;
+    mat.polygonOffsetUnits = -8;
+    const sticker = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
+    sticker.rotation.set(0, Math.PI, STICKER.turn);
+    sticker.scale.set(STICKER.h, STICKER.h, 1);
+    const place = (aspect) => {
+      const w = STICKER.h * aspect;
+      sticker.scale.x = w;
+      sticker.position.set(-(W / 2 - STICKER.margin - w / 2), H / 2 - STICKER.margin - STICKER.h / 2, -T / 2 - 0.05);
+    };
+    place(0.92);
+    image(m.sticker).then((img) => img && place(img.naturalWidth / img.naturalHeight));
+    inner.add(sticker);
+  }
+
+  const root = normalise(inner);
+
+  // opened, it just stands upright facing the viewer (no spin on its spindle)
+  return { root, kind: 'postcard', update() {} };
+}
+
 export function buildModel(p) {
   if (p.kind === 'vinyl') return buildVinyl(p);
+  if (p.kind === 'postcard') return buildPostcard(p);
   if (p.kind === 'bundle') return buildBundle(p);
   if (p.kind === 'sauce') return buildSauce(p);
   return buildCard(p);
