@@ -149,6 +149,8 @@ body.ready #loader { opacity: 0; visibility: hidden; }
 .foot .links { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; margin-bottom: 14px; }
 .foot .links a { transition: color 0.3s var(--ease); }
 .foot .links a:hover { color: var(--fg); }
+.foot .lang { font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; transition: color 0.3s var(--ease); }
+.foot .lang:hover { color: var(--fg); }
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 body.detail #list, body.detail .foot { opacity: 0; pointer-events: none; }
 body.detail .bar .menu { opacity: 0; pointer-events: none; }
@@ -171,7 +173,14 @@ body.detail #detail { visibility: visible; }
 .d-hero { height: 42vh; height: 42svh; margin-top: -30px; touch-action: pan-y; }
 .d-drag { display: none; }
 .d-body { padding: 0 var(--gutter); max-width: 640px; margin: 0 auto; }
-.d-title { margin: 10px 0 0; font: 500 clamp(44px, 11vw, 88px)/0.92 var(--font); letter-spacing: -0.04em; }
+.d-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.d-tags:empty { display: none; }
+.tag-pill {
+  padding: 5px 10px 4px; border-radius: 99px; line-height: 1;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line));
+  color: color-mix(in srgb, var(--accent) 50%, var(--fg));
+}
+.d-title { margin: 14px 0 0; font: 500 clamp(44px, 11vw, 88px)/0.92 var(--font); letter-spacing: -0.04em; }
 .d-lead { margin: 16px 0 0; font: 400 21px/1.35 var(--font); color: color-mix(in srgb, var(--fg) 85%, transparent); }
 /* photos: swipeable strip, full-bleed on phones with the next photo peeking in */
 .gallery { margin: 28px 0 0; }
@@ -230,7 +239,7 @@ body.detail #detail { visibility: visible; }
 .g-dots i { display: block; height: 2px; border-radius: 2px; background: var(--line); transition: background 0.4s var(--ease); }
 .g-dots button[aria-current] i { background: var(--fg); }
 .g-count, .lb-count { font-size: 11px; letter-spacing: 0.14em; color: var(--muted); font-variant-numeric: tabular-nums; }
-.d-desc { margin: 28px 0 0; font-size: 13.5px; color: color-mix(in srgb, var(--fg) 78%, transparent); }
+.d-desc { margin: 28px 0 0; white-space: pre-line; font-size: 13.5px; color: color-mix(in srgb, var(--fg) 78%, transparent); }
 .acc { margin: 28px 0 0; border-top: 1px solid var(--line); }
 .acc details { border-bottom: 1px solid var(--line); }
 .acc summary {

@@ -6,6 +6,8 @@
 //   audio    URL of a 30 s preview (null = no music)
 //   images   real photos shown in the detail page
 
+import { lang } from './i18n.js';
+
 const A = (f) => `${import.meta.env.BASE_URL}assets/${f}`;
 // high-resolution artwork for the 3D record (shared with the mockup generator)
 const H = (f) => A(`hifi/${f}`);
@@ -53,16 +55,103 @@ const POSTCARD = {
   model: { recto: P('recto.jpg'), sticker: P('sticker.webp') },
 };
 
+// Product texts owned by the site, in both languages: they replace Shopify's (whose copy exists in English only)
+// field by field, so a field left out here keeps its Shopify value. The English is the text of the Shopify listing,
+// the French its translation. Matched like the shop order: by handle, else by title (`localize` below).
+// `kicker` is the line of tags above the title, separated by « · ». A description can hold line breaks (a list,
+// paragraphs): the page keeps them.
+export const COPY = {
+  '8-days-in-sweden-marble': {
+    fr: {
+      kicker: 'Vinyle · Marbre blanc · Édition limitée',
+      title: '8 Days in Sweden',
+      blurb: 'Obsimo, Monoko et Inkko ont passé 8 jours dans une cabane en Suède, en plein cœur de l’hiver.',
+      description:
+        "Juste à côté du lac Vänern, le plus grand lac de Suède, entièrement gelé à -10 °C. Entre deux sessions, ils partaient marcher sur la glace, puis revenaient faire de la musique au coin du feu. Il en est sorti 10 morceaux de musique électronique. L'album s'appelle 8 Days in Sweden et sort en vinyle. Les expéditions commenceront fin novembre 2026 ! L'album sort le 3 décembre.",
+    },
+    en: {
+      kicker: 'Vinyl · White marble · Limited edition',
+      title: '8 Days in Sweden',
+      blurb: 'Obsimo, Monoko and Inkko spent 8 days in a cabin in Sweden in the dead of winter.',
+      description:
+        "Right next to Lake Vänern, Sweden's largest lake, completely frozen over at -10°C. Between sessions they'd walk out onto the ice, come back, make music by the fireplace. 10 tracks of electronic music came out of it. The album is called 8 Days in Sweden, available on vinyl. Shipping will start from late November 2026! The album will be released on December 3.",
+    },
+  },
+  'life-balance-swirl': {
+    fr: {
+      kicker: 'Vinyle · Swirl vert et blanc · Édition limitée',
+      title: 'Life Balance',
+      blurb: "Édition spéciale du nouvel album d'Obsimo, LIFE BALANCE Extended, avec 12 titres.",
+      description:
+        'Pressé en Europe, en série limitée. Sorti sur mon propre label, OSR Records, avec une pochette et un design originaux signés par mon frère Matei.',
+    },
+    en: {
+      kicker: 'Vinyl · Green & white swirl · Limited edition',
+      title: 'Life Balance',
+      blurb: 'Special edition of Obsimo’s new album, LIFE BALANCE Extended, featuring 12 tracks.',
+      description:
+        'Pressed in Europe, limited. Released on my own label OSR Records, with original artwork and design by my brother Matei.',
+    },
+  },
+  'hot-sauce-obsimo-x-piquhans-50ml': {
+    fr: {
+      kicker: 'Sauce piquante · 50 ml',
+      title: "Obsimo x Piqu'Hans",
+      blurb: "Une sauce piquante unique, née d'une amitié et créée avec La Sauce Piqu’Hans.",
+      description:
+        "Aux notes de curry vert, avec un piquant de 3/5, cette recette végane est la pause pimentée idéale à savourer en écoutant la musique électronique d'Obsimo. Une expérience gustative et sonore à partager.\nIngrédients : piment vert (jalapeño et piment oiseau), eau, vinaigre de cidre, citron vert, sucre de canne, oignon, galanga, citronnelle, feuille de kaffir, sel, gomme de xanthane naturelle.\n100 % naturelle et végane, faite avec amour à Nantes.",
+    },
+    en: {
+      kicker: 'Hot sauce · 50 ml',
+      title: "Obsimo x Piqu'Hans",
+      blurb: 'A unique hot sauce born from friendship, created in collaboration with La Sauce Piqu’Hans.',
+      description:
+        "With green curry notes and a 3/5 chili heat level, this vegan recipe is the perfect spicy break to enjoy while listening to Obsimo’s electronic music. A flavorful and sonic experience to share.\nIngredients: green chili (jalapeño and bird’s eye), water, apple cider vinegar, lime, cane sugar, onion, galangal, lemongrass, kaffir lime leaf, salt, natural xanthan gum.\n100% natural & vegan – Made with love in Nantes.",
+    },
+  },
+  'bundle-8-days-in-sweden-life-balance': {
+    fr: {
+      kicker: 'Bundle · 2 vinyles',
+      title: 'Life Balance + 8 Days in Sweden',
+      blurb: 'Les deux vinyles ensemble : Life Balance en swirl vert et blanc, 8 Days in Sweden en marbre blanc.',
+      description:
+        "Life Balance : édition spéciale du nouvel album d'Obsimo, LIFE BALANCE Extended, avec 12 titres. Pressé en Europe, en série limitée. Sorti sur mon propre label, OSR Records, avec une pochette et un design originaux signés par mon frère Matei.\n\n8 Days in Sweden : Obsimo, Monoko et Inkko ont passé 8 jours dans une cabane en Suède, en plein cœur de l’hiver. Juste à côté du lac Vänern, le plus grand lac de Suède, entièrement gelé à -10 °C. Entre deux sessions, ils partaient marcher sur la glace, puis revenaient faire de la musique au coin du feu. Il en est sorti 10 morceaux de musique électronique. L'album s'appelle 8 Days in Sweden et sort en vinyle.",
+    },
+    en: {
+      kicker: 'Bundle · 2 vinyls',
+      title: 'Life Balance + 8 Days in Sweden',
+      blurb: 'Both records together: Life Balance on green & white swirl, 8 Days in Sweden on white marble.',
+      description:
+        "Life Balance: special edition of Obsimo’s new album, LIFE BALANCE Extended, featuring 12 tracks. Pressed in Europe, limited. Released on my own label OSR Records, with original artwork and design by my brother Matei.\n\n8 days in Sweden: Obsimo, Monoko and Inkko spent 8 days in a cabin in Sweden in the dead of winter. Right next to Lake Vänern, Sweden's largest lake, completely frozen over at -10°C. Between sessions they'd walk out onto the ice, come back, make music by the fireplace. 10 tracks of electronic music came out of it. The album is called 8 Days in Sweden, available on vinyl.",
+    },
+  },
+  'carte-postale-vinyle': {
+    fr: {
+      kicker: 'Carte postale vinyle · Signée · Édition limitée',
+      title: 'Club Memories',
+      blurb: 'Une carte postale qui se joue comme un vinyle.',
+      description:
+        "Chaque vinyle ne peut jouer qu'un seul morceau : à toi de choisir ton préféré (voir l'option).\n- Vinyle signé (indique ton nom à la commande)\n- Sticker offert\n- Fait main en France\n- Le son est un peu plus lo-fi que celui d'un disque classique\n- Carte postale format A5 (148 × 210 mm) avec 3 mm de fond perdu\n- « Blackout » est un morceau secret, introuvable en ligne : tu ne peux l'écouter qu'avec cette carte postale vinyle\n\nDesign par Matei Convard, photo par @nonante.six",
+    },
+    en: {
+      kicker: 'Vinyl postcard · Signed · Limited edition',
+      title: 'Club Memories',
+      blurb: 'A postcard that plays like a vinyl record.',
+      description:
+        "Each vinyl can play only one track, it's up to you to choose your favorite track (check the option).\n- Vinyl signed (tell me your name when ordering)\n- Free sticker\n- Handmade in France\n- The sound tends to be a bit more lo-fi than normal records\n- A5 size postcard (148 x 210 mm | 5.8 x 8.3 inch) with a 3 mm bleed\n- \"Blackout\" is a secret song not available online, you can only listen to it with this vinyl postcard\n\nDesign by Matei Convard, photo by @nonante.six",
+    },
+  },
+};
+
+// Demo catalogue (used without Shopify): the same texts, no details, like the live listings.
+const text = (handle) => ({ details: [], ...COPY[handle][lang] });
+
 export const demoCatalog = [
   {
     id: 'demo-8dis-marble',
     handle: '8-days-in-sweden-marble',
     kind: 'vinyl',
-    title: '8 Days in Sweden',
-    kicker: 'Vinyle 12" · Marbre blanc',
-    blurb: 'Obsimo, Monoko, Inkko. Huit jours dans un lac gelé, enregistrés sur place.',
-    description:
-      "Un disque né d'un voyage de huit jours en Suède, entre lacs gelés et studio de fortune. Six titres enregistrés sur place avec Monoko et Inkko, pressés sur un vinyle marbre blanc unique : aucun exemplaire n'a les mêmes veines.",
+    ...text('8-days-in-sweden-marble'),
     price: 32,
     currency: 'EUR',
     variantId: null,
@@ -71,42 +160,24 @@ export const demoCatalog = [
     model: { ...SLEEVE_8DIS, disc: H('vinyl-marble.webp') },
     preorder: PREORDER_8DIS,
     images: [A('insert-recto.jpg'), A('insert-verso.jpg'), A('cover-front.jpg'), A('cover-back.jpg')],
-    details: [
-      { title: 'Tracklist', body: 'A1 · Arrivée\nA2 · Glace noire\nA3 · 8 Days\nB1 · Monoko\nB2 · Inkko\nB3 · Retour' },
-      { title: 'Le pressage', body: 'Vinyle 180 g marbre blanc, 33 tours. Pochette carton 350 g avec rond central découpé, poster A2 recto verso inclus. Édition limitée à 300 exemplaires.' },
-      { title: 'Livraison', body: 'Expédié sous 3 jours ouvrés dans un carton renforcé. France 5 €, Europe 12 €, monde 18 €.' },
-    ],
   },
   {
     id: 'demo-sauce-piquhans',
     handle: 'hot-sauce-obsimo-x-piquhans-50ml',
     kind: 'sauce',
-    title: "Obsimo × La Sauce Piqu'hans",
-    kicker: 'Sauce piquante · 50 ml',
-    blurb: 'Piment vert, citronnelle et kaffir, aux notes de curry vert. Faite à Nantes avec amour.',
-    description:
-      "Née d'une amitié, cette sauce piquante aux notes de curry vert se savoure en écoutant la musique électronique d'Obsimo. Une pause piquante et sonore à partager. 100 % naturelle et végane.",
+    ...text('hot-sauce-obsimo-x-piquhans-50ml'),
     price: 8,
     currency: 'EUR',
     variantId: null,
     ...PIQUHANS,
     audio: null,
     images: [],
-    details: [
-      { title: 'Ingrédients', body: 'Piment vert (jalapeño et oiseau), eau, vinaigre de cidre, citron vert, sucre de canne, oignon, galanga, citronnelle, feuille de kaffir, sel, gomme naturelle de xanthane.' },
-      { title: 'Conservation', body: 'Au réfrigérateur après ouverture. À consommer de préférence avant la date inscrite sous la bouteille.' },
-      { title: 'Livraison', body: 'Bouteille en verre calée dans un étui carton. Expédiée sous 3 jours ouvrés.' },
-    ],
   },
   {
     id: 'demo-life-balance-swirl',
     handle: 'life-balance-swirl',
     kind: 'vinyl',
-    title: 'Life Balance',
-    kicker: 'Vinyle 12" · Swirl vert',
-    blurb: 'Life Balance Extended : douze titres, avec Shuttle et Monoko, pressés sur un swirl vert et crème.',
-    description:
-      "La version longue de Life Balance : douze titres, dont BDXBXL avec Shuttle et I Fall avec Monoko. Pochette carton verte à fenêtre découpée sur le macaron, sticker holographique, et un vinyle swirl vert et crème : chaque exemplaire a ses propres taches.",
+    ...text('life-balance-swirl'),
     price: 30,
     currency: 'EUR',
     variantId: null,
@@ -114,23 +185,12 @@ export const demoCatalog = [
     audio: null,
     model: { ...SLEEVE_LB, disc: L('disc.webp') },
     images: [L('photo-disc.webp'), L('photo-sleeve.webp')],
-    details: [
-      {
-        title: 'Tracklist',
-        body: "A1 · He Needs Me\nA2 · Love Balance\nA3 · U\nA4 · BDXBXL (ft Shuttle)\nA5 · Off Track\nA6 · It Won't Be Long\nB1 · Call Center\nB2 · Dreamer\nB3 · Stay In A Loop\nB4 · I Fall (ft Monoko)\nB5 · B4D MOOD\nB6 · I Don't Mind",
-      },
-      { title: 'Le pressage', body: 'Vinyle swirl vert et crème, 33 tours. Pochette carton avec fenêtre ronde découpée sur le macaron, sticker holographique. OSR Records.' },
-      { title: 'Livraison', body: 'Expédié sous 3 jours ouvrés dans un carton renforcé. France 5 €, Europe 12 €, monde 18 €.' },
-    ],
   },
   {
     id: 'demo-bundle-vinyls',
     handle: 'bundle-8-days-in-sweden-life-balance',
     kind: 'bundle',
-    title: 'Bundle vinyles',
-    kicker: '2 vinyles 12" · Swirl vert + Marbre blanc',
-    blurb: 'Life Balance et 8 Days in Sweden, les deux pressages ensemble.',
-    description: 'Le swirl vert et crème de Life Balance et le marbre blanc de 8 Days in Sweden, expédiés ensemble dans un seul carton renforcé.',
+    ...text('bundle-8-days-in-sweden-life-balance'),
     price: 55,
     currency: 'EUR',
     variantId: null,
@@ -139,29 +199,17 @@ export const demoCatalog = [
     model: { cover: SLEEVE_8DIS.cover, records: [{ ...SLEEVE_LB, disc: L('disc.webp') }, { ...SLEEVE_8DIS, disc: H('vinyl-marble.webp'), rest: 0 }] },
     preorder: PREORDER_8DIS, // ships with 8 Days in Sweden, so it is a pre-order too
     images: [L('photo-sleeve.webp'), L('photo-disc.webp')],
-    details: [
-      { title: 'Contenu', body: 'Life Balance · vinyle swirl vert et crème, pochette à fenêtre\n8 Days in Sweden · vinyle marbre blanc, vernis sélectif' },
-      { title: 'Livraison', body: 'Expédié sous 3 jours ouvrés dans un carton renforcé. France 5 €, Europe 12 €, monde 18 €.' },
-    ],
   },
   {
     id: 'demo-postcard',
     handle: 'carte-postale-vinyle',
-    title: 'Carte postale vinyle',
-    kicker: 'Carte postale · se joue sur platine',
-    blurb: 'Une carte postale gravée comme un disque : pose-la sur la platine, le trou central sur l’axe.',
-    description:
-      "Au recto, le visuel sous un film transparent gravé de sillons : elle se joue comme un vinyle. Au dos, une vraie carte postale à écrire et à envoyer, avec le sticker holographique Obsimo en guise de timbre.",
+    ...text('carte-postale-vinyle'),
     price: 10,
     currency: 'EUR',
     variantId: null,
     ...POSTCARD,
     audio: null,
     images: [P('photo-verso.webp')],
-    details: [
-      { title: 'La carte', body: 'Recto imprimé sous film gravé, lisible en 33 tours. Verso carte postale avec sticker holographique.' },
-      { title: 'Livraison', body: 'Expédiée à plat sous enveloppe rigide, sous 3 jours ouvrés.' },
-    ],
   },
 ];
 
@@ -214,6 +262,11 @@ const rank = (p) => {
   return i < 0 ? ORDER.length : i;
 };
 export const sortProducts = (list) => [...list].sort((a, b) => rank(a) - rank(b));
+
+// The site's own texts (COPY) over a Shopify product, in the visitor's language. Same matching as the order above:
+// the handle, else the title (8 Days in Sweden, Life Balance, the hot sauce, the bundle, the postcard).
+const COPY_KEYS = ['8-days-in-sweden-marble', 'life-balance-swirl', 'hot-sauce-obsimo-x-piquhans-50ml', 'bundle-8-days-in-sweden-life-balance', 'carte-postale-vinyle'];
+export const localize = (p) => ({ ...p, ...(COPY[p.handle] || COPY[COPY_KEYS[rank(p)]])?.[lang] });
 
 // Shopify has two Life Balance listings (the old "Life Balance Transparent Green" and the swirl): only the swirl is
 // shown. Kept: the listing titled swirl, else the ones not titled transparent, else not the old handle, else the
