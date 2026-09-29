@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0b0b0c" />
     <title>Obsimo · Site officiel · Vinyles, merch et concerts</title>
-    <meta name="description" content="Site officiel d'Obsimo, artiste électro indépendant : vinyles (8 Days in Sweden, Life Balance), merch, sauce Obsimo × Piqu'hans et dates de concert." />
+    <meta name="description" data-i18n-content="meta.description" content="Site officiel d'Obsimo, artiste électro indépendant : vinyles (8 Days in Sweden, Life Balance), merch, sauce Obsimo × Piqu'hans et dates de concert." />
     <link rel="canonical" href="https://www.obsimo.com/" />
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
@@ -14,6 +14,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Obsimo" />
     <meta property="og:locale" content="fr_FR" />
+    <meta property="og:locale:alternate" content="en_GB" />
     <meta property="og:url" content="https://www.obsimo.com/" />
     <meta property="og:title" content="Obsimo · Site officiel" />
     <meta property="og:description" content="Vinyles, merch et dates de concert d'Obsimo." />
@@ -70,7 +71,7 @@
 
     <header class="bar">
       <a class="logo" href="#" id="logo">Obsimo</a>
-      <nav class="menu" aria-label="Rubriques">
+      <nav class="menu" aria-label="Rubriques" data-i18n-aria="nav.sections">
         <a href="#" class="on" aria-current="page" data-view="shop">Shop</a>
         <a href="#tour" data-view="tour">Tour</a>
       </nav>
@@ -78,17 +79,17 @@
         <a href="#contact" class="contact-link" data-view="contact" aria-label="Contact">
           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="9" ry="4.6"/><path d="M12 3v9M12 16.6V21"/></svg>
         </a>
-        <button class="cart-btn" id="cart-btn" aria-label="Panier">
+        <button class="cart-btn" id="cart-btn" aria-label="Panier" data-i18n-aria="nav.cart">
           <svg viewBox="0 0 20 20" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="M4 6.5h12l-1 11H5z"/><path d="M7.2 6.5V5a2.8 2.8 0 0 1 5.6 0v1.5"/></svg>
           <span id="cart-count">0</span>
         </button>
       </div>
     </header>
 
-    <h1 class="sr-only">Obsimo · vinyles, merch et concerts</h1>
+    <h1 class="sr-only" data-i18n="h1">Obsimo · vinyles, merch et concerts</h1>
     <main id="list"></main>
     <footer class="foot">
-      <nav class="links" aria-label="Écouter Obsimo">
+      <nav class="links" aria-label="Écouter Obsimo" data-i18n-aria="nav.listen">
         <a href="https://open.spotify.com/artist/3zHiZOMFJFL3GjWwsmYEJy" rel="me noopener" target="_blank">Spotify</a>
         <a href="https://music.apple.com/artist/obsimo/1165449125" rel="me noopener" target="_blank">Apple Music</a>
         <a href="https://obsimo.bandcamp.com/" rel="me noopener" target="_blank">Bandcamp</a>
@@ -96,7 +97,7 @@
         <a href="https://www.youtube.com/c/ObsimoMusic" rel="me noopener" target="_blank">YouTube</a>
         <a href="https://www.instagram.com/obsimo_music/" rel="me noopener" target="_blank">Instagram</a>
       </nav>
-      <p>Obsimo · <span id="year">2026</span></p>
+      <p>Obsimo · <span id="year">2026</span> · <button class="lang" id="lang" type="button" lang="en" data-i18n="lang.switch">English</button></p>
     </footer>
     <div class="hands" id="hands" aria-hidden="true"><i></i><i></i></div>
 
@@ -104,18 +105,18 @@
     <section id="detail" aria-hidden="true">
       <div class="d-drag" id="d-drag" aria-hidden="true"></div>
       <div class="d-scroll" id="d-scroll">
-        <button class="back" id="back">← Retour</button>
+        <button class="back" id="back" data-i18n="detail.back">← Retour</button>
         <div class="d-hero" id="d-hero"></div>
         <article class="d-body">
           <p class="kicker reveal" id="d-kicker"></p>
           <h2 class="d-title reveal" id="d-title"></h2>
           <p class="d-lead reveal" id="d-lead"></p>
           <div class="pre reveal" id="d-pre" hidden></div>
-          <div class="gallery reveal" id="gallery" role="region" aria-roledescription="carrousel" aria-label="Photos">
+          <div class="gallery reveal" id="gallery" role="region" aria-roledescription="carrousel" data-i18n-roledesc="gallery.role" aria-label="Photos" data-i18n-aria="gallery.label">
             <div class="g-stage">
               <div class="g-track" tabindex="0"></div>
-              <button class="g-nav g-prev" aria-label="Photo précédente"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M12 4.5 6.5 10l5.5 5.5"/></svg></button>
-              <button class="g-nav g-next" aria-label="Photo suivante"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M8 4.5 13.5 10 8 15.5"/></svg></button>
+              <button class="g-nav g-prev" aria-label="Photo précédente" data-i18n-aria="gallery.prev"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M12 4.5 6.5 10l5.5 5.5"/></svg></button>
+              <button class="g-nav g-next" aria-label="Photo suivante" data-i18n-aria="gallery.next"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M8 4.5 13.5 10 8 15.5"/></svg></button>
             </div>
             <div class="g-foot"><div class="g-dots"></div><span class="g-count" aria-live="polite"></span></div>
           </div>
@@ -125,7 +126,7 @@
       </div>
       <div class="d-buy">
         <span class="price" id="d-price"></span>
-        <button class="add" id="d-add"><span>Ajouter au panier</span><b>+</b></button>
+        <button class="add" id="d-add"><span data-i18n="detail.add">Ajouter au panier</span><b>+</b></button>
       </div>
     </section>
 
@@ -146,11 +147,11 @@
           <canvas class="t-3d c-3d" id="c-3d" aria-hidden="true"></canvas>
         </header>
         <div class="c-body">
-          <p class="c-intro">I'm an independent artist, releasing my music on my own label, OSR&nbsp;Records.</p>
+          <p class="c-intro" data-i18n-html="contact.intro">Artiste indépendant, je sors ma musique sur mon propre label, OSR&nbsp;Records.</p>
 
           <div class="c-block" style="--i:0">
             <h3 class="kicker">Email</h3>
-            <button class="c-mail" id="c-mail" type="button" data-email="obsimomusic@gmail.com" aria-label="Copy email address">
+            <button class="c-mail" id="c-mail" type="button" data-email="obsimomusic@gmail.com" aria-label="Copier l'adresse email" data-i18n-aria="contact.copy">
               <span>obsimomusic@gmail.com</span>
               <svg class="i-copy" viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><rect x="6.5" y="6.5" width="10" height="10" rx="2"/><path d="M13.5 6.5V5.5a2 2 0 0 0-2-2h-6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h1"/></svg>
               <svg class="i-done" viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4.5 10.5l3.5 3.5 7.5-8"/></svg>
@@ -158,7 +159,7 @@
           </div>
 
           <div class="c-block" style="--i:1">
-            <h3 class="kicker">Listen</h3>
+            <h3 class="kicker" data-i18n="contact.listen">Écouter</h3>
             <ul class="c-links">
               <li><a href="https://open.spotify.com/artist/0YY5QtheeDP5U9dMdQRoEc" target="_blank" rel="noopener">Spotify</a></li>
               <li><a href="https://music.apple.com/artist/obsimo/1165449125" target="_blank" rel="noopener">Apple Music</a></li>
@@ -173,41 +174,41 @@
 
     <div id="cart" aria-hidden="true">
       <div class="scrim" id="cart-scrim"></div>
-      <aside class="panel" role="dialog" aria-label="Panier">
+      <aside class="panel" role="dialog" aria-label="Panier" data-i18n-aria="cart.title">
         <div class="panel-head">
-          <h3>Panier</h3>
-          <button id="cart-close" aria-label="Fermer">Fermer</button>
+          <h3 data-i18n="cart.title">Panier</h3>
+          <button id="cart-close" data-i18n="cart.close">Fermer</button>
         </div>
         <ul class="lines" id="lines"></ul>
         <div class="panel-foot">
           <div class="total"><span>Total</span><span id="cart-total"></span></div>
-          <p class="note">Livraison calculée à l'étape suivante.</p>
-          <button class="add wide" id="checkout"><span>Commander</span><b>→</b></button>
+          <p class="note" data-i18n="cart.shipping">Livraison calculée à l'étape suivante.</p>
+          <button class="add wide" id="checkout"><span data-i18n="cart.checkout">Commander</span><b>→</b></button>
         </div>
       </aside>
     </div>
 
-    <div id="lightbox" role="dialog" aria-modal="true" aria-label="Photos" aria-hidden="true">
+    <div id="lightbox" role="dialog" aria-modal="true" aria-label="Photos" data-i18n-aria="gallery.label" aria-hidden="true">
       <div class="lb-top">
         <span class="lb-count" aria-live="polite"></span>
-        <button class="lb-close">Fermer<i aria-hidden="true"><svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M5 5l10 10M15 5 5 15"/></svg></i></button>
+        <button class="lb-close"><span data-i18n="lightbox.close">Fermer</span><i aria-hidden="true"><svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M5 5l10 10M15 5 5 15"/></svg></i></button>
       </div>
       <div class="lb-stage">
         <div class="lb-track"></div>
-        <button class="lb-nav lb-prev" aria-label="Photo précédente"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M12 4.5 6.5 10l5.5 5.5"/></svg></button>
-        <button class="lb-nav lb-next" aria-label="Photo suivante"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M8 4.5 13.5 10 8 15.5"/></svg></button>
+        <button class="lb-nav lb-prev" aria-label="Photo précédente" data-i18n-aria="gallery.prev"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M12 4.5 6.5 10l5.5 5.5"/></svg></button>
+        <button class="lb-nav lb-next" aria-label="Photo suivante" data-i18n-aria="gallery.next"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M8 4.5 13.5 10 8 15.5"/></svg></button>
       </div>
       <div class="lb-thumbs"></div>
     </div>
 
     <div id="mini" class="paused" aria-hidden="true">
-      <button class="mini-play" id="mini-play" aria-label="Lecture">
+      <button class="mini-play" id="mini-play" aria-label="Lecture" data-i18n-aria="mini.play">
         <svg class="i-play" viewBox="0 0 20 20" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M6.5 4.2v11.6a.6.6 0 0 0 .9.5l9.2-5.8a.6.6 0 0 0 0-1L7.4 3.7a.6.6 0 0 0-.9.5z"/></svg>
         <svg class="i-pause" viewBox="0 0 20 20" width="14" height="14" fill="currentColor" aria-hidden="true"><rect x="5" y="4" width="3.4" height="12" rx="1"/><rect x="11.6" y="4" width="3.4" height="12" rx="1"/></svg>
       </button>
-      <div class="mini-txt"><span class="mini-k">Morceau secret</span><span>Obsimo · Inédit</span></div>
+      <div class="mini-txt"><span class="mini-k" data-i18n="mini.kicker">Morceau secret</span><span data-i18n="mini.title">Obsimo · Inédit</span></div>
       <span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>
-      <button class="mini-close" id="mini-close" aria-label="Fermer le lecteur">
+      <button class="mini-close" id="mini-close" aria-label="Fermer le lecteur" data-i18n-aria="mini.close">
         <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><path d="M5.5 5.5l9 9M14.5 5.5l-9 9"/></svg>
       </button>
       <i class="mini-bar" aria-hidden="true"></i>

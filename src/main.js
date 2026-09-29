@@ -8,16 +8,21 @@ import { fetchDates } from './tour.js';
 import { TourTitle } from './tourTitle.js';
 import { Gallery, Lightbox } from './gallery.js';
 import { OsrLogo } from './osrLogo.js';
+import { t, locale, lang, applyStatic, switchLang } from './i18n.js';
 
 const $ = (s) => document.querySelector(s);
 const body = document.body;
 const root = document.documentElement;
-const money = (v, c = 'EUR') => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: c, maximumFractionDigits: v % 1 ? 2 : 0 }).format(v);
+const money = (v, c = 'EUR') => new Intl.NumberFormat(locale, { style: 'currency', currency: c, maximumFractionDigits: v % 1 ? 2 : 0 }).format(v);
 
 let products = demoCatalog;
 let stage, cart;
 let current = -1; // product open in the detail page
 const player = new Player();
+
+applyStatic();
+$('#lang').lang = lang === 'fr' ? 'en' : 'fr';
+$('#lang').onclick = switchLang;
 
 // ---------- loader ----------
 // The counter eases toward the real progress instead of jumping file by file, and keeps creeping slowly while a step
@@ -228,7 +233,7 @@ document.querySelectorAll('.bar a[data-view]').forEach((a) => {
   a.onclick = (e) => {
     e.preventDefault();
     const view = a.dataset.view;
-    if (a.classList.contains('soon')) toast(`${a.textContent} · bientôt`);
+    if (a.classList.contains('soon')) toast(t('toast.soon', a.textContent));
     else if (pages[view]) page === view ? pages[view].scroller.scrollTo({ top: 0, behavior: 'smooth' }) : openPage(view, !page);
     else if (current >= 0 || page) leaveOverlay();
     else scrollTo({ top: 0, behavior: 'smooth' });
@@ -314,18 +319,18 @@ function showPreorder(p) {
   const box = $('#d-pre');
   const on = isPreorder(p);
   box.hidden = !on;
-  $('#d-add span').textContent = on ? 'Précommander' : 'Ajouter au panier';
+  $('#d-add span').textContent = t(on ? 'detail.preorder' : 'detail.add');
   if (!on) return;
   const release = Date.parse(p.preorder.release);
-  const day = new Date(release).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'Europe/Paris' });
-  const units = ['jours', 'heures', 'min', 'sec'];
+  const day = new Date(release).toLocaleDateString(locale, { day: 'numeric', month: 'long', timeZone: 'Europe/Paris' });
+  const units = t('pre.units');
   box.innerHTML = `
-    <p class="kicker">Précommande · sortie le ${day}</p>
+    <p class="kicker">${t('pre.release', day)}</p>
     <div class="count" role="timer" aria-live="off">${units.map((u) => `<div><b>00</b><span>${u}</span></div>`).join('')}</div>
     ${p.preorder.goldenTicket ? `
     <div class="ticket">
-      <p class="t-head"><span class="t-star" aria-hidden="true">✦</span>Ticket d'or</p>
-      <p>Un des vinyles précommandés cache un <b>test pressing</b> en plus. Seulement 5 exemplaires pressés, un seul glissé au hasard dans une précommande.</p>
+      <p class="t-head"><span class="t-star" aria-hidden="true">✦</span>${t('pre.ticket')}</p>
+      <p>${t('pre.ticketText')}</p>
     </div>` : ''}`;
   const cells = box.querySelectorAll('.count b');
   const tick = () => {
@@ -371,13 +376,13 @@ function addToCart(btn) {
   const label = btn.querySelector('span');
   const old = label.textContent;
   btn.classList.add('done');
-  label.textContent = isPreorder(p) ? 'Précommandé' : 'Ajouté';
+  label.textContent = t(isPreorder(p) ? 'detail.preordered' : 'detail.added');
   btn.querySelector('b').textContent = '✓';
   const cb = $('#cart-btn');
   cb.classList.remove('bump');
   void cb.offsetWidth;
   cb.classList.add('bump');
-  toast(`${p.title} ${isPreorder(p) ? 'précommandé' : 'ajouté au panier'}`);
+  toast(t(isPreorder(p) ? 'toast.preordered' : 'toast.added', p.title));
   setTimeout(() => {
     btn.classList.remove('done');
     label.textContent = old;
@@ -396,16 +401,16 @@ let page = null; // name of the open page
 
 // Easter egg: spinning the 3D "TOUR" fast for a while unlocks an unreleased track
 function makeTourTitle() {
-  const t = new TourTitle($('#t-3d'));
-  t.onSecret = () => {
+  const title = new TourTitle($('#t-3d'));
+  title.onSecret = () => {
     player.play({ audio: SECRET, loop: false });
-    toast('Morceau secret débloqué');
+    toast(t('secret.unlocked'));
   };
-  return t;
+  return title;
 }
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-const dayFmt = new Intl.DateTimeFormat('fr-FR', { day: '2-digit' });
-const monthFmt = new Intl.DateTimeFormat('fr-FR', { month: 'short' });
+const dayFmt = new Intl.DateTimeFormat(locale, { day: '2-digit' });
+const monthFmt = new Intl.DateTimeFormat(locale, { month: 'short' });
 
 function setMenu(view) {
   document.querySelectorAll('.bar a[data-view]').forEach((a) => {
@@ -480,13 +485,13 @@ function eventsLd(dates) {
 
 async function renderTour() {
   const list = $('#dates');
-  if (!list.children.length) list.innerHTML = '<li class="t-empty">Chargement des dates…</li>';
+  if (!list.children.length) list.innerHTML = `<li class="t-empty">${t('tour.loading')}</li>`;
   let dates;
   try {
     dates = await fetchDates();
   } catch (err) {
     console.error(err);
-    list.innerHTML = '<li class="t-empty">Les dates sont indisponibles pour le moment.</li>';
+    list.innerHTML = `<li class="t-empty">${t('tour.error')}</li>`;
     return;
   }
   const upcoming = dates
@@ -500,13 +505,13 @@ async function renderTour() {
           const sep = at.getFullYear() !== year ? `<li class="t-year">${(year = at.getFullYear())}</li>` : '';
           const link = d.tickets || d.url;
           const row = `<time datetime="${esc(d.datetime)}">${dayFmt.format(at)} ${monthFmt.format(at).replace('.', '')}</time>
-            <span class="city">${esc(d.city)}${d.soldOut ? ' <span class="tag">Sold out</span>' : ''}</span><span class="venue">${esc(d.venue)}</span>`;
+            <span class="city">${esc(d.city)}${d.soldOut ? ` <span class="tag">${t('tour.soldOut')}</span>` : ''}</span><span class="venue">${esc(d.venue)}</span>`;
           return `${sep}<li class="date${d.soldOut ? ' out' : ''}" style="--i:${Math.min(i, 12)}">${
             link && !d.soldOut ? `<a href="${esc(link)}" target="_blank" rel="noopener">${row}</a>` : `<div>${row}</div>`
           }</li>`;
         })
         .join('')
-    : '<li class="t-empty">Pas de date annoncée pour le moment. Reviens bientôt.</li>';
+    : `<li class="t-empty">${t('tour.empty')}</li>`;
 }
 
 // ---------- copy email ----------
@@ -520,7 +525,7 @@ $('#c-mail').onclick = async (e) => {
     return;
   }
   btn.classList.add('done');
-  toast('Email copied');
+  toast(t('contact.copied'));
   clearTimeout(btn.t);
   btn.t = setTimeout(() => btn.classList.remove('done'), 1800);
 };
@@ -547,13 +552,13 @@ function renderCart() {
           return `<li>
             ${thumb ? `<img src="${thumb}" alt="">` : `<span class="sw" style="background:${p.accent}"></span>`}
             <div><div class="t">${p.title}</div><div class="k">${p.kicker}</div>
-              <div class="qty"><button data-id="${l.id}" data-d="-1" aria-label="Retirer un">−</button><span>${l.qty}</span><button data-id="${l.id}" data-d="1" aria-label="Ajouter un">+</button></div>
+              <div class="qty"><button data-id="${l.id}" data-d="-1" aria-label="${t('cart.less')}">−</button><span>${l.qty}</span><button data-id="${l.id}" data-d="1" aria-label="${t('cart.more')}">+</button></div>
             </div>
             <div class="lp">${money(p.price * l.qty, p.currency)}</div>
           </li>`;
         })
         .join('')
-    : '<li class="empty">Ton panier est vide.</li>';
+    : `<li class="empty">${t('cart.empty')}</li>`;
 }
 $('#lines').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-id]');
@@ -563,13 +568,13 @@ $('#lines').addEventListener('click', (e) => {
 });
 
 $('#checkout').onclick = async () => {
-  if (!shopifyEnabled) return toast('Mode démo : le paiement sera branché sur Shopify');
+  if (!shopifyEnabled) return toast(t('cart.demo'));
   try {
-    $('#checkout span').textContent = 'Redirection…';
+    $('#checkout span').textContent = t('cart.redirect');
     location.href = await checkout(cart.lines);
   } catch (err) {
-    $('#checkout span').textContent = 'Commander';
-    toast('Le paiement est indisponible, réessaie dans un instant');
+    $('#checkout span').textContent = t('cart.checkout');
+    toast(t('cart.error'));
     console.error(err);
   }
 };
@@ -591,7 +596,7 @@ function syncMini() {
 function renderMini() {
   const paused = !miniEl || miniEl.paused;
   mini.classList.toggle('paused', paused);
-  $('#mini-play').setAttribute('aria-label', paused ? 'Lecture' : 'Pause');
+  $('#mini-play').setAttribute('aria-label', t(paused ? 'mini.play' : 'mini.pause'));
   mini.style.setProperty('--p', miniEl?.duration ? (miniEl.currentTime / miniEl.duration).toFixed(4) : 0);
   if (pages.tour.spinner) pages.tour.spinner.lit = !paused;
 }

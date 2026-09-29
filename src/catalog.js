@@ -6,6 +6,8 @@
 //   audio    URL of a 30 s preview (null = no music)
 //   images   real photos shown in the detail page
 
+import { lang } from './i18n.js';
+
 const A = (f) => `${import.meta.env.BASE_URL}assets/${f}`;
 // high-resolution artwork for the 3D record (shared with the mockup generator)
 const H = (f) => A(`hifi/${f}`);
@@ -42,6 +44,9 @@ const PIQUHANS = {
 // 8 Days in Sweden (and the bundle that holds it) is sold as a pre-order until its release (midnight, Paris time):
 // the detail page shows a countdown and the golden ticket (one of the 5 test pressings slipped into a random
 // pre-ordered copy).
+const LB_TRACKS =
+  "A1 · He Needs Me\nA2 · Love Balance\nA3 · U\nA4 · BDXBXL (ft Shuttle)\nA5 · Off Track\nA6 · It Won't Be Long\nB1 · Call Center\nB2 · Dreamer\nB3 · Stay In A Loop\nB4 · I Fall (ft Monoko)\nB5 · B4D MOOD\nB6 · I Don't Mind";
+
 const PREORDER_8DIS = { release: '2026-12-03T00:00:00+01:00', goldenTicket: true };
 
 // The record postcard: the printed front under a grooved film (it plays on a turntable, centre hole on the spindle),
@@ -53,16 +58,145 @@ const POSTCARD = {
   model: { recto: P('recto.jpg'), sticker: P('sticker.webp') },
 };
 
+// Texts of the demo catalogue, in both languages (the shop shows the one picked in src/i18n.js).
+const SHIPPING_RECORD = {
+  fr: { title: 'Livraison', body: 'Expédié sous 3 jours ouvrés dans un carton renforcé. France 5 €, Europe 12 €, monde 18 €.' },
+  en: { title: 'Shipping', body: 'Ships within 3 working days in a reinforced box. France €5, Europe €12, rest of the world €18.' },
+};
+const TEXT = {
+  '8-days-in-sweden-marble': {
+    fr: {
+      title: '8 Days in Sweden',
+      kicker: 'Vinyle 12" · Marbre blanc',
+      blurb: 'Obsimo, Monoko, Inkko. Huit jours au bord d’un lac gelé, enregistrés sur place.',
+      description:
+        "Un disque né d'un voyage de huit jours en Suède, entre lacs gelés et studio de fortune. Six titres enregistrés sur place avec Monoko et Inkko, pressés sur un vinyle marbre blanc unique : aucun exemplaire n'a les mêmes veines.",
+      details: [
+        { title: 'Tracklist', body: 'A1 · Arrivée\nA2 · Glace noire\nA3 · 8 Days\nB1 · Monoko\nB2 · Inkko\nB3 · Retour' },
+        { title: 'Le pressage', body: 'Vinyle 180 g marbre blanc, 33 tours. Pochette carton 350 g avec rond central découpé, poster A2 recto verso inclus. Édition limitée à 300 exemplaires.' },
+        SHIPPING_RECORD.fr,
+      ],
+    },
+    en: {
+      title: '8 Days in Sweden',
+      kicker: '12" vinyl · White marble',
+      blurb: 'Obsimo, Monoko, Inkko. Eight days by a frozen lake, recorded on the spot.',
+      description:
+        'A record born from an eight-day trip to Sweden, between frozen lakes and a makeshift studio. Six tracks recorded on the spot with Monoko and Inkko, pressed on a one-of-a-kind white marble vinyl: no two copies share the same veins.',
+      details: [
+        { title: 'Tracklist', body: 'A1 · Arrivée\nA2 · Glace noire\nA3 · 8 Days\nB1 · Monoko\nB2 · Inkko\nB3 · Retour' },
+        { title: 'The pressing', body: '180 g white marble vinyl, 33 rpm. 350 g board sleeve with a die-cut centre hole, double-sided A2 poster included. Limited edition of 300 copies.' },
+        SHIPPING_RECORD.en,
+      ],
+    },
+  },
+  'hot-sauce-obsimo-x-piquhans-50ml': {
+    fr: {
+      title: "Obsimo × La Sauce Piqu'hans",
+      kicker: 'Sauce piquante · 50 ml',
+      blurb: 'Piment vert, citronnelle et kaffir, aux notes de curry vert. Faite à Nantes avec amour.',
+      description:
+        "Née d'une amitié, cette sauce piquante aux notes de curry vert se savoure en écoutant la musique électronique d'Obsimo. Une pause piquante et sonore à partager. 100 % naturelle et végane.",
+      details: [
+        { title: 'Ingrédients', body: 'Piment vert (jalapeño et oiseau), eau, vinaigre de cidre, citron vert, sucre de canne, oignon, galanga, citronnelle, feuille de kaffir, sel, gomme naturelle de xanthane.' },
+        { title: 'Conservation', body: 'Au réfrigérateur après ouverture. À consommer de préférence avant la date inscrite sous la bouteille.' },
+        { title: 'Livraison', body: 'Bouteille en verre calée dans un étui carton. Expédiée sous 3 jours ouvrés.' },
+      ],
+    },
+    en: {
+      title: "Obsimo × La Sauce Piqu'hans",
+      kicker: 'Hot sauce · 50 ml',
+      blurb: 'Green chilli, lemongrass and kaffir lime, with green curry notes. Made in Nantes with love.',
+      description:
+        "Born from a friendship, this hot sauce with green curry notes is best enjoyed while listening to Obsimo's electronic music. A spicy, sonic break to share. 100% natural and vegan.",
+      details: [
+        { title: 'Ingredients', body: "Green chilli (jalapeño and bird's eye), water, cider vinegar, lime, cane sugar, onion, galangal, lemongrass, kaffir lime leaf, salt, natural xanthan gum." },
+        { title: 'Storage', body: 'Keep refrigerated after opening. Best before the date printed under the bottle.' },
+        { title: 'Shipping', body: 'Glass bottle wedged in a cardboard case. Ships within 3 working days.' },
+      ],
+    },
+  },
+  'life-balance-swirl': {
+    fr: {
+      title: 'Life Balance',
+      kicker: 'Vinyle 12" · Swirl vert',
+      blurb: 'Life Balance Extended : douze titres, avec Shuttle et Monoko, pressés sur un swirl vert et crème.',
+      description:
+        'La version longue de Life Balance : douze titres, dont BDXBXL avec Shuttle et I Fall avec Monoko. Pochette carton verte à fenêtre découpée sur le macaron, sticker holographique, et un vinyle swirl vert et crème : chaque exemplaire a ses propres taches.',
+      details: [
+        { title: 'Tracklist', body: LB_TRACKS },
+        { title: 'Le pressage', body: 'Vinyle swirl vert et crème, 33 tours. Pochette carton avec fenêtre ronde découpée sur le macaron, sticker holographique. OSR Records.' },
+        SHIPPING_RECORD.fr,
+      ],
+    },
+    en: {
+      title: 'Life Balance',
+      kicker: '12" vinyl · Green swirl',
+      blurb: 'Life Balance Extended: twelve tracks, featuring Shuttle and Monoko, pressed on a green and cream swirl.',
+      description:
+        'The extended version of Life Balance: twelve tracks, including BDXBXL with Shuttle and I Fall with Monoko. Green board sleeve with a die-cut window onto the label, holographic sticker, and a green and cream swirl vinyl: every copy has its own pattern.',
+      details: [
+        { title: 'Tracklist', body: LB_TRACKS },
+        { title: 'The pressing', body: 'Green and cream swirl vinyl, 33 rpm. Board sleeve with a round die-cut window onto the label, holographic sticker. OSR Records.' },
+        SHIPPING_RECORD.en,
+      ],
+    },
+  },
+  'bundle-8-days-in-sweden-life-balance': {
+    fr: {
+      title: 'Bundle vinyles',
+      kicker: '2 vinyles 12" · Swirl vert + Marbre blanc',
+      blurb: 'Life Balance et 8 Days in Sweden, les deux pressages ensemble.',
+      description: 'Le swirl vert et crème de Life Balance et le marbre blanc de 8 Days in Sweden, expédiés ensemble dans un seul carton renforcé.',
+      details: [
+        { title: 'Contenu', body: 'Life Balance · vinyle swirl vert et crème, pochette à fenêtre\n8 Days in Sweden · vinyle marbre blanc, vernis sélectif' },
+        SHIPPING_RECORD.fr,
+      ],
+    },
+    en: {
+      title: 'Vinyl bundle',
+      kicker: '2 × 12" vinyl · Green swirl + White marble',
+      blurb: 'Life Balance and 8 Days in Sweden, both pressings together.',
+      description: "Life Balance's green and cream swirl and 8 Days in Sweden's white marble, shipped together in a single reinforced box.",
+      details: [
+        { title: 'Contents', body: 'Life Balance · green and cream swirl vinyl, window sleeve\n8 Days in Sweden · white marble vinyl, spot varnish' },
+        SHIPPING_RECORD.en,
+      ],
+    },
+  },
+  'carte-postale-vinyle': {
+    fr: {
+      title: 'Carte postale vinyle',
+      kicker: 'Carte postale · se joue sur platine',
+      blurb: 'Une carte postale gravée comme un disque : pose-la sur la platine, le trou central sur l’axe.',
+      description:
+        'Au recto, le visuel sous un film transparent gravé de sillons : elle se joue comme un vinyle. Au dos, une vraie carte postale à écrire et à envoyer, avec le sticker holographique Obsimo en guise de timbre.',
+      details: [
+        { title: 'La carte', body: 'Recto imprimé sous film gravé, lisible en 33 tours. Verso carte postale avec sticker holographique.' },
+        { title: 'Livraison', body: 'Expédiée à plat sous enveloppe rigide, sous 3 jours ouvrés.' },
+      ],
+    },
+    en: {
+      title: 'Vinyl postcard',
+      kicker: 'Postcard · plays on a turntable',
+      blurb: 'A postcard cut like a record: put it on the turntable, centre hole on the spindle.',
+      description:
+        'On the front, the artwork under a clear film cut with grooves: it plays like a vinyl record. On the back, a real postcard to write and send, with the holographic Obsimo sticker as its stamp.',
+      details: [
+        { title: 'The card', body: 'Front printed under a grooved film, plays at 33 rpm. Postcard back with a holographic sticker.' },
+        { title: 'Shipping', body: 'Shipped flat in a rigid envelope, within 3 working days.' },
+      ],
+    },
+  },
+};
+const text = (handle) => TEXT[handle][lang];
+
 export const demoCatalog = [
   {
     id: 'demo-8dis-marble',
     handle: '8-days-in-sweden-marble',
     kind: 'vinyl',
-    title: '8 Days in Sweden',
-    kicker: 'Vinyle 12" · Marbre blanc',
-    blurb: 'Obsimo, Monoko, Inkko. Huit jours dans un lac gelé, enregistrés sur place.',
-    description:
-      "Un disque né d'un voyage de huit jours en Suède, entre lacs gelés et studio de fortune. Six titres enregistrés sur place avec Monoko et Inkko, pressés sur un vinyle marbre blanc unique : aucun exemplaire n'a les mêmes veines.",
+    ...text('8-days-in-sweden-marble'),
     price: 32,
     currency: 'EUR',
     variantId: null,
@@ -71,42 +205,24 @@ export const demoCatalog = [
     model: { ...SLEEVE_8DIS, disc: H('vinyl-marble.webp') },
     preorder: PREORDER_8DIS,
     images: [A('insert-recto.jpg'), A('insert-verso.jpg'), A('cover-front.jpg'), A('cover-back.jpg')],
-    details: [
-      { title: 'Tracklist', body: 'A1 · Arrivée\nA2 · Glace noire\nA3 · 8 Days\nB1 · Monoko\nB2 · Inkko\nB3 · Retour' },
-      { title: 'Le pressage', body: 'Vinyle 180 g marbre blanc, 33 tours. Pochette carton 350 g avec rond central découpé, poster A2 recto verso inclus. Édition limitée à 300 exemplaires.' },
-      { title: 'Livraison', body: 'Expédié sous 3 jours ouvrés dans un carton renforcé. France 5 €, Europe 12 €, monde 18 €.' },
-    ],
   },
   {
     id: 'demo-sauce-piquhans',
     handle: 'hot-sauce-obsimo-x-piquhans-50ml',
     kind: 'sauce',
-    title: "Obsimo × La Sauce Piqu'hans",
-    kicker: 'Sauce piquante · 50 ml',
-    blurb: 'Piment vert, citronnelle et kaffir, aux notes de curry vert. Faite à Nantes avec amour.',
-    description:
-      "Née d'une amitié, cette sauce piquante aux notes de curry vert se savoure en écoutant la musique électronique d'Obsimo. Une pause piquante et sonore à partager. 100 % naturelle et végane.",
+    ...text('hot-sauce-obsimo-x-piquhans-50ml'),
     price: 8,
     currency: 'EUR',
     variantId: null,
     ...PIQUHANS,
     audio: null,
     images: [],
-    details: [
-      { title: 'Ingrédients', body: 'Piment vert (jalapeño et oiseau), eau, vinaigre de cidre, citron vert, sucre de canne, oignon, galanga, citronnelle, feuille de kaffir, sel, gomme naturelle de xanthane.' },
-      { title: 'Conservation', body: 'Au réfrigérateur après ouverture. À consommer de préférence avant la date inscrite sous la bouteille.' },
-      { title: 'Livraison', body: 'Bouteille en verre calée dans un étui carton. Expédiée sous 3 jours ouvrés.' },
-    ],
   },
   {
     id: 'demo-life-balance-swirl',
     handle: 'life-balance-swirl',
     kind: 'vinyl',
-    title: 'Life Balance',
-    kicker: 'Vinyle 12" · Swirl vert',
-    blurb: 'Life Balance Extended : douze titres, avec Shuttle et Monoko, pressés sur un swirl vert et crème.',
-    description:
-      "La version longue de Life Balance : douze titres, dont BDXBXL avec Shuttle et I Fall avec Monoko. Pochette carton verte à fenêtre découpée sur le macaron, sticker holographique, et un vinyle swirl vert et crème : chaque exemplaire a ses propres taches.",
+    ...text('life-balance-swirl'),
     price: 30,
     currency: 'EUR',
     variantId: null,
@@ -114,23 +230,12 @@ export const demoCatalog = [
     audio: null,
     model: { ...SLEEVE_LB, disc: L('disc.webp') },
     images: [L('photo-disc.webp'), L('photo-sleeve.webp')],
-    details: [
-      {
-        title: 'Tracklist',
-        body: "A1 · He Needs Me\nA2 · Love Balance\nA3 · U\nA4 · BDXBXL (ft Shuttle)\nA5 · Off Track\nA6 · It Won't Be Long\nB1 · Call Center\nB2 · Dreamer\nB3 · Stay In A Loop\nB4 · I Fall (ft Monoko)\nB5 · B4D MOOD\nB6 · I Don't Mind",
-      },
-      { title: 'Le pressage', body: 'Vinyle swirl vert et crème, 33 tours. Pochette carton avec fenêtre ronde découpée sur le macaron, sticker holographique. OSR Records.' },
-      { title: 'Livraison', body: 'Expédié sous 3 jours ouvrés dans un carton renforcé. France 5 €, Europe 12 €, monde 18 €.' },
-    ],
   },
   {
     id: 'demo-bundle-vinyls',
     handle: 'bundle-8-days-in-sweden-life-balance',
     kind: 'bundle',
-    title: 'Bundle vinyles',
-    kicker: '2 vinyles 12" · Swirl vert + Marbre blanc',
-    blurb: 'Life Balance et 8 Days in Sweden, les deux pressages ensemble.',
-    description: 'Le swirl vert et crème de Life Balance et le marbre blanc de 8 Days in Sweden, expédiés ensemble dans un seul carton renforcé.',
+    ...text('bundle-8-days-in-sweden-life-balance'),
     price: 55,
     currency: 'EUR',
     variantId: null,
@@ -139,29 +244,17 @@ export const demoCatalog = [
     model: { cover: SLEEVE_8DIS.cover, records: [{ ...SLEEVE_LB, disc: L('disc.webp') }, { ...SLEEVE_8DIS, disc: H('vinyl-marble.webp'), rest: 0 }] },
     preorder: PREORDER_8DIS, // ships with 8 Days in Sweden, so it is a pre-order too
     images: [L('photo-sleeve.webp'), L('photo-disc.webp')],
-    details: [
-      { title: 'Contenu', body: 'Life Balance · vinyle swirl vert et crème, pochette à fenêtre\n8 Days in Sweden · vinyle marbre blanc, vernis sélectif' },
-      { title: 'Livraison', body: 'Expédié sous 3 jours ouvrés dans un carton renforcé. France 5 €, Europe 12 €, monde 18 €.' },
-    ],
   },
   {
     id: 'demo-postcard',
     handle: 'carte-postale-vinyle',
-    title: 'Carte postale vinyle',
-    kicker: 'Carte postale · se joue sur platine',
-    blurb: 'Une carte postale gravée comme un disque : pose-la sur la platine, le trou central sur l’axe.',
-    description:
-      "Au recto, le visuel sous un film transparent gravé de sillons : elle se joue comme un vinyle. Au dos, une vraie carte postale à écrire et à envoyer, avec le sticker holographique Obsimo en guise de timbre.",
+    ...text('carte-postale-vinyle'),
     price: 10,
     currency: 'EUR',
     variantId: null,
     ...POSTCARD,
     audio: null,
     images: [P('photo-verso.webp')],
-    details: [
-      { title: 'La carte', body: 'Recto imprimé sous film gravé, lisible en 33 tours. Verso carte postale avec sticker holographique.' },
-      { title: 'Livraison', body: 'Expédiée à plat sous enveloppe rigide, sous 3 jours ouvrés.' },
-    ],
   },
 ];
 

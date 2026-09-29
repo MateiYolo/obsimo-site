@@ -26,6 +26,20 @@ Sans ces variables, le site utilise le catalogue de démo de `src/catalog.js`.
 - **Métachamps** (namespace `custom`) : `preview_audio` (URL d'un mp3 de 30 s), `accent` (couleur hex),
   `kicker` (ligne courte), `details` (JSON `[{"title","body"}]`), et pour les sauces `liquid`, `label`, `ink`, `heat`.
 
+## Langues (FR / EN)
+
+Le site s'affiche en français si la première langue du navigateur est le français, en anglais pour tout le reste.
+`?lang=fr` ou `?lang=en` force une langue (pratique pour tester), tout comme le lien « English / Français » du footer ;
+le choix est gardé dans le navigateur. Les textes de l'interface sont dans `src/i18n.js` (les éléments de
+`index.html` portent un attribut `data-i18n*`, leur version française reste dans le HTML pour Google).
+
+**Fiches produits** : les textes viennent de Shopify, demandés dans la langue du visiteur (`@inContext`). Pour
+qu'une fiche existe dans les deux langues, il faut l'anglais (ou le français) activé dans Shopify (Paramètres →
+Langues) et la traduction de chaque produit saisie avec l'app gratuite **Translate & Adapt** : titre, description,
+et les métachamps `kicker` et `details`. Sans traduction, Shopify renvoie la langue par défaut de la boutique.
+Le checkout Shopify s'ouvre aussi dans la langue du visiteur. Le catalogue de démo (`src/catalog.js`) a ses
+textes dans les deux langues (`TEXT`).
+
 ## Brancher Bandsintown (page Tour)
 
 La page Tour (`/#tour`) liste les prochaines dates et se met à jour toute seule à partir de ton compte Bandsintown.
