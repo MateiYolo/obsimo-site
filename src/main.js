@@ -460,7 +460,7 @@ function renderCart() {
     ? cart.lines
         .map((l) => {
           const p = cart.product(l.id);
-          const thumb = p.model?.cover || p.images[0];
+          const thumb = p.model?.cover || p.model?.recto || p.images[0];
           return `<li>
             ${thumb ? `<img src="${thumb}" alt="">` : `<span class="sw" style="background:${p.accent}"></span>`}
             <div><div class="t">${p.title}</div><div class="k">${p.kicker}</div>

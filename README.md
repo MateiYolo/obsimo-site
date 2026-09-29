@@ -64,6 +64,15 @@ Champs `model` d'une sauce : `art` (l'étiquette à plat, encre noire sur blanc,
 un sticker holographique dont les reflets arc-en-ciel bougent avec l'angle), `liquid`, `cap`, `capMetal`, ou à défaut
 d'`art` une étiquette dessinée dans le code : `label`, `ink`, `heat`. L'étiquette de La Sauce Piqu'hans est
 `public/assets/sauce/piquhans-label.webp`, rendue depuis le PDF d'impression.
+
+## Carte postale vinyle
+
+Une carte postale qui se joue sur platine (152 × 105,7 mm, trou central sur l'axe). Au recto, le visuel sous un film
+gravé : les sillons sont calculés dans le shader (reflet anisotrope qui suit les cercles autour du trou, quelques
+silences entre les pistes, un léger arc-en-ciel selon l'angle). Au dos, une carte postale classique (trait central,
+lignes d'adresse) avec le sticker holographique Obsimo en guise de timbre. Un produit Shopify dont le titre contient « carte postale » ou « postcard » prend
+ce modèle. Champs `model` : `recto` (le visuel, centré sur le trou), `sticker` (encre noire sur blanc, fond
+transparent, tiré du PDF d'impression). Fichiers dans `public/assets/postcard/`.
 - `src/hifi/` : modèle du vinyle repris du mockup-vinyl-generator, chargement des textures précalculées (`baked.js`) et leur génération (`bake.js`, page `bake.html`)
 - `src/main.js` : liste, gestes de rotation, menu, page détail, galerie, panier
 - `src/audio.js` : extraits audio (fichier ou boucle générative de démo)
