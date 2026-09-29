@@ -70,8 +70,7 @@ d'`art` une étiquette dessinée dans le code : `label`, `ink`, `heat`. L'étiqu
 Une carte postale qui se joue sur platine (152 × 105,7 mm, trou central sur l'axe). Au recto, le visuel sous un film
 gravé : les sillons sont calculés dans le shader (reflet anisotrope qui suit les cercles autour du trou, quelques
 silences entre les pistes, un léger arc-en-ciel selon l'angle). Au dos, une carte postale classique (trait central,
-lignes d'adresse) avec le sticker holographique Obsimo en guise de timbre. Dans la fiche, elle tourne sur son axe,
-à 33 tours quand la musique joue. Un produit Shopify dont le titre contient « carte postale » ou « postcard » prend
+lignes d'adresse) avec le sticker holographique Obsimo en guise de timbre. Un produit Shopify dont le titre contient « carte postale » ou « postcard » prend
 ce modèle. Champs `model` : `recto` (le visuel, centré sur le trou), `sticker` (encre noire sur blanc, fond
 transparent, tiré du PDF d'impression). Fichiers dans `public/assets/postcard/`.
 - `src/hifi/` : modèle du vinyle repris du mockup-vinyl-generator, chargement des textures précalculées (`baked.js`) et leur génération (`bake.js`, page `bake.html`)

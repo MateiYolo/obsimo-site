@@ -640,9 +640,9 @@ export function buildPostcard(p) {
   const edge = new THREE.MeshStandardMaterial({ color: '#efede8', roughness: 0.9 });
   const card = new THREE.Mesh(geo, [verso, recto, edge]);
 
+  const inner = new THREE.Group();
+  inner.add(card);
   // the stamp: holographic sticker in the top right corner of the back
-  const spinner = new THREE.Group(); // turns on the spindle
-  spinner.add(card);
   if (m.sticker) {
     const mat = holoLabel(m.sticker, { flat: true });
     mat.alphaTest = 0.5; // die-cut outline
@@ -659,29 +659,13 @@ export function buildPostcard(p) {
     };
     place(0.92);
     image(m.sticker).then((img) => img && place(img.naturalWidth / img.naturalHeight));
-    spinner.add(sticker);
+    inner.add(sticker);
   }
 
-  const inner = new THREE.Group();
-  inner.add(spinner);
   const root = normalise(inner);
 
-  // in the product page it turns on the platter like a record: 33 rpm while its music plays, slowly otherwise;
-  // closed, it comes back upright
-  let speed = 0;
-  return {
-    root,
-    kind: 'postcard',
-    update(dt, s) {
-      const target = s.detail > 0.5 ? (s.playing ? 3.49 : 0.5) : 0;
-      speed += (target - speed) * (1 - Math.exp(-dt * 2));
-      spinner.rotation.z -= speed * dt;
-      if (!target) {
-        const upright = Math.round(spinner.rotation.z / (2 * Math.PI)) * 2 * Math.PI;
-        spinner.rotation.z += (upright - spinner.rotation.z) * (1 - Math.exp(-dt * 3));
-      }
-    },
-  };
+  // opened, it just stands upright facing the viewer (no spin on its spindle)
+  return { root, kind: 'postcard', update() {} };
 }
 
 export function buildModel(p) {
