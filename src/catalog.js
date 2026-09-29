@@ -39,8 +39,9 @@ const PIQUHANS = {
   model: { art: A('sauce/piquhans-label.webp'), holo: true, liquid: '#3a3f0e', cap: '#d2bb82', capMetal: true },
 };
 
-// 8 Days in Sweden is sold as a pre-order until its release (midnight, Paris time): the detail page shows a
-// countdown and the golden ticket (one of the 5 test pressings slipped into a random pre-ordered copy).
+// 8 Days in Sweden (and the bundle that holds it) is sold as a pre-order until its release (midnight, Paris time):
+// the detail page shows a countdown and the golden ticket (one of the 5 test pressings slipped into a random
+// pre-ordered copy).
 const PREORDER_8DIS = { release: '2026-11-27T00:00:00+01:00', goldenTicket: true };
 
 export const demoCatalog = [
@@ -130,6 +131,7 @@ export const demoCatalog = [
     audio: null,
     audioSeed: 1,
     model: { cover: SLEEVE_8DIS.cover, records: [{ ...SLEEVE_LB, disc: L('disc.webp') }, { ...SLEEVE_8DIS, disc: H('vinyl-marble.webp'), rest: 0 }] },
+    preorder: PREORDER_8DIS, // ships with 8 Days in Sweden, so it is a pre-order too
     images: [L('photo-sleeve.webp'), L('photo-disc.webp')],
     details: [
       { title: 'Contenu', body: 'Life Balance · vinyle swirl vert et crème, pochette à fenêtre\n8 Days in Sweden · vinyle marbre blanc, vernis sélectif' },
