@@ -3,7 +3,7 @@
 //
 //   kind     'vinyl' | 'bundle' | 'sauce' | 'merch'  → which 3D model is built (bundle: several records)
 //   model    textures / colours for that model
-//   audio    URL of a 30 s preview (null = generative placeholder for vinyls, nothing for other products)
+//   audio    URL of a 30 s preview (null = no music)
 //   images   real photos shown in the detail page
 
 const A = (f) => `${import.meta.env.BASE_URL}assets/${f}`;
@@ -59,7 +59,6 @@ export const demoCatalog = [
     variantId: null,
     accent: '#d9d6cc',
     audio: null,
-    audioSeed: 0,
     model: { ...SLEEVE_8DIS, disc: H('vinyl-marble.webp') },
     preorder: PREORDER_8DIS,
     images: [A('insert-recto.jpg'), A('insert-verso.jpg'), A('cover-front.jpg'), A('cover-back.jpg')],
@@ -104,7 +103,6 @@ export const demoCatalog = [
     variantId: null,
     accent: '#3dbb6c',
     audio: null,
-    audioSeed: 1,
     model: { ...SLEEVE_LB, disc: L('disc.webp') },
     images: [L('photo-disc.webp'), L('photo-sleeve.webp')],
     details: [
@@ -129,7 +127,6 @@ export const demoCatalog = [
     variantId: null,
     accent: '#8fc9a0',
     audio: null,
-    audioSeed: 1,
     model: { cover: SLEEVE_8DIS.cover, records: [{ ...SLEEVE_LB, disc: L('disc.webp') }, { ...SLEEVE_8DIS, disc: H('vinyl-marble.webp'), rest: 0 }] },
     preorder: PREORDER_8DIS, // ships with 8 Days in Sweden, so it is a pre-order too
     images: [L('photo-sleeve.webp'), L('photo-disc.webp')],
@@ -144,8 +141,8 @@ export const demoCatalog = [
 // Shopify gives title, texts, price, stock and photos; this table decides which model is built and how it looks.
 // A product missing from the table is shown as a flat card with its first Shopify photo.
 const lookOf = (handle) => {
-  const { kind, accent, audioSeed, model, preorder } = demoCatalog.find((p) => p.handle === handle);
-  return { kind, accent, audioSeed, model, preorder };
+  const { kind, accent, model, preorder } = demoCatalog.find((p) => p.handle === handle);
+  return { kind, accent, model, preorder };
 };
 const LIFE_BALANCE = lookOf('life-balance-swirl');
 const BUNDLE = lookOf('bundle-8-days-in-sweden-life-balance');

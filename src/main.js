@@ -95,7 +95,6 @@ async function boot() {
   cart.onChange(renderCart);
   renderCart();
 
-  body.classList.toggle('muted', player.muted);
   const fromHash = products.findIndex((p) => `#${p.handle}` === location.hash);
   if (fromHash >= 0) openDetail(fromHash, false);
   else if (location.hash === '#tour') openTour(false);
@@ -103,9 +102,7 @@ async function boot() {
 }
 
 // ---------- render loop ----------
-let wasPlaying = false;
 let shown = -1;
-const soundBtn = $('#sound');
 function loop() {
   requestAnimationFrame(loop);
   if (current < 0 && stage.active >= 0 && stage.detail < 0.01) stage.active = -1; // back in its slot
@@ -119,9 +116,6 @@ function loop() {
     body.style.setProperty('--accent', products[focus].accent);
     player.play(products[focus]);
   }
-  const lv = player.playing ? player.sample() : 0;
-  if (player.playing || wasPlaying) soundBtn.style.setProperty('--lv', lv.toFixed(3));
-  wasPlaying = player.playing;
 }
 
 // ---------- touch / mouse rotation ----------
@@ -496,13 +490,6 @@ $('#checkout').onclick = async () => {
     console.error(err);
   }
 };
-
-// ---------- sound ----------
-$('#sound').onclick = () => player.toggleMute();
-player.onChange((pl) => {
-  body.classList.toggle('muted', pl.muted);
-  $('#sound').setAttribute('aria-label', pl.muted ? 'Activer le son' : 'Couper le son');
-});
 
 // ---------- toast ----------
 let toastTimer;
