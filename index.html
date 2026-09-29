@@ -46,7 +46,14 @@
           <h2 class="d-title reveal" id="d-title"></h2>
           <p class="d-lead reveal" id="d-lead"></p>
           <div class="pre reveal" id="d-pre" hidden></div>
-          <div class="gallery reveal" id="gallery"></div>
+          <div class="gallery reveal" id="gallery" role="region" aria-roledescription="carrousel" aria-label="Photos">
+            <div class="g-stage">
+              <div class="g-track" tabindex="0"></div>
+              <button class="g-nav g-prev" aria-label="Photo précédente"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M12 4.5 6.5 10l5.5 5.5"/></svg></button>
+              <button class="g-nav g-next" aria-label="Photo suivante"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M8 4.5 13.5 10 8 15.5"/></svg></button>
+            </div>
+            <div class="g-foot"><div class="g-dots"></div><span class="g-count" aria-live="polite"></span></div>
+          </div>
           <p class="d-desc reveal" id="d-desc"></p>
           <div class="acc reveal" id="acc"></div>
         </article>
@@ -83,10 +90,17 @@
       </aside>
     </div>
 
-    <div id="lightbox" aria-hidden="true">
-      <div class="lb-track" id="lb-track"></div>
-      <button class="lb-close" id="lb-close">Fermer</button>
-      <span class="lb-count" id="lb-count"></span>
+    <div id="lightbox" role="dialog" aria-modal="true" aria-label="Photos" aria-hidden="true">
+      <div class="lb-top">
+        <span class="lb-count" aria-live="polite"></span>
+        <button class="lb-close">Fermer<i aria-hidden="true"><svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M5 5l10 10M15 5 5 15"/></svg></i></button>
+      </div>
+      <div class="lb-stage">
+        <div class="lb-track"></div>
+        <button class="lb-nav lb-prev" aria-label="Photo précédente"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M12 4.5 6.5 10l5.5 5.5"/></svg></button>
+        <button class="lb-nav lb-next" aria-label="Photo suivante"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M8 4.5 13.5 10 8 15.5"/></svg></button>
+      </div>
+      <div class="lb-thumbs"></div>
     </div>
 
     <div id="toast" role="status"></div>
