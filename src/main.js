@@ -1,6 +1,6 @@
 import { Stage } from './scene.js';
 import { manager, prefetch } from './models.js';
-import { demoCatalog, placeholderPhotos, sortProducts, dedupe } from './catalog.js';
+import { demoCatalog, placeholderPhotos, sortProducts, dedupe, isLifeBalance } from './catalog.js';
 import { shopifyEnabled, fetchProducts, checkout } from './shopify.js';
 import { Cart } from './cart.js';
 import { Player } from './audio.js';
@@ -79,12 +79,13 @@ async function boot() {
 
   const list = $('#list');
   list.innerHTML = products
-    .map((p, i) => `<div class="slot" role="button" tabindex="0" data-i="${i}" aria-label="${p.title}, ${p.kicker}"></div>`)
+    .map((p, i) => `<div class="slot${isLifeBalance(p) ? ' lb' : ''}" role="button" tabindex="0" data-i="${i}" aria-label="${p.title}, ${p.kicker}"></div>`)
     .join('');
   list.insertAdjacentHTML('afterend', `<footer class="foot">Obsimo · ${new Date().getFullYear()}</footer>`);
   const slots = [...list.children];
   slots.forEach((el, i) => {
     attachRotate(el, () => i, () => openDetail(i));
+    if (el.classList.contains('lb')) attachHands(el);
     el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(i); } });
   });
 
@@ -154,7 +155,6 @@ function attachRotate(el, index, onTap) {
     }
     if (pts.size === 2 && mode !== 'scroll') grab(); // two fingers: a twist
     twistAngle = pts.size === 2 ? angle() : null;
-    if (mouse) cursor.classList.add('grab'); // the round cursor only follows the mouse
   });
   el.addEventListener('pointermove', (e) => {
     const p = pts.get(e.pointerId);
@@ -188,7 +188,6 @@ function attachRotate(el, index, onTap) {
     if (pts.size) return;
     if (mode === 'rotate') stage.release(index(), e.timeStamp - lastT > 90); // held still before letting go: no flick
     mode = null;
-    cursor.classList.remove('grab');
     const tap = e.type === 'pointerup' && !moved && performance.now() - start.t < 450;
     if (tap && onTap) onTap();
   };
@@ -196,15 +195,20 @@ function attachRotate(el, index, onTap) {
   el.addEventListener('pointercancel', end); // the browser took over to scroll
 }
 
-// ---------- custom cursor (desktop) ----------
-const cursor = $('#cursor');
+// ---------- Life Balance: two more hands beside the mouse, like the three hands on its sleeve (desktop) ----------
+const hands = $('#hands');
 addEventListener('pointermove', (e) => {
   if (e.pointerType !== 'mouse') return;
-  cursor.style.setProperty('--x', `${e.clientX}px`);
-  cursor.style.setProperty('--y', `${e.clientY}px`);
-  const onSlot = !!e.target.closest?.('.slot') && current < 0;
-  cursor.classList.toggle('on', onSlot || cursor.classList.contains('grab'));
+  hands.style.setProperty('--x', `${e.clientX}px`);
+  hands.style.setProperty('--y', `${e.clientY}px`);
 });
+function attachHands(el) {
+  const mouse = (e) => e.pointerType === 'mouse';
+  el.addEventListener('pointerenter', (e) => mouse(e) && current < 0 && hands.classList.add('on'));
+  el.addEventListener('pointerleave', () => hands.classList.remove('on', 'grab'));
+  el.addEventListener('pointerdown', (e) => mouse(e) && hands.classList.add('grab'));
+  for (const ev of ['pointerup', 'pointercancel']) el.addEventListener(ev, () => hands.classList.remove('grab'));
+}
 
 // sound needs a gesture; iOS only counts some of them
 for (const ev of ['pointerdown', 'touchend', 'click', 'keydown']) addEventListener(ev, () => player.unlock(), { passive: true });
@@ -267,7 +271,7 @@ function openDetail(i, push = true) {
   stage.detailTarget = 1;
   root.classList.add('lock');
   body.classList.add('detail');
-  cursor.classList.remove('on');
+  hands.classList.remove('on', 'grab');
   $('#detail').setAttribute('aria-hidden', 'false');
   if (push) history.pushState({ detail: p.handle }, '', `#${p.handle}`);
 }
@@ -376,7 +380,6 @@ function openTour(push = true) {
     tourScroller.scrollTop = 0;
     root.classList.add('lock');
     body.classList.add('tour');
-    cursor.classList.remove('on');
     $('#tour').setAttribute('aria-hidden', 'false');
     setMenu('tour');
     (tourTitle ??= new TourTitle($('#t-3d'))).start();

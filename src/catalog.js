@@ -223,6 +223,7 @@ export const sortProducts = (list) => [...list].sort((a, b) => rank(a) - rank(b)
 // shown. Kept: the listing titled swirl, else the ones not titled transparent, else not the old handle, else the
 // limited edition; never all of them dropped.
 const isLbSingle = (t) => hasLb(t) && !isBundle(t) && !isCard(t);
+export const isLifeBalance = (p) => isLbSingle(p.title);
 const LB_KEEP = [
   (p) => /swirl/i.test(p.title),
   (p) => !/transparent/i.test(p.title),
