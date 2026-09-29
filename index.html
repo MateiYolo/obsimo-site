@@ -4,8 +4,58 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0b0b0c" />
-    <title>Obsimo · Shop</title>
-    <meta name="description" content="Vinyles, sauces piquantes et objets d'Obsimo." />
+    <title>Obsimo · Site officiel · Vinyles, merch et concerts</title>
+    <meta name="description" content="Site officiel d'Obsimo, artiste électro indépendant : vinyles (8 Days in Sweden, Life Balance), merch, sauce Obsimo × Piqu'hans et dates de concert." />
+    <link rel="canonical" href="https://www.obsimo.com/" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Obsimo" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:url" content="https://www.obsimo.com/" />
+    <meta property="og:title" content="Obsimo · Site officiel" />
+    <meta property="og:description" content="Vinyles, merch et dates de concert d'Obsimo." />
+    <meta property="og:image" content="https://www.obsimo.com/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Logo Obsimo" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://www.obsimo.com/#website",
+            "url": "https://www.obsimo.com/",
+            "name": "Obsimo",
+            "inLanguage": "fr-FR",
+            "publisher": { "@id": "https://www.obsimo.com/#artist" }
+          },
+          {
+            "@type": "MusicGroup",
+            "@id": "https://www.obsimo.com/#artist",
+            "name": "Obsimo",
+            "url": "https://www.obsimo.com/",
+            "logo": "https://www.obsimo.com/icon-512.png",
+            "image": "https://www.obsimo.com/og-image.jpg",
+            "genre": ["Electronic", "Indie"],
+            "sameAs": [
+              "https://open.spotify.com/artist/3zHiZOMFJFL3GjWwsmYEJy",
+              "https://music.apple.com/artist/obsimo/1165449125",
+              "https://obsimo.bandcamp.com/",
+              "https://soundcloud.com/obsimo",
+              "https://www.instagram.com/obsimo_music/",
+              "https://www.facebook.com/Obsimo/",
+              "https://www.youtube.com/c/ObsimoMusic",
+              "https://www.beatport.com/artist/obsimo/665577"
+            ]
+          }
+        ]
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet" />
@@ -32,7 +82,19 @@
       </div>
     </header>
 
+    <h1 class="sr-only">Obsimo · vinyles, merch et concerts</h1>
     <main id="list"></main>
+    <footer class="foot">
+      <nav class="links" aria-label="Écouter Obsimo">
+        <a href="https://open.spotify.com/artist/3zHiZOMFJFL3GjWwsmYEJy" rel="me noopener" target="_blank">Spotify</a>
+        <a href="https://music.apple.com/artist/obsimo/1165449125" rel="me noopener" target="_blank">Apple Music</a>
+        <a href="https://obsimo.bandcamp.com/" rel="me noopener" target="_blank">Bandcamp</a>
+        <a href="https://soundcloud.com/obsimo" rel="me noopener" target="_blank">SoundCloud</a>
+        <a href="https://www.youtube.com/c/ObsimoMusic" rel="me noopener" target="_blank">YouTube</a>
+        <a href="https://www.instagram.com/obsimo_music/" rel="me noopener" target="_blank">Instagram</a>
+      </nav>
+      <p>Obsimo · <span id="year">2026</span></p>
+    </footer>
     <div class="hands" id="hands" aria-hidden="true"><i></i><i></i></div>
 
 

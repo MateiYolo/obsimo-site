@@ -139,7 +139,12 @@ body.ready #loader { opacity: 0; visibility: hidden; }
 .hands.grab i { background-image: url(./hands/hand-closed.svg); }
 .hands i:nth-child(1) { transform: translate(2px, -44px) rotate(125deg); } /* above, reaching down */
 .hands i:nth-child(2) { transform: translate(40px, -14px) rotate(-95deg); } /* to the right, reaching in */
-.foot { position: relative; z-index: 2; text-align: center; color: var(--muted); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 0 0 calc(var(--bot) + 36px); }
+.foot { position: relative; z-index: 2; text-align: center; color: var(--muted); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 0 var(--gutter) calc(var(--bot) + 36px); }
+.foot p { margin: 0; }
+.foot .links { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; margin-bottom: 14px; }
+.foot .links a { transition: color 0.3s var(--ease); }
+.foot .links a:hover { color: var(--fg); }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 body.detail #list, body.detail .foot { opacity: 0; pointer-events: none; }
 body.detail .bar .menu { opacity: 0; pointer-events: none; }
 .menu { transition: opacity 0.5s var(--ease); }
