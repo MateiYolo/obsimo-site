@@ -1,6 +1,6 @@
 import { Stage } from './scene.js';
 import { manager, prefetch } from './models.js';
-import { demoCatalog, placeholderPhotos, sortProducts, dedupe, isLifeBalance } from './catalog.js';
+import { demoCatalog, placeholderPhotos, sortProducts, dedupe, isLifeBalance, localize } from './catalog.js';
 import { shopifyEnabled, fetchProducts, checkout } from './shopify.js';
 import { Cart } from './cart.js';
 import { Player } from './audio.js';
@@ -57,7 +57,9 @@ async function boot() {
     }
   }
   if (products === demoCatalog) console.info('Catalogue de démo (Shopify non configuré sur ce déploiement)');
+  const live = products !== demoCatalog;
   products = sortProducts(dedupe(products));
+  if (live) products = products.map(localize); // after the sort and dedupe, which read Shopify's titles
   products.forEach((p) => { if (!p.images.length) p.images = placeholderPhotos(p); });
 
   // files 0–80, then the GPU uploads and shader compile up to 99; 100 is only shown once everything is ready

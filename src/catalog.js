@@ -58,37 +58,34 @@ const POSTCARD = {
   model: { recto: P('recto.jpg'), sticker: P('sticker.webp') },
 };
 
-// Texts of the demo catalogue, in both languages (the shop shows the one picked in src/i18n.js).
-const SHIPPING_RECORD = {
-  fr: { title: 'Livraison', body: 'Expédié sous 3 jours ouvrés dans un carton renforcé. France 5 €, Europe 12 €, monde 18 €.' },
-  en: { title: 'Shipping', body: 'Ships within 3 working days in a reinforced box. France €5, Europe €12, rest of the world €18.' },
-};
-const TEXT = {
+// Product texts owned by the site, in both languages: they replace Shopify's (whose copy exists in one language
+// only) field by field, so a field left out here (details, kicker…) keeps its Shopify value. The English is the text
+// of the Shopify listing, the French its translation. Matched like the shop order: by handle, else by title.
+export const COPY = {
   '8-days-in-sweden-marble': {
     fr: {
-      title: '8 Days in Sweden',
-      kicker: 'Vinyle 12" · Marbre blanc',
-      blurb: 'Obsimo, Monoko, Inkko. Huit jours au bord d’un lac gelé, enregistrés sur place.',
+      title: 'Vinyle - 8 Days in Sweden',
+      blurb:
+        'Vinyle marbre blanc / 8 Days in Sweden (édition limitée). Obsimo, Monoko et Inkko ont passé 8 jours dans une cabane en Suède, en plein cœur de l’hiver.',
       description:
-        "Un disque né d'un voyage de huit jours en Suède, entre lacs gelés et studio de fortune. Six titres enregistrés sur place avec Monoko et Inkko, pressés sur un vinyle marbre blanc unique : aucun exemplaire n'a les mêmes veines.",
-      details: [
-        { title: 'Tracklist', body: 'A1 · Arrivée\nA2 · Glace noire\nA3 · 8 Days\nB1 · Monoko\nB2 · Inkko\nB3 · Retour' },
-        { title: 'Le pressage', body: 'Vinyle 180 g marbre blanc, 33 tours. Pochette carton 350 g avec rond central découpé, poster A2 recto verso inclus. Édition limitée à 300 exemplaires.' },
-        SHIPPING_RECORD.fr,
-      ],
+        "Juste à côté du lac Vänern, le plus grand lac de Suède, entièrement gelé à -10 °C. Entre deux sessions, ils partaient marcher sur la glace, puis revenaient faire de la musique au coin du feu. Il en est sorti 10 morceaux de musique électronique. L'album s'appelle 8 Days in Sweden et sort en vinyle. Les expéditions commenceront fin novembre 2026 ! L'album sort le 3 décembre.",
     },
     en: {
-      title: '8 Days in Sweden',
-      kicker: '12" vinyl · White marble',
-      blurb: 'Obsimo, Monoko, Inkko. Eight days by a frozen lake, recorded on the spot.',
+      title: 'Vinyl - 8 days in Sweden',
+      blurb:
+        'White Marble Vinyl / 8 days in Sweden (Limited Edition). Obsimo, Monoko and Inkko spent 8 days in a cabin in Sweden in the dead of winter.',
       description:
-        'A record born from an eight-day trip to Sweden, between frozen lakes and a makeshift studio. Six tracks recorded on the spot with Monoko and Inkko, pressed on a one-of-a-kind white marble vinyl: no two copies share the same veins.',
-      details: [
-        { title: 'Tracklist', body: 'A1 · Arrivée\nA2 · Glace noire\nA3 · 8 Days\nB1 · Monoko\nB2 · Inkko\nB3 · Retour' },
-        { title: 'The pressing', body: '180 g white marble vinyl, 33 rpm. 350 g board sleeve with a die-cut centre hole, double-sided A2 poster included. Limited edition of 300 copies.' },
-        SHIPPING_RECORD.en,
-      ],
+        "Right next to Lake Vänern, Sweden's largest lake, completely frozen over at -10°C. Between sessions they'd walk out onto the ice, come back, make music by the fireplace. 10 tracks of electronic music came out of it. The album is called 8 Days in Sweden, available on vinyl. Shipping will start from late November 2026! The album will be released on December 3.",
     },
+  },
+};
+
+// Texts of the demo catalogue (used without Shopify), in both languages (the shop shows the one picked in
+// src/i18n.js).
+const TEXT = {
+  '8-days-in-sweden-marble': {
+    fr: { kicker: 'Vinyle 12" · Marbre blanc', ...COPY['8-days-in-sweden-marble'].fr, details: [] },
+    en: { kicker: '12" vinyl · White marble', ...COPY['8-days-in-sweden-marble'].en, details: [] },
   },
   'hot-sauce-obsimo-x-piquhans-50ml': {
     fr: {
@@ -307,6 +304,11 @@ const rank = (p) => {
   return i < 0 ? ORDER.length : i;
 };
 export const sortProducts = (list) => [...list].sort((a, b) => rank(a) - rank(b));
+
+// The site's own texts (COPY) over a Shopify product, in the visitor's language. Same matching as the order above:
+// the handle, else the title (8 Days in Sweden, Life Balance, the hot sauce, the bundle, the postcard).
+const COPY_KEYS = ['8-days-in-sweden-marble', 'life-balance-swirl', 'hot-sauce-obsimo-x-piquhans-50ml', 'bundle-8-days-in-sweden-life-balance', 'carte-postale-vinyle'];
+export const localize = (p) => ({ ...p, ...(COPY[p.handle] || COPY[COPY_KEYS[rank(p)]])?.[lang] });
 
 // Shopify has two Life Balance listings (the old "Life Balance Transparent Green" and the swirl): only the swirl is
 // shown. Kept: the listing titled swirl, else the ones not titled transparent, else not the old handle, else the
