@@ -34,7 +34,8 @@ query Products {
   products(first: 50) {
     nodes {
       id handle title description productType tags
-      images(first: 12) { nodes { url altText } }
+      # photos of the product page, resized by Shopify's CDN (the originals can be 4000 px: slow to download and decode)
+      images(first: 12) { nodes { url(transform: { maxWidth: 1600, preferredContentType: WEBP }) altText } }
       variants(first: 1) { nodes { id availableForSale price { amount currencyCode } } }
       metafields(identifiers: [${META}]) { key value }
     }

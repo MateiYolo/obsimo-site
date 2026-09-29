@@ -85,6 +85,7 @@ async function boot() {
   const slots = [...list.children];
   slots.forEach((el, i) => {
     attachRotate(el, () => i, () => openDetail(i));
+    el.addEventListener('pointerdown', () => warmGallery(i)); // a tap is on its way: a head start of ~100 ms
     if (el.classList.contains('lb')) attachHands(el);
     el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(i); } });
   });
@@ -116,6 +117,7 @@ function loop() {
     shown = focus;
     body.style.setProperty('--accent', products[focus].accent);
     player.play(products[focus]);
+    idle(() => warmGallery(focus), { timeout: 1000 });
   }
 }
 
@@ -241,6 +243,34 @@ function leaveOverlay() {
 // ---------- detail page ----------
 const scroller = $('#d-scroll');
 
+// The photos of a product page are built and decoded ahead of the click (the product in the middle of the list, the
+// one pressed): opening the page then only swaps nodes in, with nothing left to download or decode during the
+// transition. The last few are kept (full-size photos weigh a lot once decoded, on phones).
+const galleries = new Map();
+function gallery(p) {
+  let g = galleries.get(p);
+  if (g) galleries.delete(p); // most recent last
+  else {
+    g = p.images.slice(0, 5).map((src, j) => {
+      const b = document.createElement('button');
+      b.dataset.i = j;
+      b.setAttribute('aria-label', `Photo ${j + 1}`);
+      const img = new Image();
+      img.alt = '';
+      img.decoding = 'async';
+      img.src = src;
+      img.decode().catch(() => {});
+      b.append(img);
+      return b;
+    });
+  }
+  galleries.set(p, g);
+  for (const k of galleries.keys()) if (galleries.size > 3 && k !== products[current]) galleries.delete(k);
+  return g;
+}
+const idle = window.requestIdleCallback || ((f) => setTimeout(f, 200));
+const warmGallery = (i) => products[i] && gallery(products[i]);
+
 function openDetail(i, push = true) {
   const p = products[i];
   current = i;
@@ -250,10 +280,7 @@ function openDetail(i, push = true) {
   $('#d-desc').textContent = p.description;
   $('#d-price').textContent = money(p.price, p.currency);
   showPreorder(p);
-  $('#gallery').innerHTML = p.images
-    .slice(0, 5)
-    .map((src, j) => `<button data-i="${j}" aria-label="Photo ${j + 1}"><img src="${src}" alt="" loading="lazy" decoding="async"></button>`)
-    .join('');
+  $('#gallery').replaceChildren(...gallery(p));
   $('#acc').innerHTML = p.details
     .map((d, j) => `<details${j === 0 ? ' open' : ''}><summary>${d.title}</summary><div class="acc-body">${d.body}</div></details>`)
     .join('');

@@ -445,6 +445,22 @@ export class Sleeve extends Card {
     const d = Math.hypot(pos.x, pos.y);
     // only whole labels: one that reaches the opening is out of reach of the window anyway
     rec.visible = d + VINYL.labelR < this.w / 2 - 0.05;
+    vinyl.disc.updateWorldMatrix(true, false);
+    const toDisc = vinyl.disc.matrixWorld.clone().invert().multiply(mesh.matrixWorld);
+    // the record only turned on its spindle (every frame while it plays): same patch, only its UVs move, instead of
+    // a new geometry per frame (triangulation, garbage, a buffer upload)
+    const key = `${pos.x.toFixed(4)}|${pos.y.toFixed(4)}`;
+    if (key === patch.userData.key) {
+      const pa = patch.geometry.attributes.position, uv = patch.geometry.attributes.uv, v = new THREE.Vector3();
+      for (let i = 0; i < pa.count; i++) {
+        v.fromBufferAttribute(pa, i).applyMatrix4(toDisc);
+        uv.setXY(i, v.x / (2 * R) + 0.5, 0.5 - v.z / (2 * R));
+      }
+      uv.needsUpdate = true;
+      patch.visible = true;
+      return;
+    }
+    patch.userData.key = null;
     // the part of the disc inside the window: hole circle ∩ disc circle, minus the spindle hole
     const r1 = DIECUT.r + 0.02, pts = [];
     for (let i = 0; i < 128; i++) {
@@ -463,8 +479,6 @@ export class Sleeve extends Card {
     const flat = new THREE.ShapeGeometry(shape, 8);
     const fp = flat.attributes.position, idx = flat.index.array;
     // both faces (front at +z, back at -z, facing out), UVs = the disc's own planar UVs at that point
-    vinyl.disc.updateWorldMatrix(true, false);
-    const toDisc = vinyl.disc.matrixWorld.clone().invert().multiply(mesh.matrixWorld);
     const zf = 0.066, P = [], N = [], U = [], I = [], v = new THREE.Vector3();
     for (const side of [1, -1]) {
       const base = P.length / 3;
@@ -488,6 +502,7 @@ export class Sleeve extends Card {
     g.setIndex(I);
     patch.geometry.dispose();
     patch.geometry = g;
+    patch.userData.key = key;
     patch.visible = true;
   }
   setLabels(texA, texB) {

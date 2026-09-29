@@ -19,6 +19,9 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
+/* the scrollbar's room stays reserved while the page is locked (product page, cart): otherwise, on desktop, the page
+   gets wider on the click, everything shifts sideways and the 3D canvas is stretched until the next resize */
+html { scrollbar-gutter: stable; }
 html.lock { overflow: hidden; }
 body {
   background: var(--bg);

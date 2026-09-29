@@ -115,8 +115,11 @@ export class Stage {
 
   // Safety net for slow GPUs: when frames keep taking over 40 ms (under 25 fps), draw at a lower resolution, a step
   // at a time, never below 1. A browser capping at 30 fps (iOS low power mode) stays above the threshold.
+  // Not sampled while a product page opens or closes: those frames aren't the usual load, and resizing the drawing
+  // buffer there (a reallocation, a blank frame) would be a hitch right in the middle of the transition.
   adapt(dt) {
     if (this.dpr <= 1 || dt > 0.25) return; // a tab switch or a one-off hitch says nothing about the GPU
+    if (Math.abs(this.detail - this.detailTarget) > 0.01) return;
     this.slow.push(dt);
     if (this.slow.length < 90) return;
     const median = this.slow.sort((a, b) => a - b)[45];
