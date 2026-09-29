@@ -79,9 +79,9 @@ async function boot() {
 
   const list = $('#list');
   list.innerHTML = products
-    .map((p, i) => `<div class="slot${isLifeBalance(p) ? ' lb' : ''}" role="button" tabindex="0" data-i="${i}" aria-label="${p.title}, ${p.kicker}"></div>`)
+    .map((p, i) => `<div class="slot${isLifeBalance(p) ? ' lb' : ''}" role="button" tabindex="0" data-i="${i}" aria-label="${esc(p.title)}, ${esc(p.kicker)}"><h2 class="sr-only">${esc(p.title)}</h2><p class="sr-only">${esc(p.kicker)}. ${esc(p.blurb || '')}</p></div>`)
     .join('');
-  list.insertAdjacentHTML('afterend', `<footer class="foot">Obsimo · ${new Date().getFullYear()}</footer>`);
+  $('#year').textContent = new Date().getFullYear();
   const slots = [...list.children];
   slots.forEach((el, i) => {
     attachRotate(el, () => i, () => openDetail(i));
@@ -98,6 +98,7 @@ async function boot() {
   const fromHash = products.findIndex((p) => `#${p.handle}` === location.hash);
   if (fromHash >= 0) openDetail(fromHash, false);
   else if (location.hash === '#tour') openTour(false);
+  fetchDates().then(eventsLd, () => {});
   loop();
 }
 
@@ -390,6 +391,34 @@ function closeTour() {
   $('#tour').setAttribute('aria-hidden', 'true');
   setMenu('shop');
   setTimeout(() => { if (!tourOpen) tourTitle?.stop(); }, 600); // after the fade out
+}
+
+// Upcoming dates as schema.org events, so Google can list them under the artist ("Obsimo concert")
+function eventsLd(dates) {
+  const now = new Date(new Date().toDateString());
+  const events = dates.filter((d) => new Date(d.datetime) >= now).map((d) => ({
+    '@type': 'MusicEvent',
+    name: `Obsimo · ${d.city || d.venue}`,
+    startDate: d.datetime,
+    eventStatus: 'https://schema.org/EventScheduled',
+    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+    location: {
+      '@type': 'Place',
+      name: d.venue || d.city,
+      address: { '@type': 'PostalAddress', addressLocality: d.city, addressCountry: d.country },
+    },
+    performer: { '@id': 'https://www.obsimo.com/#artist' },
+    image: 'https://www.obsimo.com/og-image.jpg',
+    url: d.url || 'https://www.obsimo.com/#tour',
+    ...(d.tickets && {
+      offers: { '@type': 'Offer', url: d.tickets, availability: `https://schema.org/${d.soldOut ? 'SoldOut' : 'InStock'}` },
+    }),
+  }));
+  if (!events.length) return;
+  const el = document.createElement('script');
+  el.type = 'application/ld+json';
+  el.textContent = JSON.stringify({ '@context': 'https://schema.org', '@graph': events });
+  document.head.append(el);
 }
 
 async function renderTour() {
