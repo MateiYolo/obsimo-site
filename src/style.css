@@ -132,22 +132,26 @@ body.muted .eq i { height: 2px !important; }
   touch-action: pan-y; cursor: grab; -webkit-user-select: none; user-select: none;
 }
 .slot:active { cursor: grabbing; }
+/* Life Balance: the mouse and two more hands drawn beside it, like the three hands on its sleeve */
+.slot.lb { cursor: url(./hands/hand-open.svg) 16 16, grab; }
+.slot.lb:active { cursor: url(./hands/hand-closed.svg) 16 16, grabbing; }
+.hands {
+  position: fixed; z-index: 25; left: 0; top: 0; pointer-events: none;
+  transform: translate(var(--x, -100px), var(--y, -100px)); opacity: 0; transition: opacity 0.25s var(--ease);
+}
+.hands.on { opacity: 1; }
+.hands i {
+  position: absolute; width: 32px; height: 32px; margin: -16px 0 0 -16px;
+  background: url(./hands/hand-open.svg) center / contain no-repeat;
+}
+.hands.grab i { background-image: url(./hands/hand-closed.svg); }
+.hands i:nth-child(1) { transform: translate(2px, -44px) rotate(125deg); } /* above, reaching down */
+.hands i:nth-child(2) { transform: translate(40px, -14px) rotate(-95deg); } /* to the right, reaching in */
 .foot { position: relative; z-index: 2; text-align: center; color: var(--muted); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; padding: 0 0 calc(var(--bot) + 36px); }
 body.detail #list, body.detail .foot { opacity: 0; pointer-events: none; }
 body.detail .bar .menu { opacity: 0; pointer-events: none; }
 .menu { transition: opacity 0.5s var(--ease); }
 body.detail #glow { opacity: 0.55; }
-
-.cursor {
-  position: fixed; z-index: 25; left: 0; top: 0; pointer-events: none;
-  width: 74px; height: 74px; margin: -37px 0 0 -37px; border-radius: 50%;
-  background: var(--fg); color: var(--bg); display: grid; place-items: center;
-  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 500;
-  transform: translate(var(--x, -100px), var(--y, -100px)) scale(0); transition: transform 0.35s var(--ease);
-}
-.cursor.on { transform: translate(var(--x), var(--y)) scale(1); }
-.cursor.grab { transform: translate(var(--x), var(--y)) scale(0.25); }
-.cursor.grab span { opacity: 0; }
 
 /* ---------- detail ---------- */
 [hidden] { display: none !important; }
