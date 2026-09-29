@@ -6,6 +6,7 @@ import { Cart } from './cart.js';
 import { Player } from './audio.js';
 import { fetchDates } from './tour.js';
 import { TourTitle } from './tourTitle.js';
+import { Gallery, Lightbox } from './gallery.js';
 
 const $ = (s) => document.querySelector(s);
 const body = document.body;
@@ -210,7 +211,7 @@ for (const ev of ['pointerdown', 'touchend', 'click', 'keydown']) addEventListen
 
 addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  if ($('#lightbox').classList.contains('open')) return closeLightbox();
+  if (lightbox.isOpen) return closePhotos();
   if ($('#cart').classList.contains('open')) return toggleCart(false);
   if (current >= 0 || tourOpen) leaveOverlay();
 });
@@ -241,6 +242,18 @@ function leaveOverlay() {
 // ---------- detail page ----------
 const scroller = $('#d-scroll');
 
+// photos: carousel in the page, full-screen viewer on a tap. Opening the viewer pushes a history entry so the phone's
+// back button closes the photos and stays on the product.
+const lightbox = new Lightbox($('#lightbox'), {
+  requestClose: () => closePhotos(),
+  onClose: (i) => gallery.show(i), // back on the page at the photo last seen
+});
+const gallery = new Gallery($('#gallery'), (i) => {
+  lightbox.open(products[current].images, i, products[current].title);
+  history.pushState({ ...history.state, photos: true }, '');
+});
+const closePhotos = () => (history.state?.photos ? history.back() : lightbox.hide());
+
 function openDetail(i, push = true) {
   const p = products[i];
   current = i;
@@ -250,10 +263,7 @@ function openDetail(i, push = true) {
   $('#d-desc').textContent = p.description;
   $('#d-price').textContent = money(p.price, p.currency);
   showPreorder(p);
-  $('#gallery').innerHTML = p.images
-    .slice(0, 5)
-    .map((src, j) => `<button data-i="${j}" aria-label="Photo ${j + 1}"><img src="${src}" alt="" loading="lazy" decoding="async"></button>`)
-    .join('');
+  gallery.set(p.images, p.title);
   $('#acc').innerHTML = p.details
     .map((d, j) => `<details${j === 0 ? ' open' : ''}><summary>${d.title}</summary><div class="acc-body">${d.body}</div></details>`)
     .join('');
@@ -318,6 +328,7 @@ function closeDetail() {
 
 $('#back').onclick = () => (history.state?.detail ? history.back() : (closeDetail(), history.replaceState(null, '', location.pathname)));
 addEventListener('popstate', () => {
+  if (lightbox.isOpen && !history.state?.photos) return lightbox.hide();
   const i = products.findIndex((p) => `#${p.handle}` === location.hash);
   if (i >= 0) openDetail(i, false);
   else closeDetail();
@@ -451,25 +462,6 @@ async function renderTour() {
         .join('')
     : '<li class="t-empty">Pas de date annoncée pour le moment. Reviens bientôt.</li>';
 }
-
-// ---------- gallery lightbox ----------
-$('#gallery').addEventListener('click', (e) => {
-  const b = e.target.closest('button');
-  if (b) openLightbox(+b.dataset.i);
-});
-const track = $('#lb-track');
-function openLightbox(i) {
-  track.innerHTML = products[current].images.map((src) => `<figure><img src="${src}" alt=""></figure>`).join('');
-  $('#lightbox').classList.add('open');
-  requestAnimationFrame(() => { track.scrollLeft = i * track.clientWidth; updateCount(); });
-}
-function updateCount() {
-  $('#lb-count').textContent = `${Math.round(track.scrollLeft / track.clientWidth) + 1} / ${products[current].images.length}`;
-}
-track.addEventListener('scroll', updateCount, { passive: true });
-const closeLightbox = () => $('#lightbox').classList.remove('open');
-$('#lb-close').onclick = closeLightbox;
-track.addEventListener('click', (e) => { if (e.target.tagName !== 'IMG') closeLightbox(); });
 
 // ---------- cart drawer ----------
 function toggleCart(open) {
