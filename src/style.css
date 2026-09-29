@@ -150,6 +150,7 @@ body.detail #glow { opacity: 0.55; }
 .cursor.grab span { opacity: 0; }
 
 /* ---------- detail ---------- */
+[hidden] { display: none !important; }
 #detail { position: fixed; inset: 0; z-index: 15; visibility: hidden; }
 #detail .d-scroll, #detail .d-drag, #detail .d-hero { pointer-events: auto; }
 body.detail #detail { visibility: visible; }
@@ -185,6 +186,30 @@ body.detail #detail { visibility: visible; }
 .acc summary::after { content: '+'; font-size: 15px; transition: transform 0.4s var(--ease); }
 .acc details[open] summary::after { transform: rotate(45deg); }
 .acc .acc-body { white-space: pre-line; padding: 0 0 18px; color: color-mix(in srgb, var(--fg) 75%, transparent); }
+
+/* pre-order: countdown + golden ticket */
+.pre { margin: 28px 0 0; }
+.count { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0 0; }
+.count div { border: 1px solid var(--line); border-radius: 14px; padding: 14px 0 12px; text-align: center; }
+.count b { display: block; font: 500 clamp(28px, 8vw, 40px)/1 var(--font); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.count span { display: block; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.14em; font-size: 10px; color: var(--muted); }
+.ticket {
+  --gold: #e3c170;
+  position: relative; overflow: hidden; margin: 14px 0 0; padding: 16px 18px; border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--gold) 55%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--gold) 16%, transparent), color-mix(in srgb, var(--gold) 4%, transparent));
+  color: color-mix(in srgb, var(--fg) 82%, transparent);
+}
+.ticket::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, color-mix(in srgb, var(--gold) 22%, transparent) 50%, transparent 65%);
+  transform: translateX(-100%); animation: shine 4.5s var(--ease) 1.2s infinite;
+}
+@keyframes shine { 40%, 100% { transform: translateX(100%); } }
+.ticket p { margin: 0; }
+.ticket b { color: var(--fg); font-weight: 500; }
+.ticket .t-head { margin-bottom: 6px; color: var(--gold); text-transform: uppercase; letter-spacing: 0.14em; font-size: 11px; font-weight: 500; }
+.t-star { margin-right: 8px; }
 
 .reveal { opacity: 0; transform: translateY(24px); }
 body.detail .reveal { opacity: 1; transform: none; transition: opacity 0.7s var(--ease), transform 0.9s var(--ease); transition-delay: calc(0.25s + var(--i, 0) * 70ms); }
