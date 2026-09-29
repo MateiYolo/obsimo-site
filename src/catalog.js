@@ -181,6 +181,23 @@ const rank = (p) => {
 };
 export const sortProducts = (list) => [...list].sort((a, b) => rank(a) - rank(b));
 
+// Shopify has two Life Balance listings (the old "Life Balance Transparent Green" and the swirl): only the swirl is
+// shown. Kept: the listing titled swirl, else the ones not titled transparent, else not the old handle, else the
+// limited edition; never all of them dropped.
+const isLbSingle = (t) => hasLb(t) && !isBundle(t) && !isCard(t);
+const LB_KEEP = [
+  (p) => /swirl/i.test(p.title),
+  (p) => !/transparent/i.test(p.title),
+  (p) => p.handle !== 'life-balance-vinyl-33-transparent-green',
+  (p) => /limited|limit[ée]e/i.test(p.title),
+];
+export function dedupe(list) {
+  const lb = list.filter((p) => isLbSingle(p.title));
+  if (lb.length < 2) return list;
+  const keep = LB_KEEP.map((test) => lb.filter(test)).find((l) => l.length) || [lb[0]];
+  return list.filter((p) => !isLbSingle(p.title) || keep.includes(p));
+}
+
 // Placeholder "photos" for products that have none yet: moody gradients drawn on a canvas.
 export function placeholderPhotos(p, n = 3) {
   const out = [];

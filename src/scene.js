@@ -76,16 +76,19 @@ export class Stage {
   // Uploads every texture to the GPU, then compiles the shaders of everything in the scene in the background
   // (KHR_parallel_shader_compile when available). Without this, each object would stall the page for its textures
   // and geometry the first time it is drawn: on the first frame, or while scrolling for the ones further down.
-  async compile() {
+  async compile(onProgress = () => {}) {
     const textures = new Set();
     this.scene.traverse((o) => {
       for (const m of [o.material].flat()) if (m) for (const v of Object.values(m)) if (v?.isTexture && v.image) textures.add(v);
     });
+    let i = 0;
     for (const t of textures) {
       this.renderer.initTexture(t);
+      onProgress((++i / textures.size) * 0.8);
       await new Promise((r) => setTimeout(r)); // one upload per task: the page stays responsive
     }
     await this.renderer.compileAsync(this.scene, this.camera);
+    onProgress(1);
     this.renderer.render(this.scene, this.camera); // everything at once, behind the loader: uploads the geometries
   }
 

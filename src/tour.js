@@ -26,11 +26,14 @@ let cache;
 export function fetchDates() {
   if (!bandsintownEnabled) return Promise.resolve([]);
   cache ??= fetch(`https://rest.bandsintown.com/artists/${encodeURIComponent(ARTIST)}/events?app_id=${APP_ID}&date=upcoming`)
-    .then((res) => {
-      if (!res.ok) throw new Error(`Bandsintown ${res.status}`);
-      return res.json();
+    .then(async (res) => {
+      // a wrong app_id comes back as 401/403 (or an error object): say so instead of showing an empty tour
+      const body = await res.json().catch(() => null);
+      if (!res.ok || !Array.isArray(body)) {
+        throw new Error(`Bandsintown ${res.status} ${body?.message || body?.Message || body?.errorMessage || ''}`.trim());
+      }
+      return body.map(toEvent);
     })
-    .then((list) => (Array.isArray(list) ? list.map(toEvent) : []))
     .catch((e) => {
       cache = null; // retry next time the page opens
       throw e;

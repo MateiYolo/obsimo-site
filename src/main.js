@@ -1,6 +1,6 @@
 import { Stage } from './scene.js';
 import { manager, prefetch } from './models.js';
-import { demoCatalog, placeholderPhotos, sortProducts } from './catalog.js';
+import { demoCatalog, placeholderPhotos, sortProducts, dedupe } from './catalog.js';
 import { shopifyEnabled, fetchProducts, checkout } from './shopify.js';
 import { Cart } from './cart.js';
 import { Player } from './audio.js';
@@ -17,6 +17,27 @@ let stage, cart;
 let current = -1; // product open in the detail page
 const player = new Player();
 
+// ---------- loader ----------
+// The counter eases toward the real progress instead of jumping file by file, and keeps creeping slowly while a step
+// takes its time (never past the next few percent), so it never looks frozen. It only reaches 100 once the shop is
+// ready, then the loader fades out.
+const loadPct = $('#load-pct');
+const loadBar = $('#load-bar');
+let loadTarget = 0, loadShown = 0, loadDone = false;
+const loadTo = (v) => (loadTarget = Math.max(loadTarget, Math.min(v, 99)));
+function tickLoader() {
+  if (loadDone) loadShown += Math.max((100 - loadShown) * 0.14, 0.8);
+  else if (loadShown < loadTarget) loadShown += Math.max((loadTarget - loadShown) * 0.08, 0.2);
+  else loadShown += (Math.min(99, loadTarget + 6) - loadShown) * 0.006;
+  loadShown = Math.min(loadShown, loadDone ? 100 : 99);
+  loadPct.textContent = Math.floor(loadShown);
+  loadBar.style.transform = `scaleX(${loadShown / 100})`;
+  if (loadShown < 100) return requestAnimationFrame(tickLoader);
+  setTimeout(() => body.classList.add('ready'), 180); // let the 100 register before the fade
+}
+requestAnimationFrame(tickLoader);
+addEventListener('load', () => loadTo(4)); // fonts and scripts in: something moves straight away
+
 // ---------- boot ----------
 async function boot() {
   if (shopifyEnabled) {
@@ -27,17 +48,18 @@ async function boot() {
       console.warn('Shopify indisponible, catalogue de démo utilisé', e);
     }
   }
-  products = sortProducts(products);
+  products = sortProducts(dedupe(products));
   products.forEach((p) => { if (!p.images.length) p.images = placeholderPhotos(p); });
 
-  manager.onProgress = (_, done, total) => ($('#load-pct').textContent = Math.round((done / total) * 100));
+  // files 0–80, then the GPU uploads and shader compile up to 99; 100 is only shown once everything is ready
+  manager.onProgress = (_, done, total) => loadTo((done / total) * 80);
   // once the files are in (and applied to the materials by their load callbacks), compile every shader without
   // blocking the page, behind the loader; nothing is drawn before, so no half-textured variant gets compiled
   let started = false, loading = false;
   const ready = () => {
     if (started || !stage) return;
     started = true;
-    setTimeout(() => stage.compile().catch(() => {}).then(() => body.classList.add('ready')));
+    setTimeout(() => stage.compile((f) => loadTo(80 + f * 19)).catch(() => {}).then(() => (loadDone = true)));
   };
   manager.onStart = () => (loading = true);
   manager.onLoad = () => {
