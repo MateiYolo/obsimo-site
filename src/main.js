@@ -44,10 +44,12 @@ async function boot() {
     try {
       const live = await fetchProducts();
       if (live.length) products = live;
+      console.info(`Catalogue Shopify : ${live.map((p) => p.title).join(' · ')}`);
     } catch (e) {
       console.warn('Shopify indisponible, catalogue de démo utilisé', e);
     }
   }
+  if (products === demoCatalog) console.info('Catalogue de démo (Shopify non configuré sur ce déploiement)');
   products = sortProducts(dedupe(products));
   products.forEach((p) => { if (!p.images.length) p.images = placeholderPhotos(p); });
 

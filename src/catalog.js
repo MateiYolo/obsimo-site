@@ -167,7 +167,7 @@ export const lookFor = (handle, title = '') => visuals[handle] || byTitle.find((
 // Order of the shop, whatever order Shopify returns: 8 Days in Sweden, Life Balance, the hot sauce, the bundle,
 // the postcard, then anything else. Matched on the title so renamed handles keep their place.
 const isBundle = (t) => /bundle|coffret|pack|lot de/i.test(t) || (has8dis(t) && hasLb(t));
-const isCard = (t) => /carte|postcard|post card/i.test(t);
+const isCard = (t) => /carte|post\s*-?\s*card|\bcards?\b/i.test(t);
 const ORDER = [
   (t) => has8dis(t) && !isBundle(t) && !isCard(t),
   (t) => hasLb(t) && !isBundle(t) && !isCard(t),

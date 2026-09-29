@@ -52,6 +52,9 @@ function canvas(size) {
   c.width = c.height = size;
   return c;
 }
+// iOS Safari caps the memory of all canvases together and hands out blank ones past it: a canvas that is done with
+// gives its memory back now instead of whenever it is garbage collected
+export const releaseCanvas = (c) => { if (c) c.width = c.height = 0; };
 
 // ---------- groove maps ----------
 // Returns { surface: R=bump, G=roughness ; aniso: RG=direction, B=strength }
@@ -313,6 +316,7 @@ export function discTextureFromImage(image, size = 2048) {
   const pctx = probe.getContext('2d', { willReadFrequently: true });
   pctx.drawImage(image, 0, 0);
   const data = pctx.getImageData(0, 0, w, h).data;
+  releaseCanvas(probe);
   let minX = w, minY = h, maxX = 0, maxY = 0;
   for (let y = 0; y < h; y += 2) {
     for (let x = 0; x < w; x += 2) {
@@ -445,9 +449,9 @@ export function makeBoardSurface(size = 2048, ringFrac = 15.05 / 31.4) {
 }
 
 // ---------- printed artwork + handling wear ----------
-let grimeCanvas = null;
-function grime(size) {
-  if (grimeCanvas && grimeCanvas.width === size) return grimeCanvas;
+let grimeCanvas = null; // 256 px, scaled up where it is drawn (a full-size copy cost 16 MB of canvas)
+function grime() {
+  if (grimeCanvas) return grimeCanvas;
   const s = 256, c = canvas(s), ctx = c.getContext('2d'), img = ctx.createImageData(s, s);
   const n = makeNoise(41);
   for (let y = 0; y < s; y++) for (let x = 0; x < s; x++) {
@@ -456,9 +460,7 @@ function grime(size) {
     img.data[o] = 255 - v * 40; img.data[o + 1] = 255 - v * 44; img.data[o + 2] = 255 - v * 52; img.data[o + 3] = 255;
   }
   ctx.putImageData(img, 0, 0);
-  grimeCanvas = canvas(size);
-  grimeCanvas.getContext('2d').drawImage(c, 0, 0, size, size);
-  return grimeCanvas;
+  return (grimeCanvas = c);
 }
 
 export function composeArtwork(image, wear = 0.4, seed = 1, size = 2048, varnishMask = null) {
@@ -471,7 +473,7 @@ export function composeArtwork(image, wear = 0.4, seed = 1, size = 2048, varnish
   // uneven ink / paper tone: multiply a soft warm grime
   ctx.globalCompositeOperation = 'multiply';
   ctx.globalAlpha = 0.12 + wear * 0.4;
-  ctx.drawImage(grime(size), 0, 0);
+  ctx.drawImage(grime(), 0, 0, size, size);
   ctx.globalAlpha = 1;
   if (wear > 0) {
     ctx.globalCompositeOperation = 'screen';
@@ -692,7 +694,10 @@ export function makeShrinkWrapMaps(level = 'heavy', size = 1024, seed = 11) {
 }
 
 // ---------- die-cut sleeve: alpha map with a round hole in the middle of the face ----------
-export function makeHoleMask(radiusFrac, size = 2048) {
+const holeMasks = new Map(); // every die-cut sleeve shares its mask
+export function makeHoleMask(radiusFrac, size = 1024) {
+  const key = `${radiusFrac}|${size}`;
+  if (holeMasks.has(key)) return holeMasks.get(key);
   const c = canvas(size), ctx = c.getContext('2d');
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, size, size);
@@ -703,6 +708,7 @@ export function makeHoleMask(radiusFrac, size = 2048) {
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.NoColorSpace;
   t.anisotropy = 8;
+  holeMasks.set(key, t);
   return t;
 }
 

@@ -6,7 +6,7 @@
 // in one image) and packed back into R/G/B on a canvas.
 import * as THREE from 'three';
 import { useBakedMaps } from './objects.js';
-import { makeVarnishMaps } from './textures.js';
+import { makeVarnishMaps, releaseCanvas } from './textures.js';
 
 export const BAKED_DIR = `${import.meta.env.BASE_URL}assets/hifi/baked/`;
 export const VARNISH_PX = 1024;
@@ -59,6 +59,7 @@ async function pack(sources) {
     cx.fillRect(0, 0, w, h);
     x.globalCompositeOperation = i ? 'lighter' : 'source-over';
     x.drawImage(c, 0, 0);
+    releaseCanvas(c);
   });
   return out;
 }

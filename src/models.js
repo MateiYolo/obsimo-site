@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Vinyl, Sleeve, SLEEVE } from './hifi/objects.js';
-import { discTextureFromImage, borderColor } from './hifi/textures.js';
+import { discTextureFromImage, borderColor, releaseCanvas } from './hifi/textures.js';
 import { loadBakedMaps, loadVarnish } from './hifi/baked.js';
 
 // Every model is built at real-ish proportions, then normalised so its tallest/widest side is 1 unit.
@@ -71,6 +71,16 @@ const imgTex = (img) => {
 let baked = null;
 const shared = new Map(); // key -> Promise<texture>: printed sleeves, pressings and labels, built once per release
 const once = (key, make) => (shared.has(key) || shared.set(key, make()), shared.get(key));
+// The 2048 px canvases of printed sleeves and pressings (16 MB each) are only needed for their one upload to the GPU:
+// emptied right after it, so the total stays under iOS Safari's canvas memory cap (past it, new canvases come out
+// blank: black or see-through sleeves, dark objects)
+const uploadOnce = (t) => {
+  t.onUpdate = () => {
+    t.onUpdate = null;
+    releaseCanvas(t.image);
+  };
+  return t;
+};
 
 // Starts downloading the files of the records right away (while the page waits for its web fonts); buildVinyl then
 // picks up the same promises.
@@ -132,7 +142,7 @@ export function buildVinyl(p) {
       sleeve.images[side] = img;
       sleeve.varnish.maps[side] = v;
       const mat = side === 'front' ? sleeve.front : sleeve.back;
-      mat.map = await once(`art|${url}|${mask}|${seed}`, () => sleeve.makeTex(img, seed, v));
+      mat.map = await once(`art|${url}|${mask}|${seed}`, () => uploadOnce(sleeve.makeTex(img, seed, v)));
       sleeve.applySurface();
       if (side === 'front' && !m.edge) sleeve.setEdge(borderColor(img));
     });
@@ -148,7 +158,7 @@ export function buildVinyl(p) {
   syncWindow();
   if (m.disc)
     image(m.disc).then(async (img) => {
-      if (img) vinyl.setStyle({ mode: 'texture', map: await once(`disc|${m.disc}`, () => discTextureFromImage(img)) });
+      if (img) vinyl.setStyle({ mode: 'texture', map: await once(`disc|${m.disc}`, () => uploadOnce(discTextureFromImage(img))) });
       syncWindow();
     });
   vinyl.labelA.visible = vinyl.labelB.visible = !!m.label;
