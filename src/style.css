@@ -173,7 +173,14 @@ body.detail #detail { visibility: visible; }
 .d-hero { height: 42vh; height: 42svh; margin-top: -30px; touch-action: pan-y; }
 .d-drag { display: none; }
 .d-body { padding: 0 var(--gutter); max-width: 640px; margin: 0 auto; }
-.d-title { margin: 10px 0 0; font: 500 clamp(44px, 11vw, 88px)/0.92 var(--font); letter-spacing: -0.04em; }
+.d-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.d-tags:empty { display: none; }
+.tag-pill {
+  padding: 5px 10px 4px; border-radius: 99px; line-height: 1;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line));
+  color: color-mix(in srgb, var(--accent) 50%, var(--fg));
+}
+.d-title { margin: 14px 0 0; font: 500 clamp(44px, 11vw, 88px)/0.92 var(--font); letter-spacing: -0.04em; }
 .d-lead { margin: 16px 0 0; font: 400 21px/1.35 var(--font); color: color-mix(in srgb, var(--fg) 85%, transparent); }
 /* photos: swipeable strip, full-bleed on phones with the next photo peeking in */
 .gallery { margin: 28px 0 0; }

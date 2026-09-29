@@ -287,7 +287,8 @@ const closePhotos = () => (history.state?.photos ? history.back() : lightbox.hid
 function openDetail(i, push = true) {
   const p = products[i];
   current = i;
-  $('#d-kicker').textContent = p.kicker;
+  // the kicker (« Vinyle · Marbre blanc · Édition limitée ») becomes tags above the title
+  $('#d-kicker').innerHTML = String(p.kicker || '').split('·').map((k) => k.trim()).filter(Boolean).map((k) => `<span class="tag-pill">${esc(k)}</span>`).join('');
   $('#d-title').textContent = p.title;
   $('#d-lead').textContent = p.blurb;
   $('#d-desc').textContent = p.description;
