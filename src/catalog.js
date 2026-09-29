@@ -60,9 +60,10 @@ export const demoCatalog = [
     kind: 'vinyl',
     title: '8 Days in Sweden',
     kicker: 'Vinyle 12" · Marbre blanc',
-    blurb: 'Obsimo, Monoko, Inkko. Huit jours dans un lac gelé, enregistrés sur place.',
+    blurb: "Obsimo, Monoko et Inkko ont passé huit jours dans un chalet en Suède, au cœur de l'hiver. Ils en sont revenus avec dix morceaux.",
     description:
-      "Un disque né d'un voyage de huit jours en Suède, entre lacs gelés et studio de fortune. Six titres enregistrés sur place avec Monoko et Inkko, pressés sur un vinyle marbre blanc unique : aucun exemplaire n'a les mêmes veines.",
+      "Huit jours dans un chalet au bord du lac Vänern, le plus grand lac de Suède, entièrement gelé par -10 °C. Entre deux sessions, Obsimo, Monoko et Inkko arpentaient le lac gelé, puis revenaient composer au coin du feu. De ce huis clos hivernal sont nés 10 morceaux de musique électronique.\n8 Days in Sweden sort le 3 décembre 2026 en vinyle. Les premières expéditions partiront dès fin novembre !",
+    ownCopy: true, // this French text wins over the (English) Shopify description
     price: 32,
     currency: 'EUR',
     variantId: null,
@@ -129,8 +130,9 @@ export const demoCatalog = [
     kind: 'bundle',
     title: 'Bundle vinyles',
     kicker: '2 vinyles 12" · Swirl vert + Marbre blanc',
-    blurb: 'Life Balance et 8 Days in Sweden, les deux pressages ensemble.',
-    description: 'Le swirl vert et crème de Life Balance et le marbre blanc de 8 Days in Sweden, expédiés ensemble dans un seul carton renforcé.',
+    blurb: 'Le pack réunit les deux vinyles : Life Balance en swirl vert et blanc, et 8 Days in Sweden en marbré blanc.',
+    description: 'Les deux disques sont expédiés ensemble dans un seul carton renforcé.',
+    ownCopy: true,
     price: 55,
     currency: 'EUR',
     variantId: null,
@@ -168,9 +170,10 @@ export const demoCatalog = [
 // 3D look of each Shopify product, keyed by its handle. The visuals live here on purpose, not in Shopify:
 // Shopify gives title, texts, price, stock and photos; this table decides which model is built and how it looks.
 // A product missing from the table is shown as a flat card with its first Shopify photo.
+// `copy` (products flagged ownCopy) replaces the Shopify subtitle and description with the French text written here.
 const lookOf = (handle) => {
-  const { kind, accent, model, preorder } = demoCatalog.find((p) => p.handle === handle);
-  return { kind, accent, model, preorder };
+  const { kind, accent, model, preorder, ownCopy, blurb, description } = demoCatalog.find((p) => p.handle === handle);
+  return { kind, accent, model, preorder, copy: ownCopy ? { blurb, description } : null };
 };
 const LIFE_BALANCE = lookOf('life-balance-swirl');
 const BUNDLE = lookOf('bundle-8-days-in-sweden-life-balance');
