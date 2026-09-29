@@ -86,6 +86,7 @@ async function boot() {
   const slots = [...list.children];
   slots.forEach((el, i) => {
     attachRotate(el, () => i, () => openDetail(i));
+    el.addEventListener('pointerdown', () => warmGallery(i)); // a tap is on its way: a head start of ~100 ms
     if (el.classList.contains('lb')) attachHands(el);
     el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(i); } });
   });
@@ -117,6 +118,7 @@ function loop() {
     shown = focus;
     body.style.setProperty('--accent', products[focus].accent);
     player.play(products[focus]);
+    idle(() => warmGallery(focus), { timeout: 1000 });
   }
 }
 
@@ -241,6 +243,25 @@ function leaveOverlay() {
 
 // ---------- detail page ----------
 const scroller = $('#d-scroll');
+
+// The photos of a product page are downloaded and decoded ahead of the click (the product in the middle of the list,
+// the one pressed): the carousel then finds them ready, with nothing left to fetch or decode during the transition.
+// The images of the last few products are kept alive so their decoded pixels stay cached (heavy on phones).
+const warmed = new Map();
+function warmPhotos(p) {
+  const imgs = warmed.get(p) || p.images.map((src) => {
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = src;
+    img.decode().catch(() => {});
+    return img;
+  });
+  warmed.delete(p);
+  warmed.set(p, imgs); // most recent last
+  for (const k of warmed.keys()) if (warmed.size > 3 && k !== products[current]) warmed.delete(k);
+}
+const idle = window.requestIdleCallback || ((f) => setTimeout(f, 200));
+const warmGallery = (i) => products[i] && warmPhotos(products[i]);
 
 // photos: carousel in the page, full-screen viewer on a tap. Opening the viewer pushes a history entry so the phone's
 // back button closes the photos and stays on the product.
