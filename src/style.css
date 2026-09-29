@@ -91,15 +91,7 @@ body.ready #loader { opacity: 0; visibility: hidden; }
 .menu a.on::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: currentColor; }
 .menu a.soon { cursor: default; }
 .bar-right { display: flex; gap: 16px; align-items: center; }
-.sound { display: flex; align-items: center; padding: 4px; }
 .cart-btn { display: flex; align-items: center; gap: 5px; }
-.eq { display: flex; gap: 2px; align-items: flex-end; height: 11px; }
-.eq i { width: 2px; background: currentColor; height: calc(2px + var(--lv, 0) * 9px); transition: height 0.08s; }
-.eq i:nth-child(2) { height: calc(2px + var(--lv, 0) * 7px * 1.4); }
-.eq i:nth-child(3) { height: calc(2px + var(--lv, 0) * 9px * 0.7); }
-.eq i:nth-child(4) { height: calc(2px + var(--lv, 0) * 9px * 1.1); }
-body.muted .sound { color: var(--muted); }
-body.muted .eq i { height: 2px !important; }
 .cart-btn span { display: inline-block; min-width: 1.4em; text-align: center; }
 .cart-btn.bump span { animation: bump 0.5s var(--ease); }
 @keyframes bump { 40% { transform: scale(1.8); } }

@@ -69,7 +69,6 @@ function toProduct(n) {
     available: v?.availableForSale !== false,
     accent: look.accent || '#d9d6cc',
     audio: meta.preview_audio || null,
-    audioSeed: look.audioSeed || 0,
     model: look.model || {},
     preorder: look.preorder || null,
     images: n.images.nodes.map((i) => i.url),
