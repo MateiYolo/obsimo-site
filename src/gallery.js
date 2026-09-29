@@ -2,6 +2,8 @@
 // Both sit on a native scroll-snap track, so a finger swipe is the browser's own (momentum, snapping); the mouse gets
 // drag-to-scroll, arrows and the keyboard on top.
 
+import { t } from './i18n.js';
+
 const behavior = () => (matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
 const pad = (n) => String(n).padStart(2, '0');
 const esc = (s) => String(s).replace(/[&"<]/g, (c) => ({ '&': '&amp;', '"': '&quot;', '<': '&lt;' })[c]);
@@ -122,12 +124,12 @@ export class Gallery {
     this.root.hidden = !n;
     this.root.classList.toggle('single', n < 2);
     this.track.innerHTML = images
-      .map((src, j) => `<button class="g-slide" data-i="${j}" aria-label="Agrandir la photo ${j + 1} sur ${n}">
-          <img src="${src}" alt="${esc(title)} · photo ${j + 1}" draggable="false"${j ? ' loading="lazy"' : ''} decoding="async">
+      .map((src, j) => `<button class="g-slide" data-i="${j}" aria-label="${t('gallery.zoom', j + 1, n)}">
+          <img src="${src}" alt="${esc(t('gallery.alt', title, j + 1))}" draggable="false"${j ? ' loading="lazy"' : ''} decoding="async">
           <span class="g-zoom" aria-hidden="true"><svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 3.5h4.5V8M8 16.5H3.5V12M16.5 3.5l-5 5M3.5 16.5l5-5"/></svg></span>
         </button>`)
       .join('');
-    this.dots.innerHTML = n > 1 ? images.map((_, j) => `<button data-i="${j}" aria-label="Photo ${j + 1}"><i></i></button>`).join('') : '';
+    this.dots.innerHTML = n > 1 ? images.map((_, j) => `<button data-i="${j}" aria-label="${t('gallery.photo', j + 1)}"><i></i></button>`).join('') : '';
     this.track.scrollLeft = 0;
     this.carousel.sync(true);
   }
@@ -182,10 +184,10 @@ export class Lightbox {
     this.el.classList.toggle('single', n < 2);
     this.el.style.removeProperty('--fade');
     this.track.innerHTML = images
-      .map((src, j) => `<figure><img src="${src}" alt="${esc(title)} · photo ${j + 1} sur ${n}" draggable="false" decoding="async"></figure>`)
+      .map((src, j) => `<figure><img src="${src}" alt="${esc(t('gallery.alt', title, j + 1, n))}" draggable="false" decoding="async"></figure>`)
       .join('');
     this.thumbs.innerHTML = n > 1
-      ? images.map((src, j) => `<button data-i="${j}" aria-label="Photo ${j + 1}"><img src="${src}" alt="" draggable="false" decoding="async"></button>`).join('')
+      ? images.map((src, j) => `<button data-i="${j}" aria-label="${t('gallery.photo', j + 1)}"><img src="${src}" alt="" draggable="false" decoding="async"></button>`).join('')
       : '';
     this.returnFocus = document.activeElement;
     this.el.classList.add('open');

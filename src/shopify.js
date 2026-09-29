@@ -5,14 +5,21 @@
 // the Shopify handle, or failing that by its title (`lookFor`). Every Shopify image is a photo in the detail page.
 // Optional metafields (namespace "custom"): preview_audio (URL, 30 s mp3), kicker (short line),
 // details (JSON list of {title, body}).
+//
+// Texts come in the visitor's language (src/i18n.js) through @inContext: the English (or French) version of each
+// product is its translation in Shopify (Translate & Adapt app), metafields included. Without a translation Shopify
+// returns the store's default language.
 
 import { lookFor } from './catalog.js';
+import { lang } from './i18n.js';
 
 const DOMAIN = import.meta.env.VITE_SHOPIFY_DOMAIN;
 const TOKEN = import.meta.env.VITE_SHOPIFY_TOKEN;
 const API = '2025-07';
 
 export const shopifyEnabled = !!(DOMAIN && TOKEN);
+
+const LANG = lang.toUpperCase();
 
 async function gql(query, variables = {}) {
   const res = await fetch(`https://${DOMAIN}/api/${API}/graphql.json`, {
@@ -30,7 +37,7 @@ const META = ['preview_audio', 'kicker', 'details']
   .join(', ');
 
 const PRODUCTS = `
-query Products {
+query Products @inContext(language: ${LANG}) {
   products(first: 50) {
     nodes {
       id handle title description productType tags
@@ -43,7 +50,11 @@ query Products {
 }`;
 
 export async function fetchProducts() {
-  const data = await gql(PRODUCTS);
+  // a language the store doesn't offer must not cost the whole catalogue: ask again without it
+  const data = await gql(PRODUCTS).catch((e) => {
+    console.warn(`Shopify : textes en ${LANG} indisponibles`, e);
+    return gql(PRODUCTS.replace(/ @inContext\([^)]*\)/, ''));
+  });
   return data.products.nodes.map(toProduct);
 }
 
@@ -62,8 +73,8 @@ function toProduct(n) {
     kind: look.kind || 'merch',
     title: n.title,
     kicker: meta.kicker || n.productType,
-    blurb: look.copy?.blurb || first || '',
-    description: look.copy?.description || rest.join(' ') || n.description,
+    blurb: first || '',
+    description: rest.join(' ') || n.description,
     price: Number(v?.price.amount || 0),
     currency: v?.price.currencyCode || 'EUR',
     variantId: v?.id,
@@ -78,13 +89,13 @@ function toProduct(n) {
 }
 
 // Creates a Shopify cart with the lines and returns the hosted checkout URL.
+// The checkout opens in the visitor's language when the store offers it.
 export async function checkout(lines) {
-  const data = await gql(
-    `mutation Cart($lines: [CartLineInput!]!) {
+  const query = `mutation Cart($lines: [CartLineInput!]!) @inContext(language: ${LANG}) {
       cartCreate(input: { lines: $lines }) { cart { checkoutUrl } userErrors { message } }
-    }`,
-    { lines: lines.map((l) => ({ merchandiseId: l.variantId, quantity: l.qty })) }
-  );
+    }`;
+  const vars = { lines: lines.map((l) => ({ merchandiseId: l.variantId, quantity: l.qty })) };
+  const data = await gql(query, vars).catch(() => gql(query.replace(/ @inContext\([^)]*\)/, ''), vars));
   const r = data.cartCreate;
   if (r.userErrors.length) throw new Error(r.userErrors[0].message);
   return r.cart.checkoutUrl;

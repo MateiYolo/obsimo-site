@@ -1,22 +1,28 @@
 import { Stage } from './scene.js';
 import { manager, prefetch } from './models.js';
-import { demoCatalog, placeholderPhotos, sortProducts, dedupe, isLifeBalance } from './catalog.js';
+import { demoCatalog, placeholderPhotos, sortProducts, dedupe, isLifeBalance, localize } from './catalog.js';
 import { shopifyEnabled, fetchProducts, checkout } from './shopify.js';
 import { Cart } from './cart.js';
 import { Player } from './audio.js';
 import { fetchDates } from './tour.js';
 import { TourTitle } from './tourTitle.js';
 import { Gallery, Lightbox } from './gallery.js';
+import { OsrLogo } from './osrLogo.js';
+import { t, locale, lang, applyStatic, switchLang } from './i18n.js';
 
 const $ = (s) => document.querySelector(s);
 const body = document.body;
 const root = document.documentElement;
-const money = (v, c = 'EUR') => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: c, maximumFractionDigits: v % 1 ? 2 : 0 }).format(v);
+const money = (v, c = 'EUR') => new Intl.NumberFormat(locale, { style: 'currency', currency: c, maximumFractionDigits: v % 1 ? 2 : 0 }).format(v);
 
 let products = demoCatalog;
 let stage, cart;
 let current = -1; // product open in the detail page
 const player = new Player();
+
+applyStatic();
+$('#lang').lang = lang === 'fr' ? 'en' : 'fr';
+$('#lang').onclick = switchLang;
 
 // ---------- loader ----------
 // The counter eases toward the real progress instead of jumping file by file, and keeps creeping slowly while a step
@@ -51,7 +57,9 @@ async function boot() {
     }
   }
   if (products === demoCatalog) console.info('Catalogue de démo (Shopify non configuré sur ce déploiement)');
+  const live = products !== demoCatalog;
   products = sortProducts(dedupe(products));
+  if (live) products = products.map(localize); // after the sort and dedupe, which read Shopify's titles
   products.forEach((p) => { if (!p.images.length) p.images = placeholderPhotos(p); });
 
   // files 0–80, then the GPU uploads and shader compile up to 99; 100 is only shown once everything is ready
@@ -99,7 +107,7 @@ async function boot() {
 
   const fromHash = products.findIndex((p) => `#${p.handle}` === location.hash);
   if (fromHash >= 0) openDetail(fromHash, false);
-  else if (location.hash === '#tour') openTour(false);
+  else if (pages[location.hash.slice(1)]) openPage(location.hash.slice(1), false);
   fetchDates().then(eventsLd, () => {});
   loop();
 }
@@ -111,7 +119,7 @@ function loop() {
   if (current < 0 && stage.active >= 0 && stage.detail < 0.01) stage.active = -1; // back in its slot
   stage.playing = player.playing;
   // layout is read first (the slots), styles are written after: the other way round forces a layout every frame
-  if (!tourOpen && body.classList.contains('ready')) stage.frame(); // hidden behind the loader / the tour page
+  if (!page && body.classList.contains('ready')) stage.frame(); // hidden behind the loader / the tour & contact pages
   else stage.measure();
   const focus = current >= 0 ? current : stage.centred;
   if (focus !== shown && focus >= 0) {
@@ -215,29 +223,30 @@ addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   if (lightbox.isOpen) return closePhotos();
   if ($('#cart').classList.contains('open')) return toggleCart(false);
-  if (current >= 0 || tourOpen) leaveOverlay();
+  if (current >= 0 || page) leaveOverlay();
 });
 
 $('#logo').onclick = (e) => {
   e.preventDefault();
-  if (current >= 0 || tourOpen) leaveOverlay();
+  if (current >= 0 || page) leaveOverlay();
   else scrollTo({ top: 0, behavior: 'smooth' });
 };
-document.querySelectorAll('.menu a').forEach((a) => {
+document.querySelectorAll('.bar a[data-view]').forEach((a) => {
   a.onclick = (e) => {
     e.preventDefault();
-    if (a.classList.contains('soon')) toast(`${a.textContent} · bientôt`);
-    else if (a.dataset.view === 'tour') tourOpen ? tourScroller.scrollTo({ top: 0, behavior: 'smooth' }) : openTour();
-    else if (current >= 0 || tourOpen) leaveOverlay();
+    const view = a.dataset.view;
+    if (a.classList.contains('soon')) toast(t('toast.soon', a.textContent));
+    else if (pages[view]) page === view ? pages[view].scroller.scrollTo({ top: 0, behavior: 'smooth' }) : openPage(view, !page);
+    else if (current >= 0 || page) leaveOverlay();
     else scrollTo({ top: 0, behavior: 'smooth' });
   };
 });
 
 // back to the shop list: pop our own history entry, or clear the hash if the page was opened on it
 function leaveOverlay() {
-  if (history.state?.detail || history.state?.tour) return history.back();
+  if (history.state?.detail || history.state?.page) return history.back();
   closeDetail();
-  closeTour();
+  closePage();
   history.replaceState(null, '', location.pathname);
 }
 
@@ -278,7 +287,8 @@ const closePhotos = () => (history.state?.photos ? history.back() : lightbox.hid
 function openDetail(i, push = true) {
   const p = products[i];
   current = i;
-  $('#d-kicker').textContent = p.kicker;
+  // the kicker (« Vinyle · Marbre blanc · Édition limitée ») becomes tags above the title
+  $('#d-kicker').innerHTML = String(p.kicker || '').split('·').map((k) => k.trim()).filter(Boolean).map((k) => `<span class="tag-pill">${esc(k)}</span>`).join('');
   $('#d-title').textContent = p.title;
   $('#d-lead').textContent = p.blurb;
   $('#d-desc').textContent = p.description;
@@ -312,18 +322,18 @@ function showPreorder(p) {
   const box = $('#d-pre');
   const on = isPreorder(p);
   box.hidden = !on;
-  $('#d-add span').textContent = on ? 'Précommander' : 'Ajouter au panier';
+  $('#d-add span').textContent = t(on ? 'detail.preorder' : 'detail.add');
   if (!on) return;
   const release = Date.parse(p.preorder.release);
-  const day = new Date(release).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'Europe/Paris' });
-  const units = ['jours', 'heures', 'min', 'sec'];
+  const day = new Date(release).toLocaleDateString(locale, { day: 'numeric', month: 'long', timeZone: 'Europe/Paris' });
+  const units = t('pre.units');
   box.innerHTML = `
-    <p class="kicker">Précommande · sortie le ${day}</p>
+    <p class="kicker">${t('pre.release', day)}</p>
     <div class="count" role="timer" aria-live="off">${units.map((u) => `<div><b>00</b><span>${u}</span></div>`).join('')}</div>
     ${p.preorder.goldenTicket ? `
     <div class="ticket">
-      <p class="t-head"><span class="t-star" aria-hidden="true">✦</span>Ticket d'or</p>
-      <p>Un des vinyles précommandés cache un <b>test pressing</b> en plus. Seulement 5 exemplaires pressés, un seul glissé au hasard dans une précommande.</p>
+      <p class="t-head"><span class="t-star" aria-hidden="true">✦</span>${t('pre.ticket')}</p>
+      <p>${t('pre.ticketText')}</p>
     </div>` : ''}`;
   const cells = box.querySelectorAll('.count b');
   const tick = () => {
@@ -353,8 +363,8 @@ addEventListener('popstate', () => {
   const i = products.findIndex((p) => `#${p.handle}` === location.hash);
   if (i >= 0) openDetail(i, false);
   else closeDetail();
-  if (location.hash === '#tour') openTour(false);
-  else closeTour();
+  if (pages[location.hash.slice(1)]) openPage(location.hash.slice(1), false);
+  else closePage();
 });
 
 scroller.addEventListener('scroll', () => { stage.detailScroll = stage.portrait ? scroller.scrollTop : 0; }, { passive: true });
@@ -369,13 +379,13 @@ function addToCart(btn) {
   const label = btn.querySelector('span');
   const old = label.textContent;
   btn.classList.add('done');
-  label.textContent = isPreorder(p) ? 'Précommandé' : 'Ajouté';
+  label.textContent = t(isPreorder(p) ? 'detail.preordered' : 'detail.added');
   btn.querySelector('b').textContent = '✓';
   const cb = $('#cart-btn');
   cb.classList.remove('bump');
   void cb.offsetWidth;
   cb.classList.add('bump');
-  toast(`${p.title} ${isPreorder(p) ? 'précommandé' : 'ajouté au panier'}`);
+  toast(t(isPreorder(p) ? 'toast.preordered' : 'toast.added', p.title));
   setTimeout(() => {
     btn.classList.remove('done');
     label.textContent = old;
@@ -384,16 +394,29 @@ function addToCart(btn) {
 }
 $('#d-add').onclick = (e) => addToCart(e.currentTarget);
 
-// ---------- tour ----------
-const tourScroller = $('#t-scroll');
-let tourOpen = false;
-let tourTitle;
+// ---------- tour & contact pages ----------
+// Full-screen pages over the shop, each with a spinnable 3D object at the top.
+const pages = {
+  tour: { el: $('#tour'), scroller: $('#t-scroll'), make: () => makeTourTitle(), render: () => renderTour() },
+  contact: { el: $('#contact'), scroller: $('#c-scroll'), make: () => new OsrLogo($('#c-3d')) },
+};
+let page = null; // name of the open page
+
+// Easter egg: spinning the 3D "TOUR" fast for a while unlocks an unreleased track
+function makeTourTitle() {
+  const title = new TourTitle($('#t-3d'));
+  title.onSecret = () => {
+    player.play({ audio: SECRET, loop: false });
+    toast(t('secret.unlocked'));
+  };
+  return title;
+}
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-const dayFmt = new Intl.DateTimeFormat('fr-FR', { day: '2-digit' });
-const monthFmt = new Intl.DateTimeFormat('fr-FR', { month: 'short' });
+const dayFmt = new Intl.DateTimeFormat(locale, { day: '2-digit' });
+const monthFmt = new Intl.DateTimeFormat(locale, { month: 'short' });
 
 function setMenu(view) {
-  document.querySelectorAll('.menu a[data-view]').forEach((a) => {
+  document.querySelectorAll('.bar a[data-view]').forEach((a) => {
     const on = a.dataset.view === view;
     a.classList.toggle('on', on);
     if (on) a.setAttribute('aria-current', 'page');
@@ -401,38 +424,38 @@ function setMenu(view) {
   });
 }
 
-function openTour(push = true) {
-  if (!tourOpen) {
-    tourOpen = true;
-    tourScroller.scrollTop = 0;
+// push: add a history entry; from another page we replace it instead, so Back returns to the shop
+function openPage(name, push = true) {
+  if (page !== name) {
+    const prev = page;
+    if (prev) closePage(false);
+    page = name;
+    const p = pages[name];
+    p.scroller.scrollTop = 0;
     root.classList.add('lock');
-    body.classList.add('tour');
-    $('#tour').setAttribute('aria-hidden', 'false');
-    setMenu('tour');
-    (tourTitle ??= makeTourTitle()).start();
-    renderTour();
+    body.classList.add('on-page', name);
+    p.el.setAttribute('aria-hidden', 'false');
+    setMenu(name);
+    (p.spinner ??= p.make()).start();
+    p.render?.();
+    // keep a pushed entry pushed (Back pops it), a landing hash stays a plain replace
+    if (prev) history.replaceState(history.state?.page ? { page: name } : null, '', `#${name}`);
   }
-  if (push) history.pushState({ tour: true }, '', '#tour');
+  if (push) history.pushState({ page: name }, '', `#${name}`);
 }
 
-// Easter egg: spinning the 3D "TOUR" fast for a while unlocks an unreleased track
-function makeTourTitle() {
-  const t = new TourTitle($('#t-3d'));
-  t.onSecret = () => {
-    player.play({ audio: SECRET, loop: false });
-    toast('Morceau secret débloqué');
-  };
-  return t;
-}
-
-function closeTour() {
-  if (!tourOpen) return;
-  tourOpen = false;
-  body.classList.remove('tour');
-  root.classList.toggle('lock', current >= 0);
-  $('#tour').setAttribute('aria-hidden', 'true');
-  setMenu('shop');
-  setTimeout(() => { if (!tourOpen) tourTitle?.stop(); }, 600); // after the fade out
+function closePage(toShop = true) {
+  if (!page) return;
+  const name = page, p = pages[name];
+  page = null;
+  body.classList.remove(name);
+  p.el.setAttribute('aria-hidden', 'true');
+  if (toShop) {
+    body.classList.remove('on-page');
+    root.classList.toggle('lock', current >= 0);
+    setMenu('shop');
+  }
+  setTimeout(() => { if (page !== name) p.spinner?.stop(); }, 600); // after the fade out
 }
 
 // Upcoming dates as schema.org events, so Google can list them under the artist ("Obsimo concert")
@@ -465,13 +488,13 @@ function eventsLd(dates) {
 
 async function renderTour() {
   const list = $('#dates');
-  if (!list.children.length) list.innerHTML = '<li class="t-empty">Chargement des dates…</li>';
+  if (!list.children.length) list.innerHTML = `<li class="t-empty">${t('tour.loading')}</li>`;
   let dates;
   try {
     dates = await fetchDates();
   } catch (err) {
     console.error(err);
-    list.innerHTML = '<li class="t-empty">Les dates sont indisponibles pour le moment.</li>';
+    list.innerHTML = `<li class="t-empty">${t('tour.error')}</li>`;
     return;
   }
   const upcoming = dates
@@ -485,20 +508,36 @@ async function renderTour() {
           const sep = at.getFullYear() !== year ? `<li class="t-year">${(year = at.getFullYear())}</li>` : '';
           const link = d.tickets || d.url;
           const row = `<time datetime="${esc(d.datetime)}">${dayFmt.format(at)} ${monthFmt.format(at).replace('.', '')}</time>
-            <span class="city">${esc(d.city)}${d.soldOut ? ' <span class="tag">Sold out</span>' : ''}</span><span class="venue">${esc(d.venue)}</span>`;
+            <span class="city">${esc(d.city)}${d.soldOut ? ` <span class="tag">${t('tour.soldOut')}</span>` : ''}</span><span class="venue">${esc(d.venue)}</span>`;
           return `${sep}<li class="date${d.soldOut ? ' out' : ''}" style="--i:${Math.min(i, 12)}">${
             link && !d.soldOut ? `<a href="${esc(link)}" target="_blank" rel="noopener">${row}</a>` : `<div>${row}</div>`
           }</li>`;
         })
         .join('')
-    : '<li class="t-empty">Pas de date annoncée pour le moment. Reviens bientôt.</li>';
+    : `<li class="t-empty">${t('tour.empty')}</li>`;
 }
+
+// ---------- copy email ----------
+$('#c-mail').onclick = async (e) => {
+  const btn = e.currentTarget, email = btn.dataset.email;
+  try {
+    await navigator.clipboard.writeText(email);
+  } catch {
+    // no clipboard access (old browser, insecure context): select the address so it can be copied by hand
+    getSelection().selectAllChildren(btn.querySelector('span'));
+    return;
+  }
+  btn.classList.add('done');
+  toast(t('contact.copied'));
+  clearTimeout(btn.t);
+  btn.t = setTimeout(() => btn.classList.remove('done'), 1800);
+};
 
 // ---------- cart drawer ----------
 function toggleCart(open) {
   $('#cart').classList.toggle('open', open);
   $('#cart').setAttribute('aria-hidden', String(!open));
-  root.classList.toggle('lock', open || current >= 0 || tourOpen);
+  root.classList.toggle('lock', open || current >= 0 || !!page);
 }
 $('#cart-btn').onclick = () => toggleCart(true);
 $('#cart-close').onclick = () => toggleCart(false);
@@ -516,13 +555,13 @@ function renderCart() {
           return `<li>
             ${thumb ? `<img src="${thumb}" alt="">` : `<span class="sw" style="background:${p.accent}"></span>`}
             <div><div class="t">${p.title}</div><div class="k">${p.kicker}</div>
-              <div class="qty"><button data-id="${l.id}" data-d="-1" aria-label="Retirer un">−</button><span>${l.qty}</span><button data-id="${l.id}" data-d="1" aria-label="Ajouter un">+</button></div>
+              <div class="qty"><button data-id="${l.id}" data-d="-1" aria-label="${t('cart.less')}">−</button><span>${l.qty}</span><button data-id="${l.id}" data-d="1" aria-label="${t('cart.more')}">+</button></div>
             </div>
             <div class="lp">${money(p.price * l.qty, p.currency)}</div>
           </li>`;
         })
         .join('')
-    : '<li class="empty">Ton panier est vide.</li>';
+    : `<li class="empty">${t('cart.empty')}</li>`;
 }
 $('#lines').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-id]');
@@ -532,13 +571,13 @@ $('#lines').addEventListener('click', (e) => {
 });
 
 $('#checkout').onclick = async () => {
-  if (!shopifyEnabled) return toast('Mode démo : le paiement sera branché sur Shopify');
+  if (!shopifyEnabled) return toast(t('cart.demo'));
   try {
-    $('#checkout span').textContent = 'Redirection…';
+    $('#checkout span').textContent = t('cart.redirect');
     location.href = await checkout(cart.lines);
   } catch (err) {
-    $('#checkout span').textContent = 'Commander';
-    toast('Le paiement est indisponible, réessaie dans un instant');
+    $('#checkout span').textContent = t('cart.checkout');
+    toast(t('cart.error'));
     console.error(err);
   }
 };
@@ -560,9 +599,9 @@ function syncMini() {
 function renderMini() {
   const paused = !miniEl || miniEl.paused;
   mini.classList.toggle('paused', paused);
-  $('#mini-play').setAttribute('aria-label', paused ? 'Lecture' : 'Pause');
+  $('#mini-play').setAttribute('aria-label', t(paused ? 'mini.play' : 'mini.pause'));
   mini.style.setProperty('--p', miniEl?.duration ? (miniEl.currentTime / miniEl.duration).toFixed(4) : 0);
-  if (tourTitle) tourTitle.lit = !paused;
+  if (pages.tour.spinner) pages.tour.spinner.lit = !paused;
 }
 player.changed = syncMini;
 $('#mini-play').onclick = () => { if (miniEl) miniEl.paused ? miniEl.play() : miniEl.pause(); };

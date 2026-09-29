@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Vinyl, Sleeve, SLEEVE } from './hifi/objects.js';
 import { discTextureFromImage, borderColor, releaseCanvas } from './hifi/textures.js';
 import { loadBakedMaps, loadVarnish } from './hifi/baked.js';
+import { t } from './i18n.js';
 
 // Every model is built at real-ish proportions, then normalised so its tallest/widest side is 1 unit.
 // Each returns { root, update(dt, state) } where state = { focus 0..1, detail 0..1, playing bool }.
@@ -302,7 +303,7 @@ function sauceLabel(p) {
     g.font = `500 ${p.title.length > 10 ? 58 : 72}px "Space Grotesk", sans-serif`;
     g.fillText(p.title, cx, 250);
     g.font = '400 26px "Space Grotesk", sans-serif';
-    g.fillText('SAUCE PIQUANTE', cx, 312);
+    g.fillText(t('sauce.label'), cx, 312);
     // heat scale
     for (let i = 0; i < 5; i++) {
       g.beginPath();
