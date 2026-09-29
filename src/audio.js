@@ -8,7 +8,14 @@ export class Player {
   }
 
   get playing() {
-    return !!this.current && this.ctx?.state === 'running';
+    return !!this.current && !this.current.el.paused && this.ctx?.state === 'running';
+  }
+
+  // stop whatever is playing (the mini player's close button)
+  stop() {
+    this.current?.stop(0.4);
+    this.current = null;
+    this.changed?.();
   }
 
   unlock() {
@@ -29,15 +36,16 @@ export class Player {
     if (!this.ctx || this.ctx.state !== 'running') { this.pending = product; return; }
     if (this.current?.key === key) return;
     this.current?.stop(0.8);
-    this.current = this.file(key);
+    this.current = this.file(key, product.loop ?? true);
     this.current.key = key;
+    this.changed?.();
   }
 
-  file(url) {
+  file(url, loop) {
     const ctx = this.ctx;
     const el = new Audio(url);
     el.crossOrigin = 'anonymous';
-    el.loop = true;
+    el.loop = loop;
     const src = ctx.createMediaElementSource(el);
     const g = ctx.createGain();
     g.gain.value = 0;
@@ -45,6 +53,7 @@ export class Player {
     el.play().catch(() => {});
     g.gain.setTargetAtTime(1, ctx.currentTime, 0.25);
     return {
+      el,
       stop(f) {
         g.gain.setTargetAtTime(0, ctx.currentTime, f / 3);
         setTimeout(() => { el.pause(); src.disconnect(); }, f * 1000 + 200);

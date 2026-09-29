@@ -8,6 +8,14 @@ const damp = (a, b, k, dt) => a + (b - a) * (1 - Math.exp(-k * dt));
 // The "Tour" heading as extruded 3D letters that can be spun with a finger or the mouse, then settle back
 // to face the reader. The glyphs come from public/assets/tour-title.typeface.json (Space Grotesk SemiBold,
 // only T O U R). Rendered only while the tour page is open.
+// Easter egg: spin it fast for a few seconds and the letters turn green, then `onSecret` fires. They stay green
+// while `lit` is set (the secret track playing).
+const SECRET_SPEED = 7; // rad/s the word has to turn at to charge
+const SECRET_TIME = 3; // seconds of fast spinning needed
+const FLICK_BONUS = 0.3; // extra charge for each fast flick, so repeated flicks get there as quickly as holding
+const WHITE = new THREE.Color('#eceae4');
+const GREEN = new THREE.Color('#0fc24a'); // darker than it looks: tone mapping and the glow lighten it
+
 export class TourTitle {
   constructor(canvas) {
     this.canvas = canvas;
@@ -35,6 +43,12 @@ export class TourTitle {
     this.held = false;
     this.running = false;
     this.clock = new THREE.Timer();
+    this.prevRot = new THREE.Vector2();
+    this.charge = 0; // seconds spent spinning fast, drains when it slows down
+    this.flash = 0;
+    this.onSecret = null;
+    this.lit = false;
+    this.glow = 0;
 
     fetch('/assets/tour-title.typeface.json')
       .then((r) => r.json())
@@ -51,8 +65,8 @@ export class TourTitle {
     geo.center();
     geo.computeBoundingBox();
     this.size = geo.boundingBox.getSize(new THREE.Vector3());
-    const mat = new THREE.MeshStandardMaterial({ color: '#eceae4', roughness: 0.32, metalness: 0.15 });
-    this.pivot.add(new THREE.Mesh(geo, mat));
+    this.mat = new THREE.MeshStandardMaterial({ color: WHITE, roughness: 0.32, metalness: 0.15, emissive: GREEN, emissiveIntensity: 0 });
+    this.pivot.add(new THREE.Mesh(geo, this.mat));
     this.resize();
     this.canvas.classList.add('ready');
   }
@@ -95,6 +109,8 @@ export class TourTitle {
       last = null;
       this.held = false;
       this.vel.clampLength(0, 14);
+      // a flung spin only stays fast for a moment, so each flick counts extra
+      if (this.vel.length() > SECRET_SPEED) this.charge += FLICK_BONUS;
     };
     el.addEventListener('pointerup', end);
     el.addEventListener('pointercancel', end);
@@ -127,8 +143,31 @@ export class TourTitle {
         this.rot.x = damp(this.rot.x, Math.round(this.rot.x / (Math.PI * 2)) * Math.PI * 2, 2.2, dt);
       }
     }
+    this.spinCharge(dt);
     // a slow breathing sway so it looks alive
     this.pivot.rotation.set(this.rot.x + Math.sin(t * 0.7) * 0.06, this.rot.y + Math.sin(t * 0.5) * 0.14, 0);
     this.renderer.render(this.scene, this.camera);
+  }
+
+  // how fast the word turned since the last frame, whether dragged or flung
+  spinCharge(dt) {
+    const speed = this.rot.distanceTo(this.prevRot) / dt;
+    this.prevRot.copy(this.rot);
+    if (speed > SECRET_SPEED) this.charge += dt;
+    else this.charge = Math.max(0, this.charge - dt * 0.6);
+    if (this.charge >= SECRET_TIME) {
+      this.charge = 0;
+      this.flash = 1;
+      this.vel.y += 30; // one last big whirl
+      this.onSecret?.();
+    }
+    this.flash = Math.max(0, this.flash - dt * 0.8);
+    // 0 = white, 1 = fully green; eased so the change is quick to notice once it starts
+    const target = this.lit ? 1 : Math.min(this.charge / SECRET_TIME, 1) ** 0.7;
+    this.glow = damp(this.glow, target, 8, dt);
+    if (this.mat) {
+      this.mat.color.lerpColors(WHITE, GREEN, this.glow);
+      this.mat.emissiveIntensity = this.glow * 0.3 + this.flash * 1.2;
+    }
   }
 }
