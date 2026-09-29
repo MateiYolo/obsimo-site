@@ -7,6 +7,7 @@ import { Player } from './audio.js';
 import { fetchDates } from './tour.js';
 import { TourTitle } from './tourTitle.js';
 import { Gallery, Lightbox } from './gallery.js';
+import { OsrLogo } from './osrLogo.js';
 
 const $ = (s) => document.querySelector(s);
 const body = document.body;
@@ -99,7 +100,7 @@ async function boot() {
 
   const fromHash = products.findIndex((p) => `#${p.handle}` === location.hash);
   if (fromHash >= 0) openDetail(fromHash, false);
-  else if (location.hash === '#tour') openTour(false);
+  else if (pages[location.hash.slice(1)]) openPage(location.hash.slice(1), false);
   fetchDates().then(eventsLd, () => {});
   loop();
 }
@@ -111,7 +112,7 @@ function loop() {
   if (current < 0 && stage.active >= 0 && stage.detail < 0.01) stage.active = -1; // back in its slot
   stage.playing = player.playing;
   // layout is read first (the slots), styles are written after: the other way round forces a layout every frame
-  if (!tourOpen && body.classList.contains('ready')) stage.frame(); // hidden behind the loader / the tour page
+  if (!page && body.classList.contains('ready')) stage.frame(); // hidden behind the loader / the tour & contact pages
   else stage.measure();
   const focus = current >= 0 ? current : stage.centred;
   if (focus !== shown && focus >= 0) {
@@ -215,29 +216,30 @@ addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   if (lightbox.isOpen) return closePhotos();
   if ($('#cart').classList.contains('open')) return toggleCart(false);
-  if (current >= 0 || tourOpen) leaveOverlay();
+  if (current >= 0 || page) leaveOverlay();
 });
 
 $('#logo').onclick = (e) => {
   e.preventDefault();
-  if (current >= 0 || tourOpen) leaveOverlay();
+  if (current >= 0 || page) leaveOverlay();
   else scrollTo({ top: 0, behavior: 'smooth' });
 };
-document.querySelectorAll('.menu a').forEach((a) => {
+document.querySelectorAll('.bar a[data-view]').forEach((a) => {
   a.onclick = (e) => {
     e.preventDefault();
+    const view = a.dataset.view;
     if (a.classList.contains('soon')) toast(`${a.textContent} · bientôt`);
-    else if (a.dataset.view === 'tour') tourOpen ? tourScroller.scrollTo({ top: 0, behavior: 'smooth' }) : openTour();
-    else if (current >= 0 || tourOpen) leaveOverlay();
+    else if (pages[view]) page === view ? pages[view].scroller.scrollTo({ top: 0, behavior: 'smooth' }) : openPage(view, !page);
+    else if (current >= 0 || page) leaveOverlay();
     else scrollTo({ top: 0, behavior: 'smooth' });
   };
 });
 
 // back to the shop list: pop our own history entry, or clear the hash if the page was opened on it
 function leaveOverlay() {
-  if (history.state?.detail || history.state?.tour) return history.back();
+  if (history.state?.detail || history.state?.page) return history.back();
   closeDetail();
-  closeTour();
+  closePage();
   history.replaceState(null, '', location.pathname);
 }
 
@@ -353,8 +355,8 @@ addEventListener('popstate', () => {
   const i = products.findIndex((p) => `#${p.handle}` === location.hash);
   if (i >= 0) openDetail(i, false);
   else closeDetail();
-  if (location.hash === '#tour') openTour(false);
-  else closeTour();
+  if (pages[location.hash.slice(1)]) openPage(location.hash.slice(1), false);
+  else closePage();
 });
 
 scroller.addEventListener('scroll', () => { stage.detailScroll = stage.portrait ? scroller.scrollTop : 0; }, { passive: true });
@@ -384,16 +386,19 @@ function addToCart(btn) {
 }
 $('#d-add').onclick = (e) => addToCart(e.currentTarget);
 
-// ---------- tour ----------
-const tourScroller = $('#t-scroll');
-let tourOpen = false;
-let tourTitle;
+// ---------- tour & contact pages ----------
+// Full-screen pages over the shop, each with a spinnable 3D object at the top.
+const pages = {
+  tour: { el: $('#tour'), scroller: $('#t-scroll'), make: () => new TourTitle($('#t-3d')), render: () => renderTour() },
+  contact: { el: $('#contact'), scroller: $('#c-scroll'), make: () => new OsrLogo($('#c-3d')) },
+};
+let page = null; // name of the open page
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const dayFmt = new Intl.DateTimeFormat('fr-FR', { day: '2-digit' });
 const monthFmt = new Intl.DateTimeFormat('fr-FR', { month: 'short' });
 
 function setMenu(view) {
-  document.querySelectorAll('.menu a[data-view]').forEach((a) => {
+  document.querySelectorAll('.bar a[data-view]').forEach((a) => {
     const on = a.dataset.view === view;
     a.classList.toggle('on', on);
     if (on) a.setAttribute('aria-current', 'page');
@@ -401,28 +406,38 @@ function setMenu(view) {
   });
 }
 
-function openTour(push = true) {
-  if (!tourOpen) {
-    tourOpen = true;
-    tourScroller.scrollTop = 0;
+// push: add a history entry; from another page we replace it instead, so Back returns to the shop
+function openPage(name, push = true) {
+  if (page !== name) {
+    const prev = page;
+    if (prev) closePage(false);
+    page = name;
+    const p = pages[name];
+    p.scroller.scrollTop = 0;
     root.classList.add('lock');
-    body.classList.add('tour');
-    $('#tour').setAttribute('aria-hidden', 'false');
-    setMenu('tour');
-    (tourTitle ??= new TourTitle($('#t-3d'))).start();
-    renderTour();
+    body.classList.add('on-page', name);
+    p.el.setAttribute('aria-hidden', 'false');
+    setMenu(name);
+    (p.spinner ??= p.make()).start();
+    p.render?.();
+    // keep a pushed entry pushed (Back pops it), a landing hash stays a plain replace
+    if (prev) history.replaceState(history.state?.page ? { page: name } : null, '', `#${name}`);
   }
-  if (push) history.pushState({ tour: true }, '', '#tour');
+  if (push) history.pushState({ page: name }, '', `#${name}`);
 }
 
-function closeTour() {
-  if (!tourOpen) return;
-  tourOpen = false;
-  body.classList.remove('tour');
-  root.classList.toggle('lock', current >= 0);
-  $('#tour').setAttribute('aria-hidden', 'true');
-  setMenu('shop');
-  setTimeout(() => { if (!tourOpen) tourTitle?.stop(); }, 600); // after the fade out
+function closePage(toShop = true) {
+  if (!page) return;
+  const name = page, p = pages[name];
+  page = null;
+  body.classList.remove(name);
+  p.el.setAttribute('aria-hidden', 'true');
+  if (toShop) {
+    body.classList.remove('on-page');
+    root.classList.toggle('lock', current >= 0);
+    setMenu('shop');
+  }
+  setTimeout(() => { if (page !== name) p.spinner?.stop(); }, 600); // after the fade out
 }
 
 // Upcoming dates as schema.org events, so Google can list them under the artist ("Obsimo concert")
@@ -484,11 +499,27 @@ async function renderTour() {
     : '<li class="t-empty">Pas de date annoncée pour le moment. Reviens bientôt.</li>';
 }
 
+// ---------- copy email ----------
+$('#c-mail').onclick = async (e) => {
+  const btn = e.currentTarget, email = btn.dataset.email;
+  try {
+    await navigator.clipboard.writeText(email);
+  } catch {
+    // no clipboard access (old browser, insecure context): select the address so it can be copied by hand
+    getSelection().selectAllChildren(btn.querySelector('span'));
+    return;
+  }
+  btn.classList.add('done');
+  toast('Email copied');
+  clearTimeout(btn.t);
+  btn.t = setTimeout(() => btn.classList.remove('done'), 1800);
+};
+
 // ---------- cart drawer ----------
 function toggleCart(open) {
   $('#cart').classList.toggle('open', open);
   $('#cart').setAttribute('aria-hidden', String(!open));
-  root.classList.toggle('lock', open || current >= 0 || tourOpen);
+  root.classList.toggle('lock', open || current >= 0 || !!page);
 }
 $('#cart-btn').onclick = () => toggleCart(true);
 $('#cart-close').onclick = () => toggleCart(false);

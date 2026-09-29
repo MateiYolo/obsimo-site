@@ -1,46 +1,17 @@
 import * as THREE from 'three';
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { Font } from 'three/addons/loaders/FontLoader.js';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
-
-const damp = (a, b, k, dt) => a + (b - a) * (1 - Math.exp(-k * dt));
+import { Spin3D, damp } from './spin3d.js';
 
 // The "Tour" heading as extruded 3D letters that can be spun with a finger or the mouse, then settle back
 // to face the reader. The glyphs come from public/assets/tour-title.typeface.json (Space Grotesk SemiBold,
 // only T O U R). Rendered only while the tour page is open.
-export class TourTitle {
+export class TourTitle extends Spin3D {
   constructor(canvas) {
-    this.canvas = canvas;
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.setClearColor(0x000000, 0);
-
-    this.scene = new THREE.Scene();
-    const pmrem = new THREE.PMREMGenerator(this.renderer);
-    this.scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    this.scene.environmentIntensity = 0.6;
-    const key = new THREE.DirectionalLight('#fff4e6', 2.6);
-    key.position.set(-3, 4, 6);
-    const rim = new THREE.DirectionalLight('#dfe8ff', 1.8);
-    rim.position.set(4, 2, -4);
-    this.scene.add(key, rim, new THREE.AmbientLight('#ffffff', 0.2));
-
-    this.camera = new THREE.PerspectiveCamera(24, 1, 0.1, 100);
-    this.pivot = new THREE.Group();
-    this.scene.add(this.pivot);
-
-    this.rot = new THREE.Vector2(); // x = tilt, y = spin
-    this.vel = new THREE.Vector2();
-    this.held = false;
-    this.running = false;
-    this.clock = new THREE.Timer();
-
+    super(canvas);
     fetch('/assets/tour-title.typeface.json')
       .then((r) => r.json())
       .then((json) => this.build(new Font(json)));
-    this.attach();
-    new ResizeObserver(() => this.resize()).observe(canvas);
   }
 
   build(font) {
@@ -50,85 +21,15 @@ export class TourTitle {
     });
     geo.center();
     geo.computeBoundingBox();
-    this.size = geo.boundingBox.getSize(new THREE.Vector3());
     const mat = new THREE.MeshStandardMaterial({ color: '#eceae4', roughness: 0.32, metalness: 0.15 });
     this.pivot.add(new THREE.Mesh(geo, mat));
-    this.resize();
-    this.canvas.classList.add('ready');
+    // the word fills the canvas width, with room around it for the letters' depth when turned
+    this.ready(geo.boundingBox.getSize(new THREE.Vector3()));
   }
 
-  resize() {
-    const w = this.canvas.clientWidth, h = this.canvas.clientHeight;
-    if (!w || !h) return;
-    this.renderer.setSize(w, h, false);
-    this.camera.aspect = w / h;
-    if (this.size) {
-      // the word fills the canvas width, with room around it for the letters' depth when turned
-      const fitW = this.size.x / 0.94, fitH = this.size.y / 0.62;
-      const halfV = Math.max(fitH, fitW / this.camera.aspect) / 2;
-      this.camera.position.set(0, 0, halfV / Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)));
-    }
-    this.camera.updateProjectionMatrix();
-  }
-
-  attach() {
-    let last = null;
-    const el = this.canvas;
-    el.addEventListener('pointerdown', (e) => {
-      last = { x: e.clientX, y: e.clientY, t: performance.now() };
-      this.held = true;
-      this.vel.set(0, 0);
-      if (e.pointerType === 'mouse') try { el.setPointerCapture(e.pointerId); } catch {}
-    });
-    el.addEventListener('pointermove', (e) => {
-      if (!last) return;
-      const now = performance.now();
-      const dt = Math.max((now - last.t) / 1000, 1 / 120);
-      const k = 0.009;
-      const dx = (e.clientX - last.x) * k, dy = (e.clientY - last.y) * k;
-      this.rot.y += dx;
-      this.rot.x += dy;
-      this.vel.set(dy / dt, dx / dt);
-      last = { x: e.clientX, y: e.clientY, t: now };
-    });
-    const end = () => {
-      last = null;
-      this.held = false;
-      this.vel.clampLength(0, 14);
-    };
-    el.addEventListener('pointerup', end);
-    el.addEventListener('pointercancel', end);
-  }
-
-  start() {
-    if (this.running) return;
-    this.running = true;
-    this.clock.reset?.();
-    const tick = () => {
-      if (!this.running) return;
-      requestAnimationFrame(tick);
-      this.frame();
-    };
-    tick();
-  }
-  stop() { this.running = false; }
-
-  frame() {
-    this.clock.update();
-    const dt = Math.min(this.clock.getDelta(), 1 / 20);
-    const t = this.clock.getElapsed();
-    if (!this.held) {
-      this.rot.x += this.vel.x * dt;
-      this.rot.y += this.vel.y * dt;
-      this.vel.multiplyScalar(Math.exp(-2.2 * dt));
-      // once the flick has died down, come back to the nearest full turn so the word reads again
-      if (this.vel.length() < 1.2) {
-        this.rot.y = damp(this.rot.y, Math.round(this.rot.y / (Math.PI * 2)) * Math.PI * 2, 2.2, dt);
-        this.rot.x = damp(this.rot.x, Math.round(this.rot.x / (Math.PI * 2)) * Math.PI * 2, 2.2, dt);
-      }
-    }
-    // a slow breathing sway so it looks alive
-    this.pivot.rotation.set(this.rot.x + Math.sin(t * 0.7) * 0.06, this.rot.y + Math.sin(t * 0.5) * 0.14, 0);
-    this.renderer.render(this.scene, this.camera);
+  // once the flick has died down, come back to the nearest full turn so the word reads again
+  settle(dt) {
+    this.rot.y = damp(this.rot.y, Math.round(this.rot.y / (Math.PI * 2)) * Math.PI * 2, 2.2, dt);
+    this.rot.x = damp(this.rot.x, Math.round(this.rot.x / (Math.PI * 2)) * Math.PI * 2, 2.2, dt);
   }
 }
