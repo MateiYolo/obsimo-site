@@ -65,9 +65,9 @@ export const COPY = {
     fr: {
       kicker: 'Vinyle · Marbre blanc · Édition limitée',
       title: '8 Days in Sweden',
-      blurb: 'Obsimo, Monoko et Inkko ont passé 8 jours dans une cabane en Suède, en plein cœur de l’hiver.',
+      blurb: "Obsimo, Monoko et Inkko ont passé huit jours dans un chalet en Suède, au cœur de l'hiver. Ils en sont revenus avec dix morceaux.",
       description:
-        "Juste à côté du lac Vänern, le plus grand lac de Suède, entièrement gelé à -10 °C. Entre deux sessions, ils partaient marcher sur la glace, puis revenaient faire de la musique au coin du feu. Il en est sorti 10 morceaux de musique électronique. L'album s'appelle 8 Days in Sweden et sort en vinyle. Les expéditions commenceront fin novembre 2026 ! L'album sort le 3 décembre.",
+        "Huit jours dans un chalet au bord du lac Vänern, le plus grand lac de Suède, entièrement gelé par -10 °C. Entre deux sessions, Obsimo, Monoko et Inkko arpentaient le lac gelé, puis revenaient composer au coin du feu. De ce huis clos hivernal sont nés 10 morceaux de musique électronique.\n8 Days in Sweden sort le 3 décembre 2026 en vinyle. Les premières expéditions partiront dès fin novembre !",
     },
     en: {
       kicker: 'Vinyl · White marble · Limited edition',
@@ -113,7 +113,7 @@ export const COPY = {
     fr: {
       kicker: 'Bundle · 2 vinyles',
       title: 'Life Balance + 8 Days in Sweden',
-      blurb: 'Les deux vinyles ensemble : Life Balance en swirl vert et blanc, 8 Days in Sweden en marbre blanc.',
+      blurb: 'Le pack réunit les deux vinyles : Life Balance en swirl vert et blanc, et 8 Days in Sweden en marbré blanc.',
       description:
         "Life Balance : édition spéciale du nouvel album d'Obsimo, LIFE BALANCE Extended, avec 12 titres. Pressé en Europe, en série limitée. Sorti sur mon propre label, OSR Records, avec une pochette et un design originaux signés par mon frère Matei.\n\n8 Days in Sweden : Obsimo, Monoko et Inkko ont passé 8 jours dans une cabane en Suède, en plein cœur de l’hiver. Juste à côté du lac Vänern, le plus grand lac de Suède, entièrement gelé à -10 °C. Entre deux sessions, ils partaient marcher sur la glace, puis revenaient faire de la musique au coin du feu. Il en est sorti 10 morceaux de musique électronique. L'album s'appelle 8 Days in Sweden et sort en vinyle.",
     },
