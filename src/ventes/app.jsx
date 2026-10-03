@@ -1,11 +1,14 @@
 // Coquille : connexion, barre latérale, page courante, palette ⌘K, fenêtres et raccourcis globaux.
 
+import { useEffect } from 'react'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { AppSidebar } from '@/components/app-sidebar'
 import { CommandMenu } from '@/components/command-menu'
+import { MobileNav } from '@/components/mobile-nav'
 import { DialogHost } from '@/components/dialogs/host'
 import { DataProvider, useStore } from '@/lib/store'
 import { UIProvider, useUI } from '@/lib/ui'
@@ -39,20 +42,30 @@ export function App() {
 function Root() {
   const { status } = useStore()
   const { theme } = useUI()
+  const mobile = useIsMobile()
   return (
     <>
       {status === 'loading' && <Loading />}
       {status === 'login' && <Login />}
       {status === 'ready' && <Shell />}
-      <Toaster theme={theme} position="bottom-right" />
+      {/* téléphone : en haut, loin du pouce et des boutons des fenêtres */}
+      <Toaster theme={theme} position={mobile ? 'top-center' : 'bottom-right'} mobileOffset={{ top: 'calc(0.75rem + env(safe-area-inset-top))' }} />
     </>
   )
 }
 
 function Shell() {
-  const { page } = useRoute()
+  const { page, params, setParams } = useRoute()
   const { open, setCommandOpen } = useUI()
   const View = VIEWS[page] || Overview
+
+  // raccourci « Nouvelle vente » de l'icône sur l'écran d'accueil (#/ventes?nouvelle=1)
+  useEffect(() => {
+    if (params.nouvelle) {
+      setParams({ nouvelle: null })
+      open('sale')
+    }
+  }, [params.nouvelle, setParams, open])
 
   useHotkeys({
     'mod+k': () => setCommandOpen((o) => !o),
@@ -64,9 +77,11 @@ function Shell() {
   return (
     <SidebarProvider style={{ '--sidebar-width': '15rem' }}>
       <AppSidebar />
-      <SidebarInset className="min-w-0 md:border">
+      {/* sur téléphone, de la place en bas pour la barre d'onglets */}
+      <SidebarInset className="min-w-0 pb-[calc(4rem+env(safe-area-inset-bottom))] md:border md:pb-0">
         <View />
       </SidebarInset>
+      <MobileNav />
       <CommandMenu />
       <DialogHost />
     </SidebarProvider>

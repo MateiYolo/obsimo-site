@@ -95,8 +95,8 @@ export function Stock() {
                   const tone = p.stock <= 0 ? 'destructive' : p.stock <= LOW_STOCK ? 'warning' : null
                   return (
                     <TableRow key={p.id} className={cn(!p.active && 'opacity-50')}>
-                      <TableCell className="max-w-0 pl-4 sm:max-w-none">
-                        <button className="block max-w-full text-left font-medium hover:underline sm:truncate" onClick={() => open('product', { id: p.id })}>
+                      <TableCell className="pl-4 whitespace-normal">
+                        <button className="block max-w-full text-left font-medium hover:underline sm:truncate pointer-coarse:-my-2 pointer-coarse:py-2" onClick={() => open('product', { id: p.id })}>
                           {p.name}
                         </button>
                         <span className="text-xs text-muted-foreground">

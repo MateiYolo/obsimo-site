@@ -39,7 +39,7 @@ export function Concerts() {
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="pl-4">Soirée</TableHead>
-                  <TableHead className="text-right">Ventes</TableHead>
+                  <TableHead className="hidden text-right sm:table-cell">Ventes</TableHead>
                   <TableHead className="hidden text-right sm:table-cell">Articles</TableHead>
                   <TableHead className="hidden text-right md:table-cell">Espèces</TableHead>
                   <TableHead className="hidden w-40 md:table-cell" />
@@ -49,12 +49,12 @@ export function Concerts() {
               </TableHeader>
               <TableBody>
                 {nights.map((n) => (
-                  <TableRow key={n.night} className="group cursor-pointer" onClick={() => navigate('ventes', { nuit: n.night })}>
-                    <TableCell className="max-w-0 pl-4 sm:max-w-none">
-                      <p className="truncate font-medium">{n.events.size ? [...n.events].join(', ') : <span className="text-muted-foreground">Concert sans nom</span>}</p>
+                  <TableRow key={n.night} className="group cursor-pointer active:bg-accent" onClick={() => navigate('ventes', { nuit: n.night })}>
+                    <TableCell className="pl-4 whitespace-normal">
+                      <p className="font-medium">{n.events.size ? [...n.events].join(', ') : <span className="text-muted-foreground">Concert sans nom</span>}</p>
                       <p className="text-xs text-muted-foreground first-letter:uppercase">{dayLabel(n.night)}</p>
                     </TableCell>
-                    <TableCell className="num text-right">{num.format(n.count)}</TableCell>
+                    <TableCell className="num hidden text-right sm:table-cell">{num.format(n.count)}</TableCell>
                     <TableCell className="num hidden text-right sm:table-cell">{num.format(n.items)}</TableCell>
                     <TableCell className="num hidden text-right text-muted-foreground md:table-cell">{n.cash ? fmt(n.cash) : '—'}</TableCell>
                     <TableCell className="hidden md:table-cell">
@@ -62,7 +62,12 @@ export function Concerts() {
                         <div className="h-full rounded-full bg-chart-2" style={{ width: `${(n.revenue / best) * 100}%` }} />
                       </div>
                     </TableCell>
-                    <TableCell className="num text-right font-medium">{fmt(n.revenue)}</TableCell>
+                    <TableCell className="num text-right font-medium">
+                      {fmt(n.revenue)}
+                      <span className="block text-xs font-normal text-muted-foreground sm:hidden">
+                        {n.count} vente{n.count > 1 ? 's' : ''}
+                      </span>
+                    </TableCell>
                     <TableCell className="pr-3">
                       <ArrowRight className="size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                     </TableCell>

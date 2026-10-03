@@ -128,11 +128,20 @@
   }
   html {
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; /* pas de zoom au double tap, pas de délai au toucher */
+    -webkit-text-size-adjust: 100%;
   }
   body {
     @apply bg-sidebar text-foreground antialiased;
     font-feature-settings: "cv11", "ss01", "ss03";
     font-size: 14px;
+    overscroll-behavior-y: none;
+  }
+  /* téléphone : pas de cadre autour du contenu, même fond partout */
+  @media (max-width: 767px) {
+    body {
+      @apply bg-background;
+    }
   }
   /* chiffres alignés partout où il y a des montants */
   .num {

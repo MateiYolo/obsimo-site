@@ -31,7 +31,7 @@ function TagInput({ id, value, onChange, placeholder }) {
       {value.map((v) => (
         <Badge key={v} variant="secondary" className="gap-1 pr-1 font-normal">
           {v}
-          <button type="button" onClick={() => onChange(value.filter((x) => x !== v))} className="rounded-sm opacity-60 hover:opacity-100" aria-label={`Retirer ${v}`}>
+          <button type="button" onClick={() => onChange(value.filter((x) => x !== v))} className="rounded-sm opacity-60 hover:opacity-100 pointer-coarse:-m-1.5 pointer-coarse:p-1.5" aria-label={`Retirer ${v}`}>
             <X className="size-3" />
           </button>
         </Badge>
@@ -46,7 +46,7 @@ function TagInput({ id, value, onChange, placeholder }) {
         }}
         onBlur={add}
         placeholder={value.length ? '' : placeholder}
-        className="h-7 min-w-24 flex-1 bg-transparent px-1 text-sm outline-none placeholder:text-muted-foreground"
+        className="h-7 min-w-24 flex-1 bg-transparent px-1 text-sm outline-none placeholder:text-muted-foreground pointer-coarse:h-9 pointer-coarse:text-base"
       />
     </div>
   )
@@ -102,7 +102,7 @@ export function ProductSheet({ id, onClose }) {
 
   return (
     <Sheet open onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="w-full gap-0 sm:max-w-md">
+      <SheetContent className="w-full gap-0 sm:max-w-md" onOpenAutoFocus={(e) => !isNew && matchMedia('(pointer: coarse)').matches && e.preventDefault()}>
         <form onSubmit={save} className="flex h-full flex-col" onKeyDown={(e) => (e.metaKey || e.ctrlKey) && e.key === 'Enter' && e.currentTarget.requestSubmit()}>
           <SheetHeader className="border-b p-5">
             <div className="flex items-center gap-2">
@@ -188,7 +188,7 @@ export function ProductSheet({ id, onClose }) {
             </Label>
           </div>
 
-          <SheetFooter className="flex-row justify-end border-t bg-muted/30 px-5 py-3">
+          <SheetFooter className="flex-row justify-end border-t bg-muted/30 px-5 py-3 max-sm:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <Button type="button" variant="ghost" onClick={onClose}>
               Annuler
             </Button>

@@ -2,11 +2,12 @@
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Kbd, KbdGroup } from '@/components/ui/kbd'
+import { cn } from '@/lib/utils'
 
 export function Keys({ keys, className }) {
   if (!keys) return null
   return (
-    <KbdGroup className={className}>
+    <KbdGroup className={cn('pointer-coarse:hidden', className)}>
       {keys.split(' ').map((k) => (
         <Kbd key={k}>{k === 'mod' ? (navigator.platform.includes('Mac') ? '⌘' : 'Ctrl') : k.toUpperCase()}</Kbd>
       ))}

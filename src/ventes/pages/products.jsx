@@ -48,7 +48,7 @@ export function Products() {
         <>
           <div className="relative w-full sm:w-64">
             <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nom, nom en caisse, handle…" className="h-8 pl-8 text-[13px]" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nom, nom en caisse, handle…" className="h-8 pl-8 text-[13px] pointer-coarse:h-10 pointer-coarse:text-base" />
           </div>
           {archived > 0 && (
             <ToggleGroup type="single" size="sm" variant="outline" value={show} onValueChange={(v) => v && setShow(v)} className="ml-auto">
@@ -82,10 +82,10 @@ export function Products() {
                 const r = sold[x.id]
                 const m = x.price_cents != null && x.cost_cents != null ? x.price_cents - x.cost_cents : null
                 return (
-                  <TableRow key={x.id} className={cn('cursor-pointer', !x.active && 'opacity-50')} onClick={() => open('product', { id: x.id })}>
-                    <TableCell className="max-w-0 pl-4 sm:max-w-none">
-                      <div className="flex items-center gap-2">
-                        <span className="truncate font-medium">{x.name}</span>
+                  <TableRow key={x.id} className={cn('cursor-pointer active:bg-accent', !x.active && 'opacity-50')} onClick={() => open('product', { id: x.id })}>
+                    <TableCell className="pl-4 whitespace-normal">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <span className="font-medium">{x.name}</span>
                         {isPack(x) && (
                           <Badge variant="outline" className="font-normal text-muted-foreground">
                             pack

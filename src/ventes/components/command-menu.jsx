@@ -24,7 +24,7 @@ export function CommandMenu() {
   const name = (l) => d.products.find((x) => x.id === l.product_id)?.name || l.label
 
   return (
-    <CommandDialog open={commandOpen} onOpenChange={setCommandOpen} title="Rechercher" description="Pages, actions, produits et ventes" className="top-[20%] translate-y-0 sm:max-w-xl" showCloseButton={false}>
+    <CommandDialog open={commandOpen} onOpenChange={setCommandOpen} title="Rechercher" description="Pages, actions, produits et ventes" className="top-[20%] translate-y-0 sm:max-w-xl max-sm:top-2 max-sm:bottom-auto max-sm:left-2 max-sm:w-[calc(100%-1rem)] max-sm:rounded-2xl max-sm:border max-sm:data-[state=open]:slide-in-from-top max-sm:data-[state=closed]:slide-out-to-top" showCloseButton={false}>
       <CommandInput placeholder="Rechercher une page, une action, un produit…" />
       <CommandList className="max-h-[min(420px,60vh)]">
         <CommandEmpty>Aucun résultat.</CommandEmpty>
@@ -93,7 +93,7 @@ export function CommandMenu() {
           ))}
         </CommandGroup>
       </CommandList>
-      <div className="flex items-center gap-3 border-t px-3 py-2 text-xs text-muted-foreground">
+      <div className="flex items-center gap-3 border-t px-3 py-2 text-xs text-muted-foreground pointer-coarse:hidden">
         <span className="flex items-center gap-1"><Keys keys="↑ ↓" /> naviguer</span>
         <span className="flex items-center gap-1"><Keys keys="↵" /> ouvrir</span>
         <span className="ml-auto flex items-center gap-1"><Keys keys="esc" /> fermer</span>

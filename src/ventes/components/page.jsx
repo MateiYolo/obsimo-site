@@ -7,10 +7,10 @@ import { cn } from '@/lib/utils'
 export function Page({ title, icon: Icon, count, actions, toolbar, children, className }) {
   return (
     <>
-      <header className="sticky top-0 z-20 flex h-12 shrink-0 items-center gap-2 border-b bg-background/85 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/70 md:rounded-t-xl md:px-4">
-        <SidebarTrigger className="-ml-1 text-muted-foreground" />
-        <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-4" />
-        <h1 className="flex min-w-0 shrink-0 items-center gap-2 text-sm font-medium max-sm:max-w-[45%]">
+      <header className="sticky top-0 z-20 flex h-12 shrink-0 items-center gap-2 border-b pointer-coarse:h-14 bg-background/85 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/70 md:rounded-t-xl md:px-4">
+        <SidebarTrigger className="-ml-1 text-muted-foreground max-md:hidden" />
+        <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-4 max-md:hidden" />
+        <h1 className="flex min-w-0 shrink-0 items-center gap-2 text-sm font-medium max-sm:max-w-[50%] max-sm:text-base max-sm:font-semibold">
           {Icon && <Icon className="size-4 shrink-0 text-muted-foreground" />}
           <span className="truncate">{title}</span>
           {count != null && <span className="num text-muted-foreground">{count}</span>}

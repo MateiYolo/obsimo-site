@@ -93,7 +93,7 @@ export function SaleSheet({ id, onClose }) {
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2 border-t bg-muted/30 px-5 py-3">
+        <div className="flex flex-wrap gap-2 border-t bg-muted/30 px-5 py-3 max-sm:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <Button variant="outline" size="sm" onClick={() => open('edit-sale', { id })}>
             <Pencil /> Modifier
           </Button>
@@ -107,8 +107,8 @@ export function SaleSheet({ id, onClose }) {
             description={`Ses articles reviennent dans le stock.${s.external_id ? ' Une vente importée reviendra au prochain import : pour une commande annulée, préfère « Rembourser ».' : ''}`}
             onConfirm={() => run(() => api('sale-delete', { id }), 'Vente supprimée').then(onClose)}
           >
-            <Button variant="ghost" size="sm" className="ml-auto text-destructive hover:text-destructive">
-              <Trash2 /> Supprimer
+            <Button variant="ghost" size="sm" className="ml-auto text-destructive hover:text-destructive" aria-label="Supprimer la vente">
+              <Trash2 /> <span className="max-sm:sr-only">Supprimer</span>
             </Button>
           </Confirm>
         </div>

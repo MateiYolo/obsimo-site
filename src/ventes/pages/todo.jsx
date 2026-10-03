@@ -86,7 +86,7 @@ function Row({ icon: Icon, iconClass, title, meta, children }) {
         <p className="truncate text-sm font-medium">{title}</p>
         <p className="text-xs text-muted-foreground">{meta}</p>
       </div>
-      <div className="flex gap-2">{children}</div>
+      <div className="flex gap-2 max-sm:w-full max-sm:pl-7 max-sm:[&>*]:flex-1">{children}</div>
     </li>
   )
 }
@@ -98,7 +98,7 @@ function AssignRow({ item }) {
   return (
     <Row icon={Link2} iconClass="text-warning" title={`« ${item.label} »`} meta={`${item.qty} vendu${item.qty > 1 ? 's' : ''} · ${item.sales} vente${item.sales > 1 ? 's' : ''}`}>
       <Select value={pid} onValueChange={setPid}>
-        <SelectTrigger size="sm" className="w-48">
+        <SelectTrigger size="sm" className="sm:w-48">
           <SelectValue placeholder="Choisir un produit…" />
         </SelectTrigger>
         <SelectContent>

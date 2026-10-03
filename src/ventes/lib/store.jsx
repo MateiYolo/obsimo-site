@@ -1,6 +1,6 @@
 // Les données du dashboard (un seul appel GET), et `run` : exécute une action, recharge, affiche le résultat.
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { api, AuthError } from '@/lib/api'
 
@@ -10,10 +10,12 @@ export function DataProvider({ children }) {
   const [data, setData] = useState(null)
   const [status, setStatus] = useState('loading') // loading | ready | login
   const [loginError, setLoginError] = useState(null)
+  const loadedAt = useRef(0)
 
   const reload = useCallback(async () => {
     try {
       setData(await api())
+      loadedAt.current = Date.now()
       setStatus('ready')
     } catch (e) {
       if (!(e instanceof AuthError)) setLoginError(e.message)
@@ -24,6 +26,13 @@ export function DataProvider({ children }) {
 
   useEffect(() => {
     reload()
+  }, [reload])
+
+  // de retour sur l'appli après plus de 30 s : on recharge (une vente SumUp a pu arriver entre-temps)
+  useEffect(() => {
+    const onShow = () => document.visibilityState === 'visible' && loadedAt.current && Date.now() - loadedAt.current > 30000 && reload()
+    document.addEventListener('visibilitychange', onShow)
+    return () => document.removeEventListener('visibilitychange', onShow)
   }, [reload])
 
   const run = useCallback(

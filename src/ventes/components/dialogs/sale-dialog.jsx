@@ -24,6 +24,11 @@ export function SaleDialog({ onClose }) {
   const { data: d, run } = useStore()
   const products = useMemo(() => d.products.filter((p) => p.active), [d])
   const events = useMemo(() => [...new Set(d.sales.map((s) => s.event).filter(Boolean))].slice(0, 30), [d])
+  // au stand : le concert de la dernière vente en caisse de moins de 12 h est déjà rempli
+  const current = useMemo(
+    () => d.sales.find((s) => s.event && ['sumup', 'cash'].includes(s.channel) && Date.now() - new Date(s.occurred_at).getTime() < 12 * 3600e3)?.event || '',
+    [d],
+  )
   const [channel, setChannel] = useState('cash')
   const [qty, setQty] = useState({})
   const [price, setPrice] = useState(() => Object.fromEntries(products.map((p) => [p.id, fromCents(p.price_cents)])))
@@ -67,7 +72,7 @@ export function SaleDialog({ onClose }) {
       <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 p-0 sm:max-w-lg" onKeyDown={(e) => (e.metaKey || e.ctrlKey) && e.key === 'Enter' && e.currentTarget.querySelector('form')?.requestSubmit()}>
         <DialogHeader className="border-b px-5 pt-5 pb-4 text-left">
           <DialogTitle>Nouvelle vente</DialogTitle>
-          <DialogDescription>Les ventes SumUp et du site arrivent automatiquement : saisis ici le reste.</DialogDescription>
+          <DialogDescription className="max-sm:sr-only">Les ventes SumUp et du site arrivent automatiquement : saisis ici le reste.</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
           <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-4">
@@ -98,7 +103,7 @@ export function SaleDialog({ onClose }) {
                           <Plus />
                         </Button>
                       </div>
-                      <button type="button" className="line-clamp-2 min-w-0 flex-1 text-left text-sm leading-snug" onClick={() => step(p.id, 1)}>
+                      <button type="button" className="line-clamp-2 min-w-0 flex-1 self-stretch py-1 text-left text-sm leading-snug" onClick={() => step(p.id, 1)}>
                         {p.name}
                         {!p.components.length && p.stock <= 0 && <span className="block text-xs text-destructive">rupture</span>}
                       </button>
@@ -113,7 +118,7 @@ export function SaleDialog({ onClose }) {
               <Field label="Concert">
                 {(id) => (
                   <>
-                    <Input id={id} name="event" list="sale-events" placeholder="ex. Lyon · La Marquise" autoComplete="off" />
+                    <Input id={id} name="event" list="sale-events" defaultValue={current} placeholder="ex. Lyon · La Marquise" autoComplete="off" />
                     <datalist id="sale-events">
                       {events.map((e) => (
                         <option key={e} value={e} />
@@ -126,7 +131,7 @@ export function SaleDialog({ onClose }) {
             </div>
 
             <div>
-              <button type="button" onClick={() => setMore((m) => !m)} className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground">
+              <button type="button" onClick={() => setMore((m) => !m)} className="-my-2 flex items-center gap-1 py-2 text-xs font-medium text-muted-foreground hover:text-foreground">
                 <ChevronDown className={cn('size-3.5 transition-transform', !more && '-rotate-90')} /> Frais de port, commission, note
               </button>
               <div className={cn('mt-3 grid gap-3 sm:grid-cols-2', !more && 'hidden')}>
@@ -141,7 +146,7 @@ export function SaleDialog({ onClose }) {
             </div>
           </div>
 
-          <DialogFooter className="flex-row items-center border-t bg-muted/30 px-5 py-3 sm:justify-between">
+          <DialogFooter className="flex-row items-center border-t bg-muted/30 px-5 py-3 sm:justify-between max-sm:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <div className="mr-auto">
               <div className="num text-lg font-semibold leading-tight">{fmt(total)}</div>
               <div className="text-xs text-muted-foreground">{items ? `${items} article${items > 1 ? 's' : ''}` : 'Aucun article'}</div>

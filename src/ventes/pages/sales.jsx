@@ -116,7 +116,7 @@ export function Sales() {
             </Button>
           </Hint>
           <Hint label="Nouvelle vente" keys="n">
-            <Button size="sm" onClick={() => open('sale')} aria-label="Nouvelle vente">
+            <Button size="sm" onClick={() => open('sale')} aria-label="Nouvelle vente" className="max-md:hidden">
               <Plus /> <span className="hidden sm:inline">Vente</span>
             </Button>
           </Hint>
@@ -124,7 +124,7 @@ export function Sales() {
       }
       toolbar={
         <>
-          <div className="relative w-full sm:w-64">
+          <div className="relative min-w-0 flex-1 sm:w-64 sm:flex-none">
             <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
               ref={search}
@@ -132,14 +132,14 @@ export function Sales() {
               onChange={(e) => setQ(e.target.value)}
               onKeyDown={(e) => e.key === 'Escape' && (setQ(''), e.currentTarget.blur())}
               placeholder="Produit, concert, note…"
-              className="h-8 pl-8 text-[13px]"
+              className="h-8 pl-8 text-[13px] pointer-coarse:h-10 pointer-coarse:text-base"
             />
             {!q && <Keys keys="/" className="absolute top-1/2 right-2 -translate-y-1/2 max-sm:hidden" />}
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 text-muted-foreground">
-                <ListFilter /> Filtrer
+              <Button variant="ghost" size="sm" className="h-8 text-muted-foreground pointer-coarse:h-10" aria-label="Filtrer">
+                <ListFilter /> <span className="max-sm:hidden">Filtrer</span>{filters > 0 && <span className="num rounded bg-accent px-1 text-xs">{filters}</span>}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">
@@ -183,7 +183,7 @@ export function Sales() {
         <div ref={list} role="listbox" aria-label="Ventes" className="pb-10">
           {groups.map((g) => (
             <div key={g.day}>
-              <div className="sticky top-12 z-10 flex items-center gap-2 border-b bg-muted/60 px-4 py-1.5 text-xs backdrop-blur md:px-6">
+              <div className="sticky top-12 z-10 flex pointer-coarse:top-14 items-center gap-2 border-b bg-muted/60 px-4 py-1.5 text-xs backdrop-blur md:px-6">
                 <span className="font-medium first-letter:uppercase">{dayLabel(g.day)}</span>
                 <span className="text-muted-foreground">{g.sales.length}</span>
                 <span className="num ml-auto text-muted-foreground">{fmt(g.total)}</span>
@@ -200,7 +200,7 @@ export function Sales() {
                     aria-selected={selected === s.id}
                     onClick={() => (setCursor(i), openSale(s.id))}
                     className={cn(
-                      'group flex w-full items-center gap-3 border-b border-border/60 px-4 py-2.5 text-left text-sm transition-colors hover:bg-accent/60 md:px-6',
+                      'group flex w-full items-center gap-3 border-b border-border/60 px-4 py-2.5 text-left text-sm transition-colors hover:bg-accent/60 active:bg-accent md:px-6 pointer-coarse:min-h-14 pointer-coarse:py-3',
                       (cursor === i || selected === s.id) && 'bg-accent',
                     )}
                   >
@@ -274,9 +274,9 @@ export function Sales() {
 
 function Chip({ children, onRemove }) {
   return (
-    <span className="inline-flex h-7 items-center gap-1.5 rounded-md border bg-secondary/50 pr-1 pl-2 text-xs [&_svg]:size-3">
+    <span className="inline-flex h-7 items-center gap-1.5 rounded-md border bg-secondary/50 pr-1 pl-2 text-xs pointer-coarse:h-9 [&_svg]:size-3">
       {children}
-      <button onClick={onRemove} className="rounded-sm p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground" aria-label="Retirer le filtre">
+      <button onClick={onRemove} className="rounded-sm p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground pointer-coarse:p-1.5" aria-label="Retirer le filtre">
         <X />
       </button>
     </span>

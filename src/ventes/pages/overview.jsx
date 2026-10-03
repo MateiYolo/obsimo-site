@@ -8,6 +8,7 @@ import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle }
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Page } from '@/components/page'
 import { PeriodSelect } from '@/components/period-select'
 import { RevenueChart, monthLabel } from '@/components/revenue-chart'
@@ -233,12 +234,15 @@ function Stat({ label, value, delta, foot, help, warn, negative }) {
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         {label}
         {help && (
-          <Tooltip>
-            <TooltipTrigger className="opacity-60 hover:opacity-100" aria-label={`À propos : ${label}`}>
+          <Popover>
+            <PopoverTrigger className="-m-3 p-3 opacity-60 hover:opacity-100" aria-label={`À propos : ${label}`}>
               <Info className="size-3" />
-            </TooltipTrigger>
-            <TooltipContent className="max-w-60">{help}</TooltipContent>
-          </Tooltip>
+            </PopoverTrigger>
+            <PopoverContent side="top" className="w-64 text-xs">
+              {help}
+              {delta != null && <p className="mt-2 text-muted-foreground">La flèche compare à la période précédente de même durée.</p>}
+            </PopoverContent>
+          </Popover>
         )}
       </div>
       <div className="flex flex-wrap items-baseline gap-x-2">
@@ -255,7 +259,7 @@ function Stat({ label, value, delta, foot, help, warn, negative }) {
           </Tooltip>
         )}
       </div>
-      <div className="truncate text-xs text-muted-foreground">{foot}</div>
+      <div className="text-xs text-muted-foreground sm:truncate">{foot}</div>
       {warn && (
         <div className="mt-1 flex items-start gap-1 text-xs text-warning">
           <AlertTriangle className="mt-px size-3 shrink-0" />
@@ -270,7 +274,7 @@ function Stat({ label, value, delta, foot, help, warn, negative }) {
 
 function LinkButton({ to, children }) {
   return (
-    <Button variant="ghost" size="xs" asChild className="text-muted-foreground">
+    <Button variant="ghost" size="xs" asChild className="text-muted-foreground pointer-coarse:h-9 pointer-coarse:px-3">
       <a href={href(to)}>
         {children} <ArrowRight />
       </a>

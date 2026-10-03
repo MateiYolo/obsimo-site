@@ -14,7 +14,7 @@ export function PeriodSelect() {
   const short = period === '12m' ? '12 mois' : period === 'all' ? 'Tout' : period
   return (
     <Select value={period} onValueChange={setPeriod}>
-      <SelectTrigger size="sm" className="h-8 gap-1.5 text-[13px]" aria-label="Période">
+      <SelectTrigger size="sm" className="h-8 gap-1.5 text-[13px] pointer-coarse:h-10" aria-label="Période">
         <CalendarRange className="text-muted-foreground max-sm:hidden" />
         <SelectValue>
           <span className="sm:hidden">{short}</span>

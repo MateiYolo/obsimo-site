@@ -78,13 +78,13 @@ export function AppSidebar() {
         <div className="flex gap-1.5">
           <SidebarMenuButton
             onClick={() => (done(), open('sale'))}
-            className="h-8 min-w-0 flex-1 justify-start border whitespace-nowrap bg-sidebar-accent/40 text-sidebar-accent-foreground shadow-xs hover:bg-sidebar-accent"
+            className="h-8 min-w-0 flex-1 justify-start border whitespace-nowrap pointer-coarse:h-10 bg-sidebar-accent/40 text-sidebar-accent-foreground shadow-xs hover:bg-sidebar-accent"
           >
             <Plus />
             <span>Nouvelle vente</span>
-            <Keys keys="n" className="ml-auto" />
+            <Keys keys="n" className="ml-auto pointer-coarse:hidden" />
           </SidebarMenuButton>
-          <SidebarMenuButton onClick={() => (done(), setCommandOpen(true))} className="size-8 shrink-0 justify-center border shadow-xs" aria-label="Rechercher (⌘K)">
+          <SidebarMenuButton onClick={() => (done(), setCommandOpen(true))} className="size-8 shrink-0 justify-center border shadow-xs pointer-coarse:size-10" aria-label="Rechercher (⌘K)">
             <Search />
           </SidebarMenuButton>
         </div>
@@ -99,7 +99,7 @@ export function AppSidebar() {
                 const p = PAGES[key]
                 return (
                   <SidebarMenuItem key={key}>
-                    <SidebarMenuButton asChild isActive={page === key} className="h-8 text-[13px]">
+                    <SidebarMenuButton asChild isActive={page === key} className="h-8 text-[13px] pointer-coarse:h-10 pointer-coarse:text-[15px]">
                       <a href={href(key)} onClick={done}>
                         <p.icon />
                         <span>{p.label}</span>
@@ -122,7 +122,7 @@ export function AppSidebar() {
               <Integration on={data.integrations.sumup} label="SumUp" />
               {data.integrations.sumup && (
                 <button
-                  className="inline-flex items-center gap-1 rounded px-1 hover:text-foreground"
+                  className="inline-flex items-center gap-1 rounded px-1 hover:text-foreground pointer-coarse:-my-3 pointer-coarse:px-2 pointer-coarse:py-3"
                   onClick={(e) => {
                     const b = e.currentTarget
                     b.disabled = true
@@ -137,7 +137,7 @@ export function AppSidebar() {
         )}
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive={page === 'reglages'} className="h-8 text-[13px]">
+            <SidebarMenuButton asChild isActive={page === 'reglages'} className="h-8 text-[13px] pointer-coarse:h-10 pointer-coarse:text-[15px]">
               <a href={href('reglages')} onClick={done}>
                 <PAGES.reglages.icon />
                 <span>Réglages</span>

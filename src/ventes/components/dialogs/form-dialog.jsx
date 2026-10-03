@@ -34,7 +34,7 @@ export function FormDialog({ title, description, submitLabel = 'Enregistrer', on
             {description && <DialogDescription>{description}</DialogDescription>}
           </DialogHeader>
           <div className="grid gap-4 px-5 pb-5">{children}</div>
-          <DialogFooter className="border-t bg-muted/30 px-5 py-3">
+          <DialogFooter className="border-t bg-muted/30 px-5 py-3 max-sm:flex-row max-sm:[&>*]:flex-1 max-sm:pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <DialogClose asChild>
               <Button type="button" variant="ghost">
                 Annuler
