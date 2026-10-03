@@ -69,6 +69,7 @@ Champs `model` d'un vinyle : `cover`, `back`, `disc` (PNG du disque vu de dessus
 ## Structure
 
 - `src/scene.js` : le canvas WebGL unique ; chaque objet suit un emplacement vide de la page (scroll natif), rotation et transition vers la fiche
+- `src/ventes/`, `api/`, `supabase/` : le dashboard des ventes (voir plus bas)
 - `src/models.js` : vinyle (pochette + disque qui sort et tourne), bouteille de sauce, carte générique
 
 ## Bouteille de sauce
@@ -101,3 +102,42 @@ transparent, tiré du PDF d'impression). Fichiers dans `public/assets/postcard/`
 - Les dates Bandsintown sont ajoutées en JSON-LD `MusicEvent` (`eventsLd` dans `src/main.js`).
 - `public/robots.txt`, `public/sitemap.xml`. `vercel.json` renvoie `X-Robots-Tag: noindex` sur tout autre domaine que
   `www.obsimo.com` (URLs `*.vercel.app`), pour que Google n'indexe qu'une seule version du site.
+
+## Dashboard des ventes (/ventes)
+
+`obsimo.com/ventes/`, protégé par mot de passe : toutes les ventes de merch au même endroit (site, concerts, Bandcamp),
+le stock, et les comptes (CA, commissions, coût de revient, marge, dépenses) par mois. Export CSV pour la compta.
+
+- **Site** : chaque commande Shopify payée arrive en direct par webhook et sort le stock ; remboursée ou annulée,
+  elle le remet.
+- **Concerts** : les ventes de la caisse SumUp sont importées tous les matins (cron Vercel) ou avec le bouton
+  « Sync SumUp ». Chaque article de la caisse est associé à un produit par son nom (« Vinyle », « Hot Sauce »…) ; un
+  nom inconnu apparaît en haut du dashboard pour être associé une fois pour toutes. Le concert du soir est retrouvé
+  dans les dates Bandsintown.
+- **Bandcamp, espèces, le reste** : bouton « + Vente ».
+- **Packs** : un pack vendu sort ses composants du stock (le bundle sort les deux vinyles).
+- **Stock** : commencer par un « Inventaire » de chaque produit (ce qu'il reste vraiment), puis « Réassort » à chaque
+  livraison. L'onglet Stock peut aussi renvoyer ce stock vers Shopify (accès Admin requis).
+
+Le code : `ventes/index.html` + `src/ventes/` (la page), `api/` (fonctions Vercel : `ventes.js` pour le dashboard,
+`webhooks/shopify.js`, `cron/sumup.js`), `supabase/migrations/` (tables `merch_*` dans le projet Supabase Obsimo, RLS
+sans policy : seule la clé secrète côté serveur y accède). En local, `npm run dev` sert aussi les fonctions de `api/`
+avec les variables de `.env.local`.
+
+### Variables Vercel (projet obsimo-website)
+
+| Variable | Rôle |
+| --- | --- |
+| `DASHBOARD_PASSWORD` | mot de passe du dashboard (8 caractères minimum ; le changer déconnecte tout le monde) |
+| `SUPABASE_URL` | `https://gzmbrpzeajjmoluceryb.supabase.co` |
+| `SUPABASE_SECRET_KEY` | Supabase → Project Settings → API Keys → clé secrète (`sb_secret_…`), ou l'ancienne `service_role` |
+| `SHOPIFY_WEBHOOK_SECRET` | la clé de signature des webhooks (voir ci-dessous) |
+| `SUMUP_API_KEY` | SumUp → Profil → Développeurs → clé API secrète (`sup_sk_…`) |
+| `CRON_SECRET` | n'importe quelle longue chaîne aléatoire : protège l'import automatique SumUp |
+| `SHOPIFY_ADMIN_TOKEN` *(facultatif)* | jeton Admin API (`shpat_…`), ou `SHOPIFY_CLIENT_ID` + `SHOPIFY_CLIENT_SECRET` d'une app du Dev Dashboard : import de l'historique des commandes et envoi du stock vers Shopify (droits `read_orders`, `read_products`, `read_inventory`, `write_inventory`, `read_locations`) |
+
+### Webhook Shopify
+
+Admin Shopify → Paramètres → Notifications → Webhooks → **Créer un webhook**, deux fois : événements
+« Paiement de commande » et « Mise à jour de commande », format JSON, URL `https://www.obsimo.com/api/webhooks/shopify`.
+La clé affichée en bas de cette page (« Vos webhooks seront signés avec… ») va dans `SHOPIFY_WEBHOOK_SECRET`.
