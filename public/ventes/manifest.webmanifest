@@ -1,0 +1,19 @@
+{
+  "name": "Obsimo Ventes",
+  "short_name": "Ventes",
+  "description": "Ventes de merch, stock et comptes d'Obsimo",
+  "start_url": "/ventes/",
+  "scope": "/ventes/",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#121212",
+  "lang": "fr",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "shortcuts": [
+    { "name": "Nouvelle vente", "url": "/ventes/#/ventes?nouvelle=1" },
+    { "name": "Stock", "url": "/ventes/#/stock" }
+  ]
+}

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="fr" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#121212" />
+    <title>Obsimo · Ventes</title>
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- installable sur l'écran d'accueil, s'ouvre en plein écran comme une appli -->
+    <link rel="manifest" href="/ventes/manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Ventes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <script>
+      // thème choisi avant le premier rendu (pas de flash blanc)
+      try {
+        const t = localStorage.getItem('ventes-theme') || 'dark';
+        const dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.classList.toggle('dark', dark);
+      } catch {}
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/ventes/main.jsx"></script>
+  </body>
+</html>

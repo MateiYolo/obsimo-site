@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /ventes/
 
 Sitemap: https://www.obsimo.com/sitemap.xml
