@@ -112,14 +112,18 @@ le stock, et les comptes (CA, commissions, coût de revient, marge, dépenses) p
   elle le remet.
 - **Concerts** : les ventes de la caisse SumUp sont importées tous les matins (cron Vercel) ou avec le bouton
   « Sync SumUp ». Chaque article de la caisse est associé à un produit par son nom (« Vinyle », « Hot Sauce »…) ; un
-  nom inconnu apparaît en haut du dashboard pour être associé une fois pour toutes. Le concert du soir est retrouvé
+  nom inconnu apparaît dans « À traiter » pour être associé une fois pour toutes. Le concert du soir est retrouvé
   dans les dates Bandsintown.
-- **Bandcamp, espèces, le reste** : bouton « + Vente ».
+- **Bandcamp, espèces, le reste** : bouton « Nouvelle vente » (ou la touche N).
 - **Packs** : un pack vendu sort ses composants du stock (le bundle sort les deux vinyles).
 - **Stock** : commencer par un « Inventaire » de chaque produit (ce qu'il reste vraiment), puis « Réassort » à chaque
   livraison. L'onglet Stock peut aussi renvoyer ce stock vers Shopify (accès Admin requis).
 
-Le code : `ventes/index.html` + `src/ventes/` (la page), `api/` (fonctions Vercel : `ventes.js` pour le dashboard,
+Navigation : barre latérale, palette ⌘K (pages, actions, produits, ventes récentes), raccourcis « G puis lettre »
+pour changer de page, `?` pour la liste des raccourcis. Les pages ont des liens partageables (`#/ventes?nuit=…`).
+
+Le code : `ventes/index.html` + `src/ventes/` (la page, en React avec les composants [shadcn/ui](https://ui.shadcn.com)
+dans `src/ventes/components/ui/` et Tailwind v4 ; `components.json` permet d'en ajouter avec la CLI shadcn), `api/` (fonctions Vercel : `ventes.js` pour le dashboard,
 `webhooks/shopify.js`, `cron/sumup.js`), `supabase/migrations/` (tables `merch_*` dans le projet Supabase Obsimo, RLS
 sans policy : seule la clé secrète côté serveur y accède). En local, `npm run dev` sert aussi les fonctions de `api/`
 avec les variables de `.env.local`.

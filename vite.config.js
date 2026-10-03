@@ -1,4 +1,6 @@
 import { defineConfig, loadEnv } from 'vite';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -54,13 +56,24 @@ const api = {
 };
 
 export default defineConfig({
-  plugins: [bake, api],
+  plugins: [bake, api, react(), tailwindcss()],
+  // @/… : the /ventes dashboard (React + shadcn/ui, see components.json)
+  resolve: { alias: { '@': path.resolve('src/ventes') } },
   build: {
     // the shop and the sales dashboard (/ventes/, password-protected through its API)
     rolldownOptions: {
       input: { main: path.resolve('index.html'), ventes: path.resolve('ventes/index.html') },
       // three.js in its own file: it changes far less often than the site, so browsers keep it cached across deploys
-      output: { codeSplitting: { groups: [{ name: 'three', test: /node_modules[\\/]three[\\/]/ }] } },
+      output: {
+        codeSplitting: {
+          groups: [
+            { name: 'three', test: /node_modules[\\/]three[\\/]/ },
+            // /ventes: charts and React also change rarely
+            { name: 'charts', test: /node_modules[\\/](recharts|d3-|victory-|es-toolkit|decimal\.js|immer|reselect|@reduxjs|react-redux|redux)/ },
+            { name: 'react', test: /node_modules[\\/](react|react-dom|scheduler|radix-ui|@radix-ui|cmdk|sonner|lucide-react)[\\/]/ },
+          ],
+        },
+      },
     },
     chunkSizeWarningLimit: 700, // three.js alone is ~580 kB minified (~150 kB gzip)
   },

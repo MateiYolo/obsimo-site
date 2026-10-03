@@ -17,6 +17,8 @@ export const SERIES = [
   { key: 'bandcamp', label: 'Bandcamp', channels: ['bandcamp'] },
   { key: 'other', label: 'Autre', channels: ['other'] },
 ];
+// couleur de chaque série (variables du thème, voir index.css)
+export const SERIES_COLOR = { shopify: 'var(--chart-1)', live: 'var(--chart-2)', bandcamp: 'var(--chart-3)', other: 'var(--chart-4)' };
 export const seriesOf = (channel) => SERIES.find((s) => s.channels.includes(channel))?.key || 'other';
 
 export const CHANNELS = {
@@ -66,6 +68,16 @@ export function monthsOf(period, sales, now = new Date()) {
     if (++m > 12) (m = 1), y++;
   }
   return out;
+}
+
+// La période précédente de même durée (pour comparer) : les N mois qui précèdent.
+export function previousMonths(months) {
+  const n = months.length;
+  return months.map((key) => {
+    const [y, m] = key.split('-').map(Number);
+    const d = new Date(Date.UTC(y, m - 1 - n, 1));
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+  });
 }
 
 export function inMonths(list, months, dateKey = 'occurred_at') {
