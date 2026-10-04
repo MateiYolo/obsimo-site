@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { useData } from '@/lib/store'
 import { useUI } from '@/lib/ui'
-import { monthOf, rangeOf, inRange, unmapped, PRESETS } from '@/calc.js'
+import { monthOf, rangeOf, inRange, unmapped, PRESETS, nightOf, byNight } from '@/calc.js'
 
 export const LOW_STOCK = 5
 export const isPack = (p) => p.components.length > 0
@@ -47,5 +47,20 @@ export function useTodo() {
     }
     out.count = out.unmapped.length + out.noCost.length + out.stock.length
     return out
+  }, [d])
+}
+
+// La soirée en cours : celle de la dernière vente en caisse (SumUp ou espèces) de moins de 12 h, sinon null.
+export const LIVE = ['sumup', 'cash']
+export function useTonight() {
+  const d = useData()
+  return useMemo(() => {
+    const last = d?.sales.find((s) => LIVE.includes(s.channel) && Date.now() - new Date(s.occurred_at).getTime() < 12 * 3600e3)
+    if (!last) return null
+    const night = nightOf(last.occurred_at)
+    const sales = d.sales.filter((s) => LIVE.includes(s.channel) && nightOf(s.occurred_at) === night)
+    const n = byNight(sales)[0]
+    // le nom le plus récent saisi ce soir-là
+    return n && { ...n, event: sales.find((s) => s.event)?.event || '' }
   }, [d])
 }

@@ -1,4 +1,4 @@
-// Vue d'ensemble : ce qui demande une action, chiffres clés (comparés à la période précédente), CA par heure/jour/mois,
+// Vue d'ensemble : la soirée en cours (au stand, sur le téléphone), ce qui demande une action, chiffres clés (comparés à la période précédente), CA par heure/jour/mois,
 // meilleurs produits, répartition par canal, derniers concerts et dernières ventes.
 
 import { useMemo } from 'react'
@@ -15,18 +15,19 @@ import { RevenueChart, bucketLabel } from '@/components/revenue-chart'
 import { ChannelIcon, ChannelDot } from '@/components/channel'
 import { SERIES, SERIES_COLOR, summary, byBucket, byProduct, byNight, metrics } from '@/calc.js'
 import { useData } from '@/lib/store'
-import { usePeriod, useTodo, isPack } from '@/lib/derived'
+import { usePeriod, useTodo, useTonight, isPack } from '@/lib/derived'
 import { usePref } from '@/lib/prefs'
 import { href } from '@/lib/router'
 import { downloadCsv } from '@/lib/actions'
 import { PAGES } from '@/lib/nav'
-import { fmt, num, dayLabel, dateShort, time } from '@/lib/format'
+import { fmt, num, plural, dayLabel, dateShort, time } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 export function Overview() {
   const d = useData()
   const p = usePeriod()
   const todo = useTodo()
+  const tonight = useTonight()
   const [view, setView] = usePref('chart', 'chart')
 
   const t = useMemo(() => summary(p.sales, p.expenses), [p])
@@ -53,6 +54,8 @@ export function Overview() {
       }
       className="space-y-6"
     >
+      {tonight && <Tonight n={tonight} />}
+
       {todo.count > 0 && (
         <a href={href('a-traiter')} className="group flex items-center gap-3 rounded-lg border border-warning/30 bg-warning/[0.06] px-4 py-2.5 text-sm transition-colors hover:bg-warning/10">
           <AlertTriangle className="size-4 shrink-0 text-warning" />
@@ -114,7 +117,7 @@ export function Overview() {
         <CardContent className="px-3 sm:px-5">{view === 'table' ? <BucketTable rows={rows} unit={p.unit} /> : <RevenueChart rows={rows} unit={p.unit} />}</CardContent>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="grid gap-6 lg:grid-cols-5 *:min-w-0">
         <Card className="gap-3 py-5 lg:col-span-3">
           <CardHeader className="px-5">
             <CardTitle className="text-sm font-medium">Meilleurs produits</CardTitle>
@@ -178,7 +181,7 @@ export function Overview() {
         </Card>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 *:min-w-0">
         <Card className="gap-2 py-5">
           <CardHeader className="px-5">
             <CardTitle className="text-sm font-medium">Derniers concerts</CardTitle>
@@ -227,6 +230,43 @@ export function Overview() {
 }
 
 const UNIT = { hour: 'heure', day: 'jour', month: 'mois' }
+
+// La soirée en cours : le total qui monte, et ce qu'il doit y avoir dans la caisse
+function Tonight({ n }) {
+  return (
+    <a href={href('ventes', { nuit: n.night })} className="group block rounded-xl border bg-card p-4 transition-colors hover:bg-accent/40 active:bg-accent/60 sm:p-5">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span className="relative flex size-2 shrink-0">
+          <span className="absolute inset-0 animate-ping rounded-full bg-chart-2 opacity-60" />
+          <span className="relative size-2 rounded-full bg-chart-2" />
+        </span>
+        <span className="min-w-0 truncate">
+          <span className="font-medium text-foreground">Ce soir</span>
+          {n.event && ` · ${n.event}`}
+        </span>
+        <ArrowRight className="ml-auto size-4 shrink-0 transition-transform group-hover:translate-x-0.5" />
+      </div>
+      <div className="mt-2 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+        <div>
+          <div className="num text-3xl font-semibold tracking-tight">{fmt(n.revenue)}</div>
+          <div className="text-xs text-muted-foreground">
+            {plural(n.count, 'vente')} · {plural(n.items, 'article')}
+          </div>
+        </div>
+        <dl className="flex gap-6 text-xs">
+          <div>
+            <dt className="text-muted-foreground">Espèces</dt>
+            <dd className="num text-base font-medium">{fmt(n.cash)}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Carte</dt>
+            <dd className="num text-base font-medium">{fmt(n.revenue - n.cash)}</dd>
+          </div>
+        </dl>
+      </div>
+    </a>
+  )
+}
 
 const delta = (cur, prev) => (prev == null || prev <= 0 ? null : ((cur - prev) / prev) * 100)
 
