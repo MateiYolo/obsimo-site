@@ -6,7 +6,7 @@
 
 import { db, q, feeFor, recordSale, setStatus, products as loadProducts, setting } from './db.js';
 import { byName } from './match.js';
-import { eventFinder } from './events.js';
+import { eventFinder, nightOf } from './events.js';
 
 const BASE = 'https://api.sumup.com';
 const cents = (v) => Math.round(Number(v || 0) * 100);
@@ -94,7 +94,14 @@ export async function syncSumup({ since } = {}) {
       await q(db().from('merch_sales').select('id, external_id, status, refunded_cents').eq('channel', 'sumup').gte('occurred_at', from.toISOString()))
     ).map((s) => [s.external_id, s]),
   );
-  const eventOf = await eventFinder();
+  const bandsintown = await eventFinder();
+  // un nom de concert donné à la main dans le dashboard l'emporte pour les ventes suivantes de la même soirée
+  const named = new Map(
+    (
+      await q(db().from('merch_sales').select('occurred_at, event').in('channel', ['sumup', 'cash']).not('event', 'is', null).gte('occurred_at', new Date(from.getTime() - 864e5).toISOString()))
+    ).map((s) => [nightOf(s.occurred_at), s.event]),
+  );
+  const eventOf = (timestamp) => (timestamp && named.get(nightOf(timestamp))) || bandsintown(timestamp);
   const out = { created: 0, updated: 0, skipped: 0, since: from.toISOString() };
 
   let url = `${base}/history?oldest_time=${encodeURIComponent(from.toISOString())}&order=ascending&limit=100`;

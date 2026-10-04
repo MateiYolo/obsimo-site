@@ -1,18 +1,20 @@
 // Concerts : une ligne par soirée (ventes en caisse SumUp et espèces), clic → les ventes de la soirée.
 
 import { useMemo } from 'react'
-import { ArrowRight, Ticket } from 'lucide-react'
+import { ArrowRight, Pencil, Ticket } from 'lucide-react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Page, Empty } from '@/components/page'
 import { PeriodSelect } from '@/components/period-select'
 import { byNight } from '@/calc.js'
 import { usePeriod } from '@/lib/derived'
+import { useUI } from '@/lib/ui'
 import { navigate } from '@/lib/router'
 import { PAGES } from '@/lib/nav'
 import { fmt, dayLabel, num } from '@/lib/format'
 
 export function Concerts() {
   const p = usePeriod()
+  const { open } = useUI()
   const nights = useMemo(() => byNight(p.sales), [p])
   const t = nights.reduce((a, n) => ({ revenue: a.revenue + n.revenue, items: a.items + n.items, count: a.count + n.count }), { revenue: 0, items: 0, count: 0 })
   const best = nights.reduce((m, n) => Math.max(m, n.revenue), 0)
@@ -51,7 +53,21 @@ export function Concerts() {
                 {nights.map((n) => (
                   <TableRow key={n.night} className="group cursor-pointer active:bg-accent" onClick={() => navigate('ventes', { nuit: n.night })}>
                     <TableCell className="pl-4 whitespace-normal">
-                      <p className="font-medium">{n.events.size ? [...n.events].join(', ') : <span className="text-muted-foreground">Concert sans nom</span>}</p>
+                      <div className="flex items-center gap-1">
+                        <p className="font-medium">{n.events.size ? [...n.events].join(', ') : <span className="text-muted-foreground">Concert sans nom</span>}</p>
+                        <button
+                          type="button"
+                          aria-label="Renommer le concert"
+                          title="Renommer le concert"
+                          className="-my-1 rounded-md p-1.5 text-muted-foreground transition-opacity hover:bg-accent hover:text-foreground focus-visible:opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            open('rename-night', { night: n.night, ids: n.ids, name: [...n.events][0] })
+                          }}
+                        >
+                          <Pencil className="size-3.5" />
+                        </button>
+                      </div>
                       <p className="text-xs text-muted-foreground first-letter:uppercase">{dayLabel(n.night)}</p>
                     </TableCell>
                     <TableCell className="num hidden text-right sm:table-cell">{num.format(n.count)}</TableCell>
@@ -76,7 +92,7 @@ export function Concerts() {
               </TableBody>
             </Table>
           </div>
-          <p className="text-xs text-muted-foreground">Une vente après minuit compte pour la soirée de la veille. Le nom du concert vient des dates Bandsintown, ou de la saisie.</p>
+          <p className="text-xs text-muted-foreground">Une vente après minuit compte pour la soirée de la veille. Le nom du concert vient des dates Bandsintown, ou de la saisie : le crayon le renomme pour toute la soirée.</p>
         </>
       ) : (
         <Empty icon={Ticket} title="Aucun concert sur la période">

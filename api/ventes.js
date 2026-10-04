@@ -94,6 +94,14 @@ const actions = {
     return { ok: true };
   },
 
+  // renomme le concert d'une soirée : toutes ses ventes en caisse prennent le même nom
+  async 'night-rename'(b) {
+    const ids = (b.ids || []).filter(Boolean);
+    if (!ids.length) throw new Error('Aucune vente');
+    await q(db().from('merch_sales').update({ event: String(b.event || '').trim() || null }).in('id', ids).in('channel', ['sumup', 'cash']));
+    return { ok: true };
+  },
+
   // supprime une vente et ses mouvements de stock (erreur de saisie) ; une vente importée reviendrait au prochain import
   async 'sale-delete'(b) {
     await q(db().from('merch_sales').delete().eq('id', b.id));

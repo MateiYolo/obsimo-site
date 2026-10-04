@@ -139,9 +139,10 @@ export function byNight(sales) {
   for (const s of sales) {
     if (!['sumup', 'cash'].includes(s.channel) || s.status === 'cancelled') continue;
     const night = nightOf(s.occurred_at);
-    const r = map.get(night) || { night, events: new Set(), revenue: 0, items: 0, count: 0, cash: 0 };
+    const r = map.get(night) || { night, events: new Set(), ids: [], revenue: 0, items: 0, count: 0, cash: 0 };
     const m = metrics(s);
     if (s.event) r.events.add(s.event);
+    r.ids.push(s.id);
     r.revenue += m.revenue;
     r.items += m.items;
     r.count++;
