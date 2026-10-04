@@ -8,6 +8,7 @@ const GENERAL = [
   ['Rechercher, lancer une action', 'mod k'],
   ['Nouvelle vente', 'n'],
   ['Afficher ou masquer le menu', 'mod b'],
+  ['Changer de période (24 h → tout)', '1 … 6'],
   ['Rechercher dans la liste', '/'],
   ['Ligne suivante / précédente', 'j k'],
   ['Ouvrir la ligne', '↵'],

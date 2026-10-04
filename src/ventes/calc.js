@@ -44,45 +44,86 @@ export function metrics(s) {
   };
 }
 
-// Mois couverts par une période : '12m' (les 12 derniers), 'AAAA' (une année civile) ou 'all'.
-export function monthsOf(period, sales, now = new Date()) {
-  const cur = monthOf(now.toISOString());
-  let from;
-  let to = cur;
-  if (period === 'all') {
-    from = sales.length ? sales.reduce((m, s) => (monthOf(s.occurred_at) < m ? monthOf(s.occurred_at) : m), cur) : cur;
-  } else if (/^\d{4}$/.test(period)) {
-    from = `${period}-01`;
-    to = period === cur.slice(0, 4) ? cur : `${period}-12`;
-  } else {
-    const [y, m] = cur.split('-').map(Number);
-    const d = new Date(Date.UTC(y, m - 12, 1));
-    from = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-  }
+// Les périodes proposées : glissantes (24 h, 7 j), mois en cours, N derniers mois, une année 'AAAA', ou tout.
+export const PRESETS = [
+  ['24h', '24 dernières heures', '24 h'],
+  ['7d', '7 derniers jours', '7 j'],
+  ['mtd', 'Mois en cours', 'Ce mois'],
+  ['6m', '6 derniers mois', '6 mois'],
+  ['12m', '12 derniers mois', '12 mois'],
+  ['all', 'Depuis le début', 'Tout'],
+];
+
+const hourFmt = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23' });
+export const hourOf = (iso) => {
+  const p = Object.fromEntries(hourFmt.formatToParts(new Date(iso)).map((x) => [x.type, x.value]));
+  return `${p.year}-${p.month}-${p.day}T${p.hour}`; // AAAA-MM-JJTHH
+};
+const addDays = (day, n) => new Date(Date.parse(`${day}T12:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
+const addMonths = (month, n) => {
+  const [y, m] = month.split('-').map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + n, 1));
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+};
+const monthSpan = (from, to) => {
   const out = [];
-  let [y, m] = from.split('-').map(Number);
-  for (let guard = 0; guard < 600; guard++) {
-    const key = `${y}-${String(m).padStart(2, '0')}`;
-    out.push(key);
-    if (key >= to) break;
-    if (++m > 12) (m = 1), y++;
+  for (let k = from, guard = 0; guard < 600; guard++, k = addMonths(k, 1)) {
+    out.push(k);
+    if (k >= to) break;
   }
   return out;
+};
+const lastDay = (month) => addDays(`${addMonths(month, 1)}-01`, -1).slice(8);
+
+// Une période → ses tranches (heures, jours ou mois de Paris) et celles de la période d'avant, pour comparer.
+// Le graphique a une colonne par tranche ; une vente est dans la période si sa tranche y est.
+export function rangeOf(period, sales, now = new Date()) {
+  const iso = now.toISOString();
+  const day = dayOf(iso);
+  const cur = monthOf(iso);
+  if (period === '24h') {
+    const hours = (from) => [...new Set(Array.from({ length: 24 }, (_, i) => hourOf(new Date(now.getTime() - (from + 23 - i) * 3600e3).toISOString())))];
+    return { unit: 'hour', keys: hours(0), prev: hours(24) };
+  }
+  if (period === '7d') {
+    const days = (from) => Array.from({ length: 7 }, (_, i) => addDays(day, i - 6 - from));
+    return { unit: 'day', keys: days(0), prev: days(7) };
+  }
+  if (period === 'mtd') {
+    const n = Number(day.slice(8));
+    const before = addMonths(cur, -1);
+    const upTo = Math.min(n, Number(lastDay(before)));
+    return {
+      unit: 'day',
+      keys: Array.from({ length: n }, (_, i) => `${cur}-${String(i + 1).padStart(2, '0')}`),
+      prev: Array.from({ length: upTo }, (_, i) => `${before}-${String(i + 1).padStart(2, '0')}`),
+    };
+  }
+  let keys;
+  if (period === 'all') {
+    const first = sales.reduce((m, s) => (monthOf(s.occurred_at) < m ? monthOf(s.occurred_at) : m), cur);
+    return { unit: 'month', keys: monthSpan(first, cur), prev: null };
+  } else if (/^\d{4}$/.test(period)) keys = monthSpan(`${period}-01`, period === cur.slice(0, 4) ? cur : `${period}-12`);
+  else keys = monthSpan(addMonths(cur, period === '6m' ? -5 : -11), cur);
+  // la période précédente de même durée : les N mois qui précèdent
+  return { unit: 'month', keys, prev: keys.map((k) => addMonths(k, -keys.length)) };
 }
 
-// La période précédente de même durée (pour comparer) : les N mois qui précèdent.
-export function previousMonths(months) {
-  const n = months.length;
-  return months.map((key) => {
-    const [y, m] = key.split('-').map(Number);
-    const d = new Date(Date.UTC(y, m - 1 - n, 1));
-    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-  });
-}
+// Tranche d'une date (ISO ou AAAA-MM-JJ pour les dépenses, qui n'ont pas d'heure).
+const keyOf = (unit, v) => {
+  const s = String(v);
+  if (s.length === 10) return unit === 'month' ? s.slice(0, 7) : unit === 'day' ? s : null;
+  return unit === 'hour' ? hourOf(s) : unit === 'day' ? dayOf(s) : monthOf(s);
+};
 
-export function inMonths(list, months, dateKey = 'occurred_at') {
-  const set = new Set(months);
-  return list.filter((x) => set.has(String(x[dateKey]).length === 10 ? x[dateKey].slice(0, 7) : monthOf(x[dateKey])));
+export function inRange(list, unit, keys, dateKey = 'occurred_at') {
+  const set = new Set(keys);
+  if (unit === 'hour') {
+    // une dépense du jour compte pour les 24 dernières heures si son jour en fait partie
+    const days = new Set(keys.map((k) => k.slice(0, 10)));
+    return list.filter((x) => (String(x[dateKey]).length === 10 ? days.has(x[dateKey]) : set.has(hourOf(x[dateKey]))));
+  }
+  return list.filter((x) => set.has(keyOf(unit, x[dateKey])));
 }
 
 export function summary(sales, expenses) {
@@ -99,11 +140,12 @@ export function summary(sales, expenses) {
   return t;
 }
 
-export function byMonth(sales, months) {
-  const rows = months.map((month) => ({ month, values: Object.fromEntries(SERIES.map((s) => [s.key, 0])), total: 0, items: 0 }));
-  const idx = new Map(rows.map((r, i) => [r.month, i]));
+// CA par tranche (heure, jour ou mois), par série.
+export function byBucket(sales, unit, keys) {
+  const rows = keys.map((key) => ({ key, values: Object.fromEntries(SERIES.map((s) => [s.key, 0])), total: 0, items: 0 }));
+  const idx = new Map(rows.map((r, i) => [r.key, i]));
   for (const s of sales) {
-    const r = rows[idx.get(monthOf(s.occurred_at))];
+    const r = rows[idx.get(keyOf(unit, s.occurred_at))];
     if (!r) continue;
     const m = metrics(s);
     r.values[seriesOf(s.channel)] += m.revenue;
