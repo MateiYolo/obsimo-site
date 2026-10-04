@@ -1,11 +1,11 @@
-// Corrections sur une vente : concert / note / commission, et remboursement.
+// Corrections sur une vente : concert / note / commission, remboursement, et nom du concert d'une soirée entière.
 
 import { Input } from '@/components/ui/input'
 import { Field, MoneyInput } from '@/components/field'
 import { FormDialog } from './form-dialog'
 import { api } from '@/lib/api'
 import { useStore } from '@/lib/store'
-import { fmt, fromCents, toCents } from '@/lib/format'
+import { fmt, fromCents, toCents, dayLabel } from '@/lib/format'
 
 export function EditSaleDialog({ id, onClose }) {
   const { data: d, run } = useStore()
@@ -39,6 +39,33 @@ export function RefundDialog({ id, onClose }) {
       }}
     >
       <Field label="Montant remboursé">{(fid) => <MoneyInput id={fid} name="amount" defaultValue={fromCents(s.total_cents)} required />}</Field>
+    </FormDialog>
+  )
+}
+
+// Renomme le concert d'une soirée : toutes ses ventes en caisse, et celles qui arriveront encore de SumUp ce soir-là.
+export function RenameNightDialog({ night, ids, name, onClose }) {
+  const { data: d, run } = useStore()
+  const known = [...new Set(d.sales.map((s) => s.event).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr'))
+  return (
+    <FormDialog
+      title="Nom du concert"
+      description={`Soirée du ${dayLabel(night)}, ${ids.length} vente${ids.length > 1 ? 's' : ''}.`}
+      onClose={onClose}
+      onSubmit={(f) => run(() => api('night-rename', { ids, event: f.get('event') }), 'Concert renommé')}
+    >
+      <Field label="Concert">
+        {(fid) => (
+          <>
+            <Input id={fid} name="event" defaultValue={name || ''} placeholder="ex. Lyon · La Marquise" list={`${fid}-list`} autoComplete="off" />
+            <datalist id={`${fid}-list`}>
+              {known.map((e) => (
+                <option key={e} value={e} />
+              ))}
+            </datalist>
+          </>
+        )}
+      </Field>
     </FormDialog>
   )
 }

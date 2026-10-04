@@ -3,6 +3,7 @@
 
 const TZ = 'Europe/Paris';
 const dayOf = (date) => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(date); // AAAA-MM-JJ
+export const nightOf = (timestamp) => dayOf(new Date(new Date(timestamp).getTime() - 8 * 3600e3));
 
 export async function eventFinder() {
   const appId = process.env.VITE_BANDSINTOWN_APP_ID || process.env.BANDSINTOWN_APP_ID;
@@ -22,7 +23,6 @@ export async function eventFinder() {
   }
   return (timestamp) => {
     if (!timestamp) return null;
-    const day = dayOf(new Date(new Date(timestamp).getTime() - 8 * 3600e3));
-    return byDay.get(day) || null;
+    return byDay.get(nightOf(timestamp)) || null;
   };
 }
