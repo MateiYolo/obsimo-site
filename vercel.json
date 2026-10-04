@@ -1,6 +1,7 @@
 {
   "redirects": [
-    { "source": "/rider", "destination": "/rider/", "permanent": true }
+    { "source": "/rider", "destination": "/rider/", "permanent": true },
+    { "source": "/ventes", "destination": "/ventes/", "permanent": true }
   ],
   "rewrites": [
     { "source": "/rider/(.*)", "destination": "https://obsimo-rider.vercel.app/$1" }
@@ -10,6 +11,17 @@
       "source": "/(.*)",
       "missing": [{ "type": "host", "value": "www.obsimo.com" }],
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+    },
+    {
+      "source": "/ventes/(.*)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
     }
+  ],
+  "functions": {
+    "api/ventes.js": { "maxDuration": 300 },
+    "api/cron/sumup.js": { "maxDuration": 300 }
+  },
+  "crons": [
+    { "path": "/api/cron/sumup", "schedule": "0 7 * * *" }
   ]
 }

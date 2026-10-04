@@ -1,4 +1,6 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -23,11 +25,56 @@ const bake = {
   },
 };
 
+// Dev only: serves the Vercel functions of api/ (export GET / POST, Web Request → Response) with the variables of
+// .env.local, so the /ventes dashboard works with `npm run dev`.
+const api = {
+  name: 'vercel-functions',
+  apply: 'serve',
+  configureServer(server) {
+    Object.assign(process.env, loadEnv('development', process.cwd(), ''));
+    server.middlewares.use('/api/', async (req, res, next) => {
+      const url = new URL(req.url, 'http://localhost');
+      const file = path.resolve('api', `${url.pathname.replace(/^\/+/, '')}.js`);
+      if (!file.startsWith(path.resolve('api')) || path.basename(file).startsWith('_') || !fs.existsSync(file)) return next();
+      try {
+        const mod = await server.ssrLoadModule(file);
+        const handler = mod[req.method];
+        if (!handler) return res.writeHead(405).end();
+        const chunks = [];
+        for await (const c of req) chunks.push(c);
+        const body = chunks.length ? Buffer.concat(chunks) : undefined;
+        const request = new Request(new URL(req.originalUrl, `http://${req.headers.host}`), { method: req.method, headers: req.headers, body });
+        const response = await handler(request);
+        res.writeHead(response.status, Object.fromEntries(response.headers));
+        res.end(Buffer.from(await response.arrayBuffer()));
+      } catch (e) {
+        console.error(e);
+        res.writeHead(500).end(String(e));
+      }
+    });
+  },
+};
+
 export default defineConfig({
-  plugins: [bake],
+  plugins: [bake, api, react(), tailwindcss()],
+  // @/… : the /ventes dashboard (React + shadcn/ui, see components.json)
+  resolve: { alias: { '@': path.resolve('src/ventes') } },
   build: {
-    // three.js in its own file: it changes far less often than the site, so browsers keep it cached across deploys
-    rolldownOptions: { output: { codeSplitting: { groups: [{ name: 'three', test: /node_modules[\\/]three[\\/]/ }] } } },
+    // the shop and the sales dashboard (/ventes/, password-protected through its API)
+    rolldownOptions: {
+      input: { main: path.resolve('index.html'), ventes: path.resolve('ventes/index.html') },
+      // three.js in its own file: it changes far less often than the site, so browsers keep it cached across deploys
+      output: {
+        codeSplitting: {
+          groups: [
+            { name: 'three', test: /node_modules[\\/]three[\\/]/ },
+            // /ventes: charts and React also change rarely
+            { name: 'charts', test: /node_modules[\\/](recharts|d3-|victory-|es-toolkit|decimal\.js|immer|reselect|@reduxjs|react-redux|redux)/ },
+            { name: 'react', test: /node_modules[\\/](react|react-dom|scheduler|radix-ui|@radix-ui|cmdk|sonner|lucide-react)[\\/]/ },
+          ],
+        },
+      },
+    },
     chunkSizeWarningLimit: 700, // three.js alone is ~580 kB minified (~150 kB gzip)
   },
 });
