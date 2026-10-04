@@ -3,31 +3,32 @@
 import { useMemo } from 'react'
 import { useData } from '@/lib/store'
 import { useUI } from '@/lib/ui'
-import { monthOf, monthsOf, inMonths, previousMonths, unmapped, nightOf, byNight } from '@/calc.js'
+import { monthOf, rangeOf, inRange, unmapped, PRESETS, nightOf, byNight } from '@/calc.js'
 
 export const LOW_STOCK = 5
 export const isPack = (p) => p.components.length > 0
 
+// [valeur, libellé, libellé court] : les raccourcis puis chaque année où il y a eu des ventes
 export function periodOptions(sales) {
   const years = new Set(sales.map((s) => monthOf(s.occurred_at).slice(0, 4)))
   years.add(String(new Date().getFullYear()))
-  return [['12m', '12 derniers mois'], ...[...years].sort().reverse().map((y) => [y, `Année ${y}`]), ['all', 'Depuis le début']]
+  return [...PRESETS, ...[...years].sort().reverse().map((y) => [y, `Année ${y}`, y])]
 }
 
 export function usePeriod() {
   const d = useData()
   const { period } = useUI()
   return useMemo(() => {
-    const months = monthsOf(period, d.sales)
-    const prev = period === 'all' ? null : previousMonths(months)
+    const { unit, keys, prev } = rangeOf(period, d.sales)
     return {
       period,
-      months,
+      unit,
+      keys,
       label: periodOptions(d.sales).find(([v]) => v === period)?.[1] || period,
-      sales: inMonths(d.sales, months),
-      expenses: inMonths(d.expenses, months),
-      prevSales: prev ? inMonths(d.sales, prev) : null,
-      prevExpenses: prev ? inMonths(d.expenses, prev) : null,
+      sales: inRange(d.sales, unit, keys),
+      expenses: inRange(d.expenses, unit, keys),
+      prevSales: prev ? inRange(d.sales, unit, prev) : null,
+      prevExpenses: prev ? inRange(d.expenses, unit, prev) : null,
     }
   }, [d, period])
 }

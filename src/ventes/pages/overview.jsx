@@ -1,4 +1,4 @@
-// Vue d'ensemble : la soirée en cours (au stand, sur le téléphone), ce qui demande une action, chiffres clés (comparés à la période précédente), CA par mois,
+// Vue d'ensemble : la soirée en cours (au stand, sur le téléphone), ce qui demande une action, chiffres clés (comparés à la période précédente), CA par heure/jour/mois,
 // meilleurs produits, répartition par canal, derniers concerts et dernières ventes.
 
 import { useMemo } from 'react'
@@ -11,9 +11,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Page } from '@/components/page'
 import { PeriodSelect } from '@/components/period-select'
-import { RevenueChart, monthLabel } from '@/components/revenue-chart'
+import { RevenueChart, bucketLabel } from '@/components/revenue-chart'
 import { ChannelIcon, ChannelDot } from '@/components/channel'
-import { SERIES, SERIES_COLOR, summary, byMonth, byProduct, byNight, metrics } from '@/calc.js'
+import { SERIES, SERIES_COLOR, summary, byBucket, byProduct, byNight, metrics } from '@/calc.js'
 import { useData } from '@/lib/store'
 import { usePeriod, useTodo, useTonight, isPack } from '@/lib/derived'
 import { usePref } from '@/lib/prefs'
@@ -32,7 +32,7 @@ export function Overview() {
 
   const t = useMemo(() => summary(p.sales, p.expenses), [p])
   const prev = useMemo(() => (p.prevSales ? summary(p.prevSales, p.prevExpenses) : null), [p])
-  const rows = useMemo(() => byMonth(p.sales, p.months), [p])
+  const rows = useMemo(() => byBucket(p.sales, p.unit, p.keys), [p])
   const products = useMemo(() => byProduct(p.sales, d.products), [p, d])
   const nights = useMemo(() => byNight(p.sales), [p])
   const stockValue = d.products.reduce((a, x) => a + (isPack(x) ? 0 : Math.max(0, x.stock) * (x.cost_cents || 0)), 0)
@@ -94,7 +94,7 @@ export function Overview() {
 
       <Card className="gap-4 py-5">
         <CardHeader className="px-5">
-          <CardTitle className="text-sm font-medium">Chiffre d’affaires par mois</CardTitle>
+          <CardTitle className="text-sm font-medium">Chiffre d’affaires par {UNIT[p.unit]}</CardTitle>
           <CardDescription className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
             {SERIES.map((s) => (
               <span key={s.key} className="inline-flex items-center gap-1.5">
@@ -114,7 +114,7 @@ export function Overview() {
             </ToggleGroup>
           </CardAction>
         </CardHeader>
-        <CardContent className="px-3 sm:px-5">{view === 'table' ? <MonthTable rows={rows} /> : <RevenueChart rows={rows} />}</CardContent>
+        <CardContent className="px-3 sm:px-5">{view === 'table' ? <BucketTable rows={rows} unit={p.unit} /> : <RevenueChart rows={rows} unit={p.unit} />}</CardContent>
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-5 *:min-w-0">
@@ -228,6 +228,8 @@ export function Overview() {
     </Page>
   )
 }
+
+const UNIT = { hour: 'heure', day: 'jour', month: 'mois' }
 
 // La soirée en cours : le total qui monte, et ce qu'il doit y avoir dans la caisse
 function Tonight({ n }) {
@@ -343,12 +345,12 @@ export function RecentSales({ sales, products }) {
   )
 }
 
-function MonthTable({ rows }) {
+function BucketTable({ rows, unit }) {
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Mois</TableHead>
+          <TableHead className="first-letter:uppercase">{UNIT[unit]}</TableHead>
           {SERIES.map((s) => (
             <TableHead key={s.key} className="text-right">
               {s.label}
@@ -360,8 +362,8 @@ function MonthTable({ rows }) {
       </TableHeader>
       <TableBody>
         {[...rows].reverse().map((r) => (
-          <TableRow key={r.month}>
-            <TableCell className="first-letter:uppercase">{monthLabel(r.month, true)}</TableCell>
+          <TableRow key={r.key}>
+            <TableCell className="first-letter:uppercase">{bucketLabel(unit, r.key, true)}</TableCell>
             {SERIES.map((s) => (
               <TableCell key={s.key} className={cn('num text-right', !r.values[s.key] && 'text-muted-foreground/50')}>
                 {r.values[s.key] ? fmt(r.values[s.key]) : '—'}
