@@ -31,7 +31,7 @@ export function SaleSheet({ id, onClose }) {
 
   return (
     <Sheet open onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="w-full gap-0 sm:max-w-md">
+      <SheetContent className="w-full gap-0 sm:max-w-md" onOpenAutoFocus={(e) => matchMedia('(pointer: coarse)').matches && e.preventDefault()}>
         <SheetHeader className="gap-3 border-b p-5">
           <div className="flex items-center gap-2 text-xs">
             <ChannelLabel channel={s.channel} long />

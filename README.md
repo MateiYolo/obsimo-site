@@ -122,9 +122,11 @@ le stock, et les comptes (CA, commissions, coût de revient, marge, dépenses) p
 Navigation : barre latérale, palette ⌘K (pages, actions, produits, ventes récentes), raccourcis « G puis lettre »
 pour changer de page, `?` pour la liste des raccourcis. Les pages ont des liens partageables (`#/ventes?nuit=…`).
 
-Sur téléphone : barre d'onglets en bas avec « + » au centre pour saisir une vente, fenêtres qui montent du bas,
-cibles tactiles d'au moins 40 px. Le concert en cours (dernière vente en caisse de moins de 12 h) est déjà rempli dans
-la saisie. Les données se rechargent quand on revient sur l'appli. Pour l'installer comme une appli : Safari →
+Sur téléphone : barre d'onglets en bas (Aperçu, Ventes, « + » au centre pour saisir une vente, Concerts, Menu),
+fenêtres qui montent du bas, cibles tactiles d'au moins 40 px. Pendant un concert (dernière vente en caisse de moins
+de 12 h), l'aperçu commence par « Ce soir » : total, espèces et carte de la soirée. La saisie remplit le concert en
+cours, met les produits les plus vendus en concert en premier avec le stock restant, calcule la monnaie à rendre en
+espèces, et la notification propose « Annuler » en cas d'erreur. Les données se rechargent quand on revient sur l'appli. Pour l'installer comme une appli : Safari →
 Partager → « Sur l'écran d'accueil » (Android : menu → « Installer l'application ») ; un appui long sur l'icône
 propose « Nouvelle vente » et « Stock » sur Android.
 

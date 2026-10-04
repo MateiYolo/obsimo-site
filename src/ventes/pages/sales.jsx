@@ -174,7 +174,7 @@ export function Sales() {
               Tout effacer
             </Button>
           )}
-          <span className="num ml-auto hidden text-xs text-muted-foreground sm:block">{fmt(total, true)}</span>
+          <span className="num ml-auto text-xs text-muted-foreground max-sm:font-medium max-sm:text-foreground">{fmt(total, true)}</span>
         </>
       }
       className="p-0 md:p-0"
@@ -206,7 +206,7 @@ export function Sales() {
                   >
                     <ChannelIcon channel={s.channel} />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate">
+                      <span className="block truncate max-sm:line-clamp-2 max-sm:whitespace-normal">
                         {s.lines.map((l, j) => (
                           <span key={l.id ?? j}>
                             {j > 0 && <span className="text-muted-foreground">, </span>}

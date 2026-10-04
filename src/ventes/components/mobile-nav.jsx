@@ -9,7 +9,8 @@ import { useUI } from '@/lib/ui'
 import { useTodo } from '@/lib/derived'
 import { cn } from '@/lib/utils'
 
-const TABS = ['apercu', 'ventes', null, 'stock']
+// en déplacement on suit les ventes et les soirées ; le stock et le reste sont dans « Menu »
+const TABS = ['apercu', 'ventes', null, 'concerts']
 
 export function MobileNav() {
   const { page } = useRoute()
