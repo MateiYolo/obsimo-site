@@ -232,7 +232,7 @@ export function Overview() {
 const UNIT = { hour: 'heure', day: 'jour', month: 'mois' }
 
 // La soirée en cours : le total qui monte, et ce qu'il doit y avoir dans la caisse
-function Tonight({ n }) {
+export function Tonight({ n }) {
   return (
     <a href={href('ventes', { nuit: n.night })} className="group block rounded-xl border bg-card p-4 transition-colors hover:bg-accent/40 active:bg-accent/60 sm:p-5">
       <div className="flex items-center gap-2 text-xs text-muted-foreground">

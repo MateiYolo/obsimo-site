@@ -16,6 +16,7 @@ import { navigate, useRoute } from '@/lib/router'
 import { useHotkeys } from '@/lib/hotkeys'
 import { PAGES } from '@/lib/nav'
 import { Login } from '@/pages/login'
+import { Home } from '@/pages/home'
 import { Overview } from '@/pages/overview'
 import { Todo } from '@/pages/todo'
 import { Sales } from '@/pages/sales'
@@ -25,7 +26,7 @@ import { Stock } from '@/pages/stock'
 import { Products } from '@/pages/products'
 import { Settings } from '@/pages/settings'
 
-const VIEWS = { apercu: Overview, 'a-traiter': Todo, ventes: Sales, concerts: Concerts, depenses: Expenses, stock: Stock, produits: Products, reglages: Settings }
+const VIEWS = { accueil: Home, apercu: Overview, 'a-traiter': Todo, ventes: Sales, concerts: Concerts, depenses: Expenses, stock: Stock, produits: Products, reglages: Settings }
 
 export function App() {
   return (
@@ -57,7 +58,7 @@ function Root() {
 function Shell() {
   const { page, params, setParams } = useRoute()
   const { open, setCommandOpen } = useUI()
-  const View = VIEWS[page] || Overview
+  const View = VIEWS[page] || Home
 
   // raccourci « Nouvelle vente » de l'icône sur l'écran d'accueil (#/ventes?nouvelle=1)
   useEffect(() => {

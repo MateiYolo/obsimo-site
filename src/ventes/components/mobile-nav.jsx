@@ -9,8 +9,8 @@ import { useUI } from '@/lib/ui'
 import { useTodo } from '@/lib/derived'
 import { cn } from '@/lib/utils'
 
-// en déplacement on suit les ventes et les soirées ; le stock et le reste sont dans « Menu »
-const TABS = ['apercu', 'ventes', null, 'concerts']
+// l'accueil (remboursement, soirée en cours), les ventes et le stock ; le reste est dans « Menu »
+const TABS = ['accueil', 'ventes', null, 'stock']
 
 export function MobileNav() {
   const { page } = useRoute()
@@ -27,7 +27,7 @@ export function MobileNav() {
       <div className="grid h-16 grid-cols-5 items-stretch">
         {TABS.map((key) =>
           key ? (
-            <Tab key={key} as="a" href={href(key)} icon={PAGES[key].icon} label={key === 'apercu' ? 'Aperçu' : PAGES[key].label} active={page === key} />
+            <Tab key={key} as="a" href={href(key)} icon={PAGES[key].icon} label={PAGES[key].label} active={page === key} />
           ) : (
             <div key="new" className="flex items-center justify-center">
               <button

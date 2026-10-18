@@ -1,6 +1,6 @@
 // Canaux de vente : pastille de couleur (celle du graphique), icône et libellé court.
 
-import { Globe, Ticket, Banknote, Disc3, Shapes } from 'lucide-react'
+import { Globe, Ticket, Banknote, Disc3, Store, Shapes } from 'lucide-react'
 import { SERIES_COLOR, seriesOf } from '@/calc.js'
 import { cn } from '@/lib/utils'
 
@@ -9,6 +9,7 @@ export const CHANNEL_META = {
   sumup: { label: 'SumUp', long: 'Concert · SumUp', icon: Ticket },
   cash: { label: 'Espèces', long: 'Concert · espèces', icon: Banknote },
   bandcamp: { label: 'Bandcamp', long: 'Bandcamp', icon: Disc3 },
+  wholesale: { label: 'Disquaire', long: 'Disquaire (prix de gros)', icon: Store },
   other: { label: 'Autre', long: 'Autre', icon: Shapes },
 }
 

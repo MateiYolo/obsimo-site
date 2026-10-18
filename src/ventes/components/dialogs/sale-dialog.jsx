@@ -4,7 +4,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Minus, Plus, ChevronDown, Banknote, Disc3, Shapes } from 'lucide-react'
+import { Minus, Plus, ChevronDown, Banknote, Disc3, Store, Shapes } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils'
 const CHANNELS = [
   ['cash', 'Espèces', Banknote],
   ['bandcamp', 'Bandcamp', Disc3],
+  ['wholesale', 'Disquaire', Store],
   ['other', 'Autre', Shapes],
 ]
 

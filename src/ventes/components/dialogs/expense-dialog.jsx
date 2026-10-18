@@ -8,7 +8,7 @@ import { api } from '@/lib/api'
 import { useStore } from '@/lib/store'
 import { today, toCents } from '@/lib/format'
 
-export const EXPENSE_CATEGORIES = ['envois', 'emballage', 'stand', 'pub', 'fabrication', 'autre']
+export const EXPENSE_CATEGORIES = ['envois', 'emballage', 'stand', 'pub', 'fabrication', 'reversement-frere', 'autre']
 
 export function ExpenseDialog({ onClose }) {
   const { run } = useStore()

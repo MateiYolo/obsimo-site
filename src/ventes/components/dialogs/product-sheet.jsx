@@ -1,4 +1,4 @@
-// Fiche produit, en panneau latéral : prix, coût (et marge unitaire), noms en caisse, handles Shopify, chiffres de vente.
+// Fiche produit, en panneau latéral : prix, coût (et marge unitaire), remboursement du tirage, noms en caisse, handles Shopify, chiffres de vente.
 
 import { useMemo, useState } from 'react'
 import { X } from 'lucide-react'
@@ -16,7 +16,7 @@ import { fmt, fromCents, toCents, num } from '@/lib/format'
 import { metrics } from '@/calc.js'
 
 const CATEGORIES = ['vinyle', 'merch', 'sauce', 'textile', 'autre']
-const EMPTY = { name: '', category: 'merch', price_cents: null, cost_cents: null, sumup_names: [], shopify_handles: [], components: [], active: true }
+const EMPTY = { name: '', category: 'merch', price_cents: null, cost_cents: null, batch_cost_cents: null, royalty_cents: 0, royalty_after_units: 0, sumup_names: [], shopify_handles: [], components: [], active: true }
 
 // Saisie de plusieurs valeurs : Entrée ou virgule ajoute une étiquette, retour arrière retire la dernière.
 function TagInput({ id, value, onChange, placeholder }) {
@@ -56,7 +56,14 @@ export function ProductSheet({ id, onClose }) {
   const { data: d, run } = useStore()
   const p = d.products.find((x) => x.id === id) || EMPTY
   const isNew = !id
-  const [form, setForm] = useState({ ...p, price: fromCents(p.price_cents), cost: fromCents(p.cost_cents) })
+  const [form, setForm] = useState({
+    ...p,
+    price: fromCents(p.price_cents),
+    cost: fromCents(p.cost_cents),
+    batch: fromCents(p.batch_cost_cents),
+    royalty: fromCents(p.royalty_cents || null),
+    after: String(p.royalty_after_units || ''),
+  })
   const [busy, setBusy] = useState(false)
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v?.target ? v.target.value : v }))
   const price = toCents(form.price)
@@ -87,6 +94,9 @@ export function ProductSheet({ id, onClose }) {
             category: form.category,
             price_cents: price,
             cost_cents: cost,
+            batch_cost_cents: toCents(form.batch),
+            royalty_cents: toCents(form.royalty) || 0,
+            royalty_after_units: Number(form.after) || 0,
             sumup_names: form.sumup_names,
             shopify_handles: form.shopify_handles,
             components: p.components,
@@ -146,6 +156,17 @@ export function ProductSheet({ id, onClose }) {
                 'Sans coût de revient, la marge de ce produit est surestimée.'
               )}
             </p>
+            {!p.components.length && (
+              <div className="space-y-3 rounded-lg border p-3">
+                <Field label="Tirage à rembourser" hint="Ce qu’a coûté toute la fabrication. 0 si le tirage est déjà payé, vide pour ne pas le suivre sur l’accueil.">
+                  {(fid) => <MoneyInput id={fid} value={form.batch} onChange={set('batch')} placeholder="non suivi" />}
+                </Field>
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Au frère, par vente">{(fid) => <MoneyInput id={fid} value={form.royalty} onChange={set('royalty')} placeholder="0" />}</Field>
+                  <Field label="Après N ventes">{(fid) => <Input id={fid} inputMode="numeric" className="num text-right" value={form.after} onChange={set('after')} placeholder="0" />}</Field>
+                </div>
+              </div>
+            )}
             <Field label="Catégorie">
               <Select value={form.category} onValueChange={set('category')}>
                 <SelectTrigger className="w-full capitalize">

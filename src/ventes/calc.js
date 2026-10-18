@@ -15,7 +15,7 @@ export const SERIES = [
   { key: 'shopify', label: 'Site', channels: ['shopify'] },
   { key: 'live', label: 'Concerts', channels: ['sumup', 'cash'] },
   { key: 'bandcamp', label: 'Bandcamp', channels: ['bandcamp'] },
-  { key: 'other', label: 'Autre', channels: ['other'] },
+  { key: 'other', label: 'Autre', channels: ['other', 'wholesale'] },
 ];
 // couleur de chaque série (variables du thème, voir index.css)
 export const SERIES_COLOR = { shopify: 'var(--chart-1)', live: 'var(--chart-2)', bandcamp: 'var(--chart-3)', other: 'var(--chart-4)' };
@@ -26,6 +26,7 @@ export const CHANNELS = {
   sumup: 'Concert (SumUp)',
   cash: 'Concert (espèces)',
   bandcamp: 'Bandcamp',
+  wholesale: 'Disquaire',
   other: 'Autre',
 };
 
@@ -173,6 +174,61 @@ export function byProduct(sales, products) {
     }
   }
   return [...map.values()].sort((a, b) => b.revenue - a.revenue);
+}
+
+// Ventes qui ne remboursent pas le tirage et ne donnent pas droit au reversement (disquaires, prix de gros).
+export const NOT_PAYBACK = ['wholesale'];
+export const ROYALTY_CATEGORY = 'reversement-frere';
+
+// Part d'un pack qui revient à chaque composant : revenue_cents du composant s'il est fixé, sinon au prorata des prix.
+function packShares(pack, products, unitPrice) {
+  const comps = pack.components.map((c) => ({ ...c, p: products.find((x) => x.id === c.product_id) }));
+  const fixed = comps.every((c) => c.revenue_cents != null);
+  const weight = comps.reduce((a, c) => a + c.qty * (c.p?.price_cents || 0), 0);
+  return comps.map((c) => ({
+    id: c.product_id,
+    qty: c.qty,
+    revenue: fixed ? c.revenue_cents : weight ? Math.round((unitPrice * (c.p?.price_cents || 0)) / weight) : 0,
+  }));
+}
+
+// Le remboursement de chaque tirage : les premières ventes paient la fabrication (batch_cost_cents), ensuite c'est du bonus.
+// batch_cost_cents = 0 : tirage déjà financé, tout est bonus dès la 1re vente ; null : produit non suivi.
+// Le reversement (royalty_cents par unité) commence après royalty_after_units unités vendues.
+// Les packs comptent pour chacun de leurs composants ; les ventes remboursées, annulées ou en gros ne comptent pas.
+export function payback(sales, products) {
+  const rows = new Map(
+    products
+      .filter((p) => p.batch_cost_cents != null && !p.components.length)
+      .map((p) => [p.id, { product: p, cost: p.batch_cost_cents, revenue: 0, units: 0 }]),
+  );
+  const add = (id, units, revenue) => {
+    const r = rows.get(id);
+    if (r) (r.units += units), (r.revenue += revenue);
+  };
+  for (const s of sales) {
+    if (back(s) || NOT_PAYBACK.includes(s.channel)) continue;
+    for (const l of s.lines || []) {
+      const p = products.find((x) => x.id === l.product_id);
+      if (!p) continue;
+      if (p.components.length) for (const c of packShares(p, products, l.unit_price_cents)) add(c.id, l.qty * c.qty, l.qty * c.revenue);
+      else add(p.id, l.qty, l.qty * l.unit_price_cents);
+    }
+  }
+  return [...rows.values()].map((r) => {
+    const p = r.product;
+    const royalty = Math.max(0, r.units - (p.royalty_after_units || 0)) * (p.royalty_cents || 0);
+    const remaining = Math.max(0, r.cost - r.revenue);
+    return {
+      ...r,
+      paid: remaining === 0,
+      remaining,
+      left: remaining && p.price_cents ? Math.ceil(remaining / p.price_cents) : 0, // unités encore à vendre au prix normal
+      royalty,
+      bonus: Math.max(0, r.revenue - r.cost) - royalty, // ce qui reste une fois le tirage remboursé et le reversement payé
+      progress: r.cost ? Math.min(1, r.revenue / r.cost) : 1,
+    };
+  });
 }
 
 // Les soirées de concert : ventes en caisse regroupées par concert (ou par soir quand le concert est inconnu).

@@ -1,9 +1,10 @@
 // Les pages du dashboard, leur icône et leur raccourci (G puis la lettre).
 
-import { LayoutGrid, Inbox, ReceiptText, Ticket, Boxes, Package, Wallet, Settings } from 'lucide-react'
+import { House, ChartColumn, Inbox, ReceiptText, Ticket, Boxes, Package, Wallet, Settings } from 'lucide-react'
 
 export const PAGES = {
-  apercu: { label: 'Vue d’ensemble', icon: LayoutGrid, key: 'o' },
+  accueil: { label: 'Accueil', icon: House, key: 'h' },
+  apercu: { label: 'Chiffres', icon: ChartColumn, key: 'o' },
   'a-traiter': { label: 'À traiter', icon: Inbox, key: 'i' },
   ventes: { label: 'Ventes', icon: ReceiptText, key: 'v' },
   concerts: { label: 'Concerts', icon: Ticket, key: 'c' },
@@ -13,8 +14,8 @@ export const PAGES = {
   reglages: { label: 'Réglages', icon: Settings, key: 'r' },
 }
 
+// L'essentiel en haut ; le reste (chiffres détaillés, saisies moins fréquentes) regroupé sous « Plus ».
 export const NAV = [
-  { label: null, items: ['apercu', 'a-traiter'] },
-  { label: 'Activité', items: ['ventes', 'concerts', 'depenses'] },
-  { label: 'Catalogue', items: ['stock', 'produits'] },
+  { label: null, items: ['accueil', 'ventes', 'stock'] },
+  { label: 'Plus', items: ['concerts', 'apercu', 'depenses', 'produits', 'a-traiter'] },
 ]

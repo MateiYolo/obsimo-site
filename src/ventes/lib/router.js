@@ -4,7 +4,7 @@ import { useCallback, useSyncExternalStore } from 'react'
 
 const parse = () => {
   const [path, query = ''] = location.hash.replace(/^#\/?/, '').split('?')
-  return { page: path || 'apercu', params: Object.fromEntries(new URLSearchParams(query)) }
+  return { page: path || 'accueil', params: Object.fromEntries(new URLSearchParams(query)) }
 }
 
 let current = parse()
