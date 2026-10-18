@@ -194,30 +194,38 @@ function packShares(pack, products, unitPrice) {
 
 // Le remboursement de chaque tirage : les premières ventes paient la fabrication (batch_cost_cents), ensuite c'est du bonus.
 // batch_cost_cents = 0 : tirage déjà financé, tout est bonus dès la 1re vente ; null : produit non suivi.
-// Le reversement (royalty_cents par unité) commence après royalty_after_units unités vendues.
+// Le reversement (royalty_cents par unité) commence après royalty_after_units unités vendues, et seulement pour les ventes
+// à partir de royalty.since (réglage) : ce qui était dû avant est repris en un montant de départ (royalty.opening_cents).
 // Les packs comptent pour chacun de leurs composants ; les ventes remboursées, annulées ou en gros ne comptent pas.
-export function payback(sales, products) {
+export function payback(sales, products, royalty = {}) {
   const rows = new Map(
     products
       .filter((p) => p.batch_cost_cents != null && !p.components.length)
-      .map((p) => [p.id, { product: p, cost: p.batch_cost_cents, revenue: 0, units: 0 }]),
+      .map((p) => [p.id, { product: p, cost: p.batch_cost_cents, revenue: 0, units: 0, royalty: 0 }]),
   );
-  const add = (id, units, revenue) => {
+  const since = royalty.since ? new Date(royalty.since).getTime() : 0;
+  // dans l'ordre des ventes : le seuil se compte depuis la 1re vente, le reversement seulement depuis `since`
+  const add = (id, units, revenue, at) => {
     const r = rows.get(id);
-    if (r) (r.units += units), (r.revenue += revenue);
+    if (!r) return;
+    const p = r.product;
+    const over = Math.max(0, r.units + units - Math.max(r.units, p.royalty_after_units || 0));
+    if (new Date(at).getTime() >= since) r.royalty += over * (p.royalty_cents || 0);
+    r.units += units;
+    r.revenue += revenue;
   };
-  for (const s of sales) {
+  for (const s of [...sales].sort((a, b) => (a.occurred_at < b.occurred_at ? -1 : 1))) {
     if (back(s) || NOT_PAYBACK.includes(s.channel)) continue;
     for (const l of s.lines || []) {
       const p = products.find((x) => x.id === l.product_id);
       if (!p) continue;
-      if (p.components.length) for (const c of packShares(p, products, l.unit_price_cents)) add(c.id, l.qty * c.qty, l.qty * c.revenue);
-      else add(p.id, l.qty, l.qty * l.unit_price_cents);
+      if (p.components.length) for (const c of packShares(p, products, l.unit_price_cents)) add(c.id, l.qty * c.qty, l.qty * c.revenue, s.occurred_at);
+      else add(p.id, l.qty, l.qty * l.unit_price_cents, s.occurred_at);
     }
   }
   return [...rows.values()].map((r) => {
     const p = r.product;
-    const royalty = Math.max(0, r.units - (p.royalty_after_units || 0)) * (p.royalty_cents || 0);
+    const royalty = r.royalty;
     const remaining = Math.max(0, r.cost - r.revenue);
     return {
       ...r,

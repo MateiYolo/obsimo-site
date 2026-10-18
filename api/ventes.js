@@ -24,7 +24,7 @@ async function stockMap() {
 const actions = {
   // tout ce que le dashboard affiche, en un appel (quelques milliers de lignes au plus)
   async data() {
-    const [products, stock, sales, movements, expenses, fees] = await Promise.all([
+    const [products, stock, sales, movements, expenses, fees, royalty] = await Promise.all([
       loadProducts(),
       stockMap(),
       q(
@@ -37,6 +37,7 @@ const actions = {
       q(db().from('merch_stock_movements').select('id, product_id, qty, reason, occurred_at, note').is('sale_id', null).order('occurred_at', { ascending: false }).limit(500)),
       q(db().from('merch_expenses').select('*').order('occurred_at', { ascending: false })),
       setting('fees'),
+      setting('royalty'),
     ]);
     return {
       products: products.map((p) => ({ ...p, stock: stock[p.id] ?? 0 })),
@@ -44,6 +45,7 @@ const actions = {
       movements,
       expenses,
       fees,
+      royalty: royalty || {},
       integrations: {
         shopifyWebhook: !!process.env.SHOPIFY_WEBHOOK_SECRET,
         shopifyAdmin: adminConfigured(),
@@ -171,6 +173,14 @@ const actions = {
 
   async 'expense-delete'(b) {
     await q(db().from('merch_expenses').delete().eq('id', b.id));
+    return { ok: true };
+  },
+
+  // reversement au frère : son nom, ce qui lui était dû au départ ; les ventes comptent à partir de `since` (fixé une fois)
+  async royalty(b) {
+    const cur = (await setting('royalty')) || {};
+    const value = { ...cur, name: String(b.name || cur.name || '').trim() || 'Matei', opening_cents: int(b.opening_cents) || 0, since: cur.since || new Date().toISOString() };
+    await q(db().from('merch_settings').upsert({ key: 'royalty', value }));
     return { ok: true };
   },
 
