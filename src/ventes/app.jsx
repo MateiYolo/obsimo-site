@@ -17,6 +17,7 @@ import { useHotkeys } from '@/lib/hotkeys'
 import { PAGES } from '@/lib/nav'
 import { Login } from '@/pages/login'
 import { Overview } from '@/pages/overview'
+import { Figures } from '@/pages/chiffres'
 import { Todo } from '@/pages/todo'
 import { Sales } from '@/pages/sales'
 import { Concerts } from '@/pages/concerts'
@@ -25,7 +26,7 @@ import { Stock } from '@/pages/stock'
 import { Products } from '@/pages/products'
 import { Settings } from '@/pages/settings'
 
-const VIEWS = { apercu: Overview, 'a-traiter': Todo, ventes: Sales, concerts: Concerts, depenses: Expenses, stock: Stock, produits: Products, reglages: Settings }
+const VIEWS = { apercu: Overview, 'a-traiter': Todo, ventes: Sales, chiffres: Figures, concerts: Concerts, depenses: Expenses, stock: Stock, produits: Products, reglages: Settings }
 
 export function App() {
   return (

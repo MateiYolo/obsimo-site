@@ -1,4 +1,5 @@
 // CA par heure, jour ou mois selon la période, en colonnes empilées par canal (recharts via le composant chart de shadcn).
+// `simple` : une seule couleur (le total), le détail par canal reste dans l'infobulle.
 
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart'
@@ -18,18 +19,18 @@ export function bucketLabel(unit, key, long) {
   return monthLabel(key, long)
 }
 
-const config = Object.fromEntries(SERIES.map((s) => [s.key, { label: s.label, color: SERIES_COLOR[s.key] }]))
+const config = { ...Object.fromEntries(SERIES.map((s) => [s.key, { label: s.label, color: SERIES_COLOR[s.key] }])), total: { label: 'Total', color: 'var(--chart-1)' } }
 
-export function RevenueChart({ rows, unit = 'month' }) {
+export function RevenueChart({ rows, unit = 'month', simple, className = 'h-64' }) {
   const data = rows.map((r) => ({ key: r.key, ...r.values, total: r.total, items: r.items }))
   const multiYear = new Set(rows.map((r) => r.key.slice(0, 4))).size > 1
   // sur 7 jours, le jour de la semaine se lit mieux que la date seule
   const tick = (k) =>
     unit === 'month' ? (multiYear && k.endsWith('-01') ? `${monthLabel(k)} ${k.slice(2, 4)}` : monthLabel(k)) : unit === 'day' && rows.length <= 7 ? dayLabel(k, false).replace(/ \S+$/, '') : bucketLabel(unit, k)
   const used = SERIES.filter((s) => rows.some((r) => r.values[s.key] > 0))
-  const series = used.length ? used : SERIES.slice(0, 1)
+  const series = simple ? [{ key: 'total' }] : used.length ? used : SERIES.slice(0, 1)
   return (
-    <ChartContainer config={config} className="aspect-auto h-64 w-full">
+    <ChartContainer config={config} className={`aspect-auto w-full ${className}`}>
       <BarChart data={data} margin={{ top: 8, right: 0, left: 0, bottom: 0 }} barCategoryGap="22%">
         <CartesianGrid vertical={false} strokeDasharray="0" className="stroke-border" />
         <XAxis

@@ -52,11 +52,10 @@ export function metrics(s) {
 }
 
 // Les périodes proposées : glissantes (24 h, 7 j), mois en cours, N derniers mois, une année 'AAAA', ou tout.
+// (rangeOf sait aussi faire '24h' et '6m', qui ne sont plus proposés : moins de choix, plus lisible)
 export const PRESETS = [
-  ['24h', '24 dernières heures', '24 h'],
   ['7d', '7 derniers jours', '7 j'],
   ['mtd', 'Mois en cours', 'Ce mois'],
-  ['6m', '6 derniers mois', '6 mois'],
   ['12m', '12 derniers mois', '12 mois'],
   ['all', 'Depuis le début', 'Tout'],
 ];
@@ -213,6 +212,76 @@ export function byBucket(sales, unit, keys) {
     r.items += m.items;
   }
   return rows;
+}
+
+// Remboursement des frais : les premières ventes d'un produit remboursent ce qu'il a coûté à produire
+// (investment_cents : le tirage, la SDRM…), ce qui rentre ensuite est du bonus. Un produit et celui qui le remplace
+// (Life Balance vert → swirl) ne font qu'un. Un pack répartit son prix entre ses composants (share_cents, sinon au
+// prorata de leur prix). Compté : le prix des articles vendus, hors port et commissions, ventes remboursées exclues.
+// `royaltyDue` : reversement dû au frère par produit, déduit du bonus.
+export function payback(sales, products, royaltyDue = {}) {
+  const byId = new Map(products.map((p) => [p.id, p]));
+  const rootOf = (p) => {
+    let r = p;
+    for (let i = 0; i < 10 && r.replaced_by && byId.has(r.replaced_by); i++) r = byId.get(r.replaced_by);
+    return r;
+  };
+  const groups = new Map();
+  const groupOf = new Map();
+  for (const p of products) {
+    if (p.investment_cents == null || p.components.length) continue;
+    const root = rootOf(p);
+    const g = groups.get(root.id) || { id: root.id, product: root, members: [], cost: 0, revenue: 0, units: 0, stock: 0, royalty: 0 };
+    g.members.push(p);
+    g.cost += p.investment_cents;
+    g.stock += p.stock ?? 0;
+    g.royalty += royaltyDue[p.id] || 0;
+    groups.set(root.id, g);
+    groupOf.set(p.id, g);
+  }
+  const add = (p, revenue, units) => {
+    const g = p && groupOf.get(p.id);
+    if (g) (g.revenue += revenue), (g.units += units);
+  };
+  for (const s of sales) {
+    if (back(s)) continue;
+    for (const l of s.lines || []) {
+      const p = byId.get(l.product_id);
+      if (!p) continue;
+      const revenue = l.qty * l.unit_price_cents;
+      if (!p.components.length) {
+        add(p, revenue, l.qty);
+        continue;
+      }
+      const weights = p.components.map((c) => c.share_cents ?? (byId.get(c.product_id)?.price_cents || 0) * c.qty);
+      const sum = weights.reduce((a, w) => a + w, 0) || 1;
+      p.components.forEach((c, i) => add(byId.get(c.product_id), (revenue * weights[i]) / sum, l.qty * c.qty));
+    }
+  }
+  return [...groups.values()]
+    .map((g) => {
+      const left = Math.max(0, g.cost - g.revenue);
+      const price = g.product.price_cents;
+      return {
+        ...g,
+        name: g.members.length > 1 ? commonName(g.members.map((m) => m.name)) : g.product.name,
+        revenue: Math.round(g.revenue),
+        repaid: left === 0,
+        left,
+        toSell: left && price ? Math.ceil(left / price) : 0,
+        bonus: Math.round(g.revenue - g.cost - g.royalty),
+      };
+    })
+    .filter((g) => g.members.some((m) => m.active) || !g.repaid)
+    .sort((a, b) => a.product.sort - b.product.sort);
+}
+
+// « Vinyle Life Balance vert transparent » + « Vinyle Life Balance swirl » → « Vinyle Life Balance »
+function commonName(names) {
+  const words = names.map((n) => n.split(' '));
+  const out = [];
+  for (let i = 0; words.every((w) => w[i] && w[i] === words[0][i]); i++) out.push(words[0][i]);
+  return out.join(' ') || names[0];
 }
 
 // Par produit : quantités, CA des lignes, coût, marge brute. Les articles non associés gardent leur nom.

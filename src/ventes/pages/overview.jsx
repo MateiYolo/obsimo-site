@@ -1,296 +1,143 @@
-// Vue d'ensemble : la soirée en cours (au stand, sur le téléphone), ce qui demande une action, chiffres clés (comparés à la période précédente), CA par heure/jour/mois,
-// meilleurs produits, répartition par canal, derniers concerts et dernières ventes.
+// Accueil : l'essentiel, sans réglage de période. La soirée en cours (au stand), où en est chaque produit (frais
+// remboursés ou pas, et combien il en reste à vendre), les ventes du mois et les dernières ventes.
+// Le détail des comptes est dans « Chiffres ».
 
 import { useMemo } from 'react'
-import { AlertTriangle, ArrowDownRight, ArrowRight, ArrowUpRight, ChartColumn, Download, Info, Plus, Table2 } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Page } from '@/components/page'
-import { PeriodSelect } from '@/components/period-select'
-import { RevenueChart, bucketLabel } from '@/components/revenue-chart'
-import { ChannelIcon, ChannelDot } from '@/components/channel'
-import { SERIES, SERIES_COLOR, PAYOUT_CATEGORY, summary, byBucket, byProduct, byNight, metrics } from '@/calc.js'
+import { RevenueChart } from '@/components/revenue-chart'
+import { ChannelIcon } from '@/components/channel'
+import { byBucket, metrics, payback, rangeOf } from '@/calc.js'
 import { useData } from '@/lib/store'
-import { usePeriod, useRoyalties, useTodo, useTonight, isPack } from '@/lib/derived'
-import { useUI } from '@/lib/ui'
-import { usePref } from '@/lib/prefs'
+import { useRoyalties, useTodo, useTonight } from '@/lib/derived'
 import { href } from '@/lib/router'
-import { downloadCsv } from '@/lib/actions'
 import { PAGES } from '@/lib/nav'
-import { fmt, num, plural, dayLabel, dateShort, time } from '@/lib/format'
+import { fmt, num, plural, dateShort, time } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 export function Overview() {
   const d = useData()
-  const p = usePeriod()
   const todo = useTodo()
   const tonight = useTonight()
-  const [view, setView] = usePref('chart', 'chart')
-
-  const t = useMemo(() => summary(p.sales, p.expenses, p.extra), [p])
-  const prev = useMemo(() => (p.prevSales ? summary(p.prevSales, p.prevExpenses, p.prevExtra) : null), [p])
-  const rows = useMemo(() => byBucket(p.sales, p.unit, p.keys), [p])
-  const products = useMemo(() => byProduct(p.sales, d.products), [p, d])
-  const nights = useMemo(() => byNight(p.sales), [p])
-  const stockValue = d.products.reduce((a, x) => a + (isPack(x) ? 0 : Math.max(0, x.stock) * (x.cost_cents || 0)), 0)
-  const stockItems = d.products.reduce((a, x) => a + (isPack(x) ? 0 : Math.max(0, x.stock)), 0)
-  const marginPct = t.revenue ? Math.round((t.margin / t.revenue) * 100) : 0
-  const channels = SERIES.map((s) => ({ ...s, value: rows.reduce((a, r) => a + r.values[s.key], 0) })).filter((s) => s.value > 0)
+  // seulement ce qui fausse les chiffres ; le stock bas est dans « À traiter » et « Stock »
+  const missing = todo.unmapped.length + todo.noCost.length
 
   return (
-    <Page
-      title={PAGES.apercu.label}
-      icon={PAGES.apercu.icon}
-      actions={
-        <>
-          <PeriodSelect />
-          <Button variant="ghost" size="sm" onClick={() => downloadCsv(`obsimo-ventes-${p.period}.csv`, p.sales, d.products)} className="text-muted-foreground" aria-label="Exporter en CSV">
-            <Download /> <span className="hidden sm:inline">Export</span>
-          </Button>
-        </>
-      }
-      className="space-y-6"
-    >
+    <Page title={PAGES.apercu.label} icon={PAGES.apercu.icon} className="mx-auto w-full max-w-4xl space-y-8">
       {tonight && <Tonight n={tonight} />}
 
-      {todo.count > 0 && (
+      {missing > 0 && (
         <a href={href('a-traiter')} className="group flex items-center gap-3 rounded-lg border border-warning/30 bg-warning/[0.06] px-4 py-2.5 text-sm transition-colors hover:bg-warning/10">
           <AlertTriangle className="size-4 shrink-0 text-warning" />
           <span className="min-w-0 flex-1">
-            <span className="font-medium">
-              {todo.count} point{todo.count > 1 ? 's' : ''} à traiter
-            </span>
-            <span className="text-muted-foreground">
-              {' · '}
-              {[
-                todo.unmapped.length && `${todo.unmapped.length} article${todo.unmapped.length > 1 ? 's' : ''} à associer`,
-                todo.noCost.length && `${todo.noCost.length} coût${todo.noCost.length > 1 ? 's' : ''} manquant${todo.noCost.length > 1 ? 's' : ''}`,
-                todo.stock.length && `${todo.stock.length} stock${todo.stock.length > 1 ? 's' : ''} bas`,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </span>
+            {plural(missing, 'chose')} à compléter <span className="text-muted-foreground">pour que les chiffres soient justes</span>
           </span>
           <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
         </a>
       )}
 
-      <div className="grid grid-cols-2 overflow-hidden rounded-xl border bg-card lg:grid-cols-4 [&>*]:border-border max-lg:[&>*:nth-child(-n+2)]:border-b max-lg:[&>*:nth-child(odd)]:border-r lg:[&>*:not(:last-child)]:border-r">
-        <Stat label="Chiffre d’affaires" value={fmt(t.revenue, true)} delta={delta(t.revenue, prev?.revenue)} foot={`${num.format(t.count)} vente${t.count > 1 ? 's' : ''} · ${num.format(t.items)} article${t.items > 1 ? 's' : ''}`} help="Total encaissé, frais de port compris, remboursements déduits." />
-        <Stat
-          label="Marge"
-          value={fmt(t.margin, true)}
-          delta={delta(t.margin, prev?.margin)}
-          foot={`${marginPct} % du CA`}
-          help={`CA moins commissions (${fmt(t.fees, true)}) et coût de revient des articles vendus (${fmt(t.cogs, true)}).`}
-          warn={t.unknownCost ? `${t.unknownCost} article${t.unknownCost > 1 ? 's' : ''} sans coût de revient : marge surestimée` : null}
-        />
-        <Stat
-          label="Résultat"
-          value={fmt(t.result, true)}
-          negative={t.result < 0}
-          delta={delta(t.result, prev?.result)}
-          foot={`après ${fmt(t.expenses + t.gifts + t.royalties, true)} de charges`}
-          help={`Marge moins les dépenses saisies (${fmt(t.expenses, true)}), le coût de revient des dons et pertes (${fmt(t.gifts, true)}) et le reversement au frère dû sur ces ventes (${fmt(t.royalties, true)}). Les versements au frère soldent ce reversement : ils ne sont pas déduits une deuxième fois.`}
-        />
-        <Stat label="Stock" value={fmt(stockValue, true)} foot={`${num.format(stockItems)} articles au prix de revient`} help="Valeur actuelle du stock, au coût de revient. Ne dépend pas de la période." />
-      </div>
+      <Payback />
+      <SalesNow />
 
-      <Card className="gap-4 py-5">
+      <Card className="gap-2 py-5">
         <CardHeader className="px-5">
-          <CardTitle className="text-sm font-medium">Chiffre d’affaires par {UNIT[p.unit]}</CardTitle>
-          <CardDescription className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-            {SERIES.map((s) => (
-              <span key={s.key} className="inline-flex items-center gap-1.5">
-                <ChannelDot series={s.key} className="rounded-[2px]" />
-                {s.label}
-              </span>
-            ))}
-          </CardDescription>
+          <CardTitle className="text-sm font-medium">Dernières ventes</CardTitle>
           <CardAction>
-            <ToggleGroup type="single" size="sm" variant="outline" value={view} onValueChange={(v) => v && setView(v)}>
-              <ToggleGroupItem value="chart" aria-label="Graphique" className="px-2">
-                <ChartColumn />
-              </ToggleGroupItem>
-              <ToggleGroupItem value="table" aria-label="Tableau" className="px-2">
-                <Table2 />
-              </ToggleGroupItem>
-            </ToggleGroup>
+            <LinkButton to="ventes">Toutes</LinkButton>
           </CardAction>
         </CardHeader>
-        <CardContent className="px-3 sm:px-5">{view === 'table' ? <BucketTable rows={rows} unit={p.unit} /> : <RevenueChart rows={rows} unit={p.unit} />}</CardContent>
+        <CardContent className="px-2">
+          <RecentSales sales={d.sales.slice(0, 5)} products={d.products} />
+        </CardContent>
       </Card>
-
-      <div className="grid gap-6 lg:grid-cols-5 *:min-w-0">
-        <Card className="gap-3 py-5 lg:col-span-3">
-          <CardHeader className="px-5">
-            <CardTitle className="text-sm font-medium">Meilleurs produits</CardTitle>
-            <CardDescription className="text-xs">Par CA des articles, hors frais de port</CardDescription>
-            <CardAction>
-              <LinkButton to="produits">Tous</LinkButton>
-            </CardAction>
-          </CardHeader>
-          <CardContent className="px-5">
-            {products.length ? (
-              <ul className="space-y-3">
-                {products.slice(0, 6).map((r) => (
-                  <li key={r.key} className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1.5 text-sm">
-                    <span className="min-w-0 truncate">
-                      {r.name}
-                      {!r.product && <span className="ml-2 text-xs text-warning">à associer</span>}
-                    </span>
-                    <span className="num text-right">
-                      {fmt(r.revenue, true)} <span className="ml-1 text-xs text-muted-foreground">× {r.qty}</span>
-                    </span>
-                    <div className="col-span-2 h-1 overflow-hidden rounded-full bg-muted">
-                      <div className="h-full rounded-full bg-foreground/70" style={{ width: `${(r.revenue / products[0].revenue) * 100}%` }} />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="py-6 text-center text-sm text-muted-foreground">Aucune vente sur la période.</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="gap-3 py-5 lg:col-span-2">
-          <CardHeader className="px-5">
-            <CardTitle className="text-sm font-medium">Par canal</CardTitle>
-            <CardDescription className="text-xs">Part du chiffre d’affaires</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4 px-5">
-            {channels.length ? (
-              <>
-                <div className="flex h-2 gap-0.5 overflow-hidden rounded-full">
-                  {channels.map((c) => (
-                    <div key={c.key} style={{ width: `${(c.value / t.revenue) * 100}%`, background: SERIES_COLOR[c.key] }} />
-                  ))}
-                </div>
-                <ul className="space-y-2.5 text-sm">
-                  {channels.map((c) => (
-                    <li key={c.key} className="flex items-center gap-2">
-                      <ChannelDot series={c.key} />
-                      <span>{c.label}</span>
-                      <span className="num ml-auto">{fmt(c.value, true)}</span>
-                      <span className="num w-10 text-right text-xs text-muted-foreground">{Math.round((c.value / t.revenue) * 100)} %</span>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            ) : (
-              <p className="py-6 text-center text-sm text-muted-foreground">Rien sur la période.</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <Royalty />
-
-      <div className="grid gap-6 lg:grid-cols-2 *:min-w-0">
-        <Card className="gap-2 py-5">
-          <CardHeader className="px-5">
-            <CardTitle className="text-sm font-medium">Derniers concerts</CardTitle>
-            <CardAction>
-              <LinkButton to="concerts">Tous</LinkButton>
-            </CardAction>
-          </CardHeader>
-          <CardContent className="px-2">
-            {nights.length ? (
-              <ul>
-                {nights.slice(0, 5).map((n) => (
-                  <li key={n.night}>
-                    <a href={href('ventes', { nuit: n.night })} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent">
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate">{n.events.size ? [...n.events].join(', ') : <span className="text-muted-foreground">Concert sans nom</span>}</span>
-                        <span className="block text-xs text-muted-foreground first-letter:uppercase">{dayLabel(n.night)}</span>
-                      </span>
-                      <span className="text-right">
-                        <span className="num block">{fmt(n.revenue, true)}</span>
-                        <span className="text-xs text-muted-foreground">{n.items} art.</span>
-                      </span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="px-3 py-6 text-center text-sm text-muted-foreground">Aucune vente en concert sur la période.</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="gap-2 py-5">
-          <CardHeader className="px-5">
-            <CardTitle className="text-sm font-medium">Dernières ventes</CardTitle>
-            <CardAction>
-              <LinkButton to="ventes">Toutes</LinkButton>
-            </CardAction>
-          </CardHeader>
-          <CardContent className="px-2">
-            <RecentSales sales={d.sales.slice(0, 5)} products={d.products} />
-          </CardContent>
-        </Card>
-      </div>
     </Page>
   )
 }
 
-const UNIT = { hour: 'heure', day: 'jour', month: 'mois' }
-
-// Reversement au frère, depuis le début : où en est chaque vinyle par rapport à son seuil, dû, versé, reste.
-function Royalty() {
+// Où en est chaque produit : tant que les frais ne sont pas remboursés, combien il en reste à vendre ; ensuite, le bonus.
+function Payback() {
   const d = useData()
-  const { open } = useUI()
   const r = useRoyalties()
-  const paid = d.expenses.filter((e) => e.category === PAYOUT_CATEGORY).reduce((a, e) => a + e.amount_cents, 0)
-  if (!r.products.length) return null
+  const items = useMemo(() => payback(d.sales, d.products, Object.fromEntries(r.products.map((x) => [x.product.id, x.due]))), [d, r])
+  if (!items.length) return null
+  return (
+    <section className="space-y-3">
+      <div>
+        <h2 className="text-base font-semibold">Tes produits</h2>
+        <p className="text-sm text-muted-foreground">Les premières ventes remboursent les frais. Après, c’est du bonus.</p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {items.map((g) => (
+          <div key={g.id} className="rounded-xl border bg-card p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-3">
+              <p className="font-medium leading-snug">{g.name}</p>
+              {g.repaid && (
+                <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-success">
+                  <Check className="size-3.5" /> Remboursé
+                </span>
+              )}
+            </div>
+            <p className="mt-3 flex items-baseline gap-1.5">
+              {g.repaid ? (
+                <>
+                  <span className="num text-3xl font-semibold tracking-tight text-success">+{fmt(Math.max(0, g.bonus), true)}</span>
+                  <span className="text-sm text-muted-foreground">de bonus</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-sm text-muted-foreground">Encore</span>
+                  <span className="num text-3xl font-semibold tracking-tight">{num.format(g.toSell)}</span>
+                  <span className="text-sm text-muted-foreground">à vendre</span>
+                </>
+              )}
+            </p>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+              <div className={cn('h-full rounded-full', g.repaid ? 'bg-success' : 'bg-foreground/70')} style={{ width: `${g.cost ? Math.min(100, (g.revenue / g.cost) * 100) : 100}%` }} />
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {g.repaid ? `${fmt(g.cost, true)} de frais remboursés` : `${fmt(g.revenue, true)} rentrés sur ${fmt(g.cost, true)} de frais`}
+              {' · '}
+              {g.stock > 0 ? `${num.format(g.stock)} en stock` : g.stock < 0 ? `${num.format(-g.stock)} à envoyer (précommandes)` : 'épuisé'}
+            </p>
+          </div>
+        ))}
+      </div>
+      <p className="text-xs text-muted-foreground">Comptés : le prix des articles vendus. Le bonus est après le reversement au frère.</p>
+    </section>
+  )
+}
+
+// Les ventes du mois, comparées au mois dernier, et les 12 derniers mois en un coup d'œil.
+function SalesNow() {
+  const d = useData()
+  const rows = useMemo(() => byBucket(d.sales, 'month', rangeOf('12m', d.sales).keys), [d])
+  const total = useMemo(() => d.sales.reduce((a, s) => a + metrics(s).revenue, 0), [d])
+  const [last, cur] = rows.slice(-2)
   return (
     <Card className="gap-4 py-5">
       <CardHeader className="px-5">
-        <CardTitle className="text-sm font-medium">Reversement au frère</CardTitle>
-        <CardDescription className="text-xs">Par vinyle vendu une fois le tirage rentabilisé · depuis le début, hors disquaires et dons</CardDescription>
+        <CardTitle className="text-base font-semibold">Ventes</CardTitle>
         <CardAction>
-          <Button variant="ghost" size="xs" className="text-muted-foreground pointer-coarse:h-9 pointer-coarse:px-3" onClick={() => open('expense', { category: PAYOUT_CATEGORY, label: 'Reversement au frère' })}>
-            <Plus /> Versement
-          </Button>
+          <LinkButton to="chiffres">Tous les chiffres</LinkButton>
         </CardAction>
       </CardHeader>
-      <CardContent className="grid gap-5 px-5 lg:grid-cols-[3fr_2fr] lg:items-center">
-        <ul className="space-y-3">
-          {r.products.map((x) => {
-            const left = x.threshold - x.units
-            return (
-              <li key={x.product.id} className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1.5 text-sm">
-                <span className="min-w-0 truncate">{x.product.name}</span>
-                <span className="num text-right">{fmt(x.due)}</span>
-                <div className="col-span-2 h-1 overflow-hidden rounded-full bg-muted">
-                  <div className={cn('h-full rounded-full', left > 0 ? 'bg-foreground/40' : 'bg-success')} style={{ width: `${x.threshold ? Math.min(100, (x.units / x.threshold) * 100) : 100}%` }} />
-                </div>
-                <span className="col-span-2 text-xs text-muted-foreground">
-                  {left > 0
-                    ? `${num.format(x.units)} / ${num.format(x.threshold)} vendus · reversement à partir du ${num.format(x.threshold + 1)}ᵉ`
-                    : `${plural(x.units, 'vendu')} · ${plural(x.paidUnits, 'exemplaire')} × ${fmt(x.product.royalty_cents)}`}
-                </span>
-              </li>
-            )
-          })}
-        </ul>
-        <dl className="grid grid-cols-3 gap-px overflow-hidden rounded-lg border bg-border text-sm">
+      <CardContent className="space-y-5 px-5">
+        <dl className="grid grid-cols-3 gap-4">
           {[
-            ['Dû', r.total],
-            ['Versé', paid],
-            ['Reste à verser', r.total - paid],
-          ].map(([k, v]) => (
-            <div key={k} className="bg-card px-3 py-2">
+            ['Ce mois-ci', cur.total, plural(cur.items, 'article')],
+            ['Le mois dernier', last.total, plural(last.items, 'article')],
+            ['Depuis le début', total, null],
+          ].map(([k, v, foot]) => (
+            <div key={k} className="min-w-0">
               <dt className="text-xs text-muted-foreground">{k}</dt>
-              <dd className={cn('num font-medium', k === 'Reste à verser' && v < 0 && 'text-destructive')}>{fmt(v)}</dd>
+              <dd className="num text-xl font-semibold tracking-tight sm:text-2xl">{fmt(v, true)}</dd>
+              {foot && <dd className="text-xs text-muted-foreground">{foot}</dd>}
             </div>
           ))}
         </dl>
+        <RevenueChart rows={rows} simple className="h-40" />
       </CardContent>
     </Card>
   )
@@ -333,52 +180,6 @@ function Tonight({ n }) {
   )
 }
 
-const delta = (cur, prev) => (prev == null || prev <= 0 ? null : ((cur - prev) / prev) * 100)
-
-function Stat({ label, value, delta, foot, help, warn, negative }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-1 p-4 sm:p-5">
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        {label}
-        {help && (
-          <Popover>
-            <PopoverTrigger className="-m-3 p-3 opacity-60 hover:opacity-100" aria-label={`À propos : ${label}`}>
-              <Info className="size-3" />
-            </PopoverTrigger>
-            <PopoverContent side="top" className="w-64 text-xs">
-              {help}
-              {delta != null && <p className="mt-2 text-muted-foreground">La flèche compare à la période précédente de même durée.</p>}
-            </PopoverContent>
-          </Popover>
-        )}
-      </div>
-      <div className="flex flex-wrap items-baseline gap-x-2">
-        <span className={cn('num text-xl font-semibold tracking-tight sm:text-2xl', negative && 'text-destructive')}>{value}</span>
-        {delta != null && Number.isFinite(delta) && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className={cn('num inline-flex items-center text-xs font-medium', delta >= 0 ? 'text-success' : 'text-destructive')}>
-                {delta >= 0 ? <ArrowUpRight className="size-3.5" /> : <ArrowDownRight className="size-3.5" />}
-                {Math.abs(Math.round(delta))} %
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>Par rapport à la période précédente de même durée</TooltipContent>
-          </Tooltip>
-        )}
-      </div>
-      <div className="text-xs text-muted-foreground sm:truncate">{foot}</div>
-      {warn && (
-        <div className="mt-1 flex items-start gap-1 text-xs text-warning">
-          <AlertTriangle className="mt-px size-3 shrink-0" />
-          <a href={href('a-traiter')} className="hover:underline">
-            {warn}
-          </a>
-        </div>
-      )}
-    </div>
-  )
-}
-
 function LinkButton({ to, children }) {
   return (
     <Button variant="ghost" size="xs" asChild className="text-muted-foreground pointer-coarse:h-9 pointer-coarse:px-3">
@@ -407,38 +208,5 @@ export function RecentSales({ sales, products }) {
         </li>
       ))}
     </ul>
-  )
-}
-
-function BucketTable({ rows, unit }) {
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="first-letter:uppercase">{UNIT[unit]}</TableHead>
-          {SERIES.map((s) => (
-            <TableHead key={s.key} className="text-right">
-              {s.label}
-            </TableHead>
-          ))}
-          <TableHead className="text-right">Total</TableHead>
-          <TableHead className="text-right">Articles</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {[...rows].reverse().map((r) => (
-          <TableRow key={r.key}>
-            <TableCell className="first-letter:uppercase">{bucketLabel(unit, r.key, true)}</TableCell>
-            {SERIES.map((s) => (
-              <TableCell key={s.key} className={cn('num text-right', !r.values[s.key] && 'text-muted-foreground/50')}>
-                {r.values[s.key] ? fmt(r.values[s.key]) : '—'}
-              </TableCell>
-            ))}
-            <TableCell className="num text-right font-medium">{fmt(r.total)}</TableCell>
-            <TableCell className="num text-right text-muted-foreground">{r.items}</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
   )
 }

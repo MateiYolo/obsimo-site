@@ -10,6 +10,7 @@ alter table public.merch_sales add constraint merch_sales_channel_check
   check (channel in ('shopify', 'sumup', 'bandcamp', 'cash', 'other', 'wholesale'));
 
 alter table public.merch_products
+  add column investment_cents integer,                  -- frais engagés (tirage, SDRM…) : les premières ventes les remboursent
   add column royalty_cents integer,                     -- reversé au frère par exemplaire vendu, null = rien
   add column royalty_after_units integer not null default 0,  -- … une fois ce nombre d'exemplaires vendus (seuil de rentabilité)
   add column replaced_by text references public.merch_products on update cascade,  -- même article chez Shopify / SumUp :
@@ -101,13 +102,13 @@ grant execute on function public.merch_resolve_product(text, timestamptz) to ser
 
 /* ---------- Catalogue ---------- */
 
--- Coûts de revient par exemplaire, SDRM comprise :
+-- Coûts de revient par exemplaire, SDRM comprise, TTC (validé : la TVA n'est pas récupérée) :
 --   vert transparent  (2 078 + 200 stickers + 388,24 SDRM) / 300 = 8,89
 --   swirl             (2 800 + 200 stickers + 770,79 SDRM) / 500 = 7,54
 --   8 Days in Sweden  (2 912 + 115 poster   + 570,92 SDRM) / 500 = 7,20
 -- Reversement : 2 € par vinyle une fois le tirage rentabilisé (seuil = coût du tirage / prix, arrondi à l'unité).
-insert into public.merch_products (id, name, category, price_cents, cost_cents, royalty_cents, royalty_after_units, sort)
-values ('life-balance-swirl', 'Vinyle Life Balance swirl', 'vinyle', 2500, 754, 200, 0, 10)
+insert into public.merch_products (id, name, category, price_cents, cost_cents, investment_cents, royalty_cents, royalty_after_units, sort)
+values ('life-balance-swirl', 'Vinyle Life Balance swirl', 'vinyle', 2500, 754, 377079, 200, 0, 10)
 on conflict (id) do nothing;
 
 -- L'ancien produit unique devient le vert transparent : ses lignes de vente et mouvements suivent (on update cascade).
@@ -115,21 +116,21 @@ on conflict (id) do nothing;
 -- date qui tranche (replaced_by). Épuisé, il n'est plus proposé à la saisie (sauf pour les disquaires).
 update public.merch_products
    set id = 'life-balance-vert', name = 'Vinyle Life Balance vert transparent', price_cents = 2500, cost_cents = 889,
-       royalty_cents = 200, royalty_after_units = 107,
+       investment_cents = 266624, royalty_cents = 200, royalty_after_units = 107,
        replaced_by = 'life-balance-swirl', replaced_at = '2026-09-07 00:00 Europe/Paris', active = false, sort = 12
  where id = 'life-balance';
 
-update public.merch_products set price_cents = 3000, cost_cents = 720, royalty_cents = 200, royalty_after_units = 120
+update public.merch_products set price_cents = 3000, cost_cents = 720, investment_cents = 359792, royalty_cents = 200, royalty_after_units = 120
  where id = '8-days-in-sweden';
 
--- Le pack : 30 € pour 8 Days + 20 € pour Life Balance (swirl) ; coût et stock = ceux des composants.
+-- Le pack : 30 € pour 8 Days + 20 € pour Life Balance (swirl), share_cents ; coût et stock = ceux des composants.
 update public.merch_products
    set price_cents = 5000, cost_cents = null,
-       components = '[{"product_id": "8-days-in-sweden", "qty": 1}, {"product_id": "life-balance-swirl", "qty": 1}]'
+       components = '[{"product_id": "8-days-in-sweden", "qty": 1, "share_cents": 3000}, {"product_id": "life-balance-swirl", "qty": 1, "share_cents": 2000}]'
  where id = 'bundle-vinyles';
 
-update public.merch_products set price_cents = 800, cost_cents = 400 where id = 'sauce-piquhans';
-update public.merch_products set price_cents = 1000, cost_cents = 200 where id = 'carte-postale';
+update public.merch_products set price_cents = 800, cost_cents = 400, investment_cents = 40000 where id = 'sauce-piquhans';
+update public.merch_products set price_cents = 1000, cost_cents = 200, investment_cents = 100000 where id = 'carte-postale';
 update public.merch_products set active = false where id = 'affiche';
 
 -- Bandcamp : prix majorés pour compenser la commission, qu'on ne compte donc pas. Disquaires : pas de commission.

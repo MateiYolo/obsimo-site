@@ -133,6 +133,7 @@ const actions = {
       category: b.category || 'merch',
       price_cents: int(b.price_cents),
       cost_cents: int(b.cost_cents),
+      investment_cents: int(b.investment_cents),
       royalty_cents: int(b.royalty_cents),
       royalty_after_units: Math.max(0, int(b.royalty_after_units) || 0),
       sumup_names: (b.sumup_names || []).map((s) => String(s).trim()).filter(Boolean),
