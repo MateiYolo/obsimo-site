@@ -21,7 +21,7 @@ import { usePref } from '@/lib/prefs'
 import { href } from '@/lib/router'
 import { downloadCsv } from '@/lib/actions'
 import { PAGES } from '@/lib/nav'
-import { fmt, num, plural, dayLabel } from '@/lib/format'
+import { fmt, num, plural, dayLabel, dateMedium } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 export function Figures() {
@@ -214,9 +214,9 @@ function Royalty() {
     <Card className="gap-4 py-5">
       <CardHeader className="px-5">
         <CardTitle className="text-sm font-medium">Reversement au frère</CardTitle>
-        <CardDescription className="text-xs">Par vinyle vendu une fois le tirage rentabilisé · depuis le début, hors disquaires et dons</CardDescription>
+        <CardDescription className="text-xs">Par vinyle vendu une fois le tirage rentabilisé, hors disquaires et dons{r.since ? ` · ventes depuis le ${dateMedium(r.since)}` : ''}{r.opening ? `, plus ${fmt(r.opening)} dus avant` : ''}</CardDescription>
         <CardAction>
-          <Button variant="ghost" size="xs" className="text-muted-foreground pointer-coarse:h-9 pointer-coarse:px-3" onClick={() => open('expense', { category: PAYOUT_CATEGORY, label: 'Reversement au frère' })}>
+          <Button variant="ghost" size="xs" className="text-muted-foreground pointer-coarse:h-9 pointer-coarse:px-3" onClick={() => open('payout', { name: r.name, balance: r.total - paid })}>
             <Plus /> Versement
           </Button>
         </CardAction>

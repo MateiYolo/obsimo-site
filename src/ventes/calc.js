@@ -169,12 +169,16 @@ export function summary(sales, expenses, { royalty, gifts = [], products = [] } 
 // rentabilité du tirage). Les ventes sont comptées dans l'ordre chronologique, précommandes comprises ; un pack compte
 // pour chacun de ses composants. Ne comptent pas : les disquaires, les ventes remboursées ou annulées, et les dons
 // (qui ne sont pas des ventes). Renvoie le dû par vente (pour une période) et l'état de chaque produit (depuis le début).
-export function royalties(sales, products) {
+// `setting` (merch_settings.royalty) : ce qui était dû au départ (opening_cents) et la date à partir de laquelle les
+// ventes rapportent au frère (since) ; le seuil, lui, se compte toujours depuis la première vente.
+export function royalties(sales, products, setting = {}) {
   const byId = new Map(products.map((p) => [p.id, p]));
+  const since = setting.since || '';
   const rows = new Map();
   const bySale = new Map();
   for (const s of [...sales].sort((a, b) => (a.occurred_at < b.occurred_at ? -1 : 1))) {
     if (back(s) || s.channel === 'wholesale') continue;
+    const counts = s.occurred_at >= since;
     let due = 0;
     for (const l of s.lines || []) {
       const p = byId.get(l.product_id);
@@ -183,7 +187,7 @@ export function royalties(sales, products) {
       for (const [c, n] of parts) {
         if (c?.royalty_cents == null) continue;
         const r = rows.get(c.id) || { product: c, threshold: c.royalty_after_units || 0, units: 0, paidUnits: 0, due: 0 };
-        const over = Math.max(0, r.units + n - Math.max(r.units, r.threshold)); // exemplaires de cette ligne au-delà du seuil
+        const over = counts ? Math.max(0, r.units + n - Math.max(r.units, r.threshold)) : 0; // exemplaires de cette ligne au-delà du seuil
         r.units += n;
         r.paidUnits += over;
         r.due += over * c.royalty_cents;
@@ -196,7 +200,8 @@ export function royalties(sales, products) {
   // les produits à reversement sans aucune vente apparaissent aussi
   for (const p of products) if (p.royalty_cents != null && !rows.has(p.id)) rows.set(p.id, { product: p, threshold: p.royalty_after_units || 0, units: 0, paidUnits: 0, due: 0 });
   const list = [...rows.values()].sort((a, b) => a.product.sort - b.product.sort);
-  return { bySale, products: list, total: list.reduce((a, r) => a + r.due, 0) };
+  const opening = setting.opening_cents || 0;
+  return { bySale, products: list, opening, since: setting.since, name: setting.name || 'Matei', total: opening + list.reduce((a, r) => a + r.due, 0) };
 }
 
 // CA par tranche (heure, jour ou mois), par série.
@@ -215,28 +220,22 @@ export function byBucket(sales, unit, keys) {
 }
 
 // Remboursement des frais : les premières ventes d'un produit remboursent ce qu'il a coûté à produire
-// (investment_cents : le tirage, la SDRM…), ce qui rentre ensuite est du bonus. Un produit et celui qui le remplace
-// (Life Balance vert → swirl) ne font qu'un. Un pack répartit son prix entre ses composants (share_cents, sinon au
+// (investment_cents : le tirage, la SDRM…), ce qui rentre ensuite est du bonus. Un compteur par pressage : le swirl
+// (investment_cents = 0, financé par le vert) est en bonus dès la 1re vente. Un pack répartit son prix entre ses composants (share_cents, sinon au
 // prorata de leur prix). Compté : le prix des articles vendus, hors port et commissions, ventes remboursées exclues.
 // `royaltyDue` : reversement dû au frère par produit, déduit du bonus.
 export function payback(sales, products, royaltyDue = {}) {
   const byId = new Map(products.map((p) => [p.id, p]));
-  const rootOf = (p) => {
-    let r = p;
-    for (let i = 0; i < 10 && r.replaced_by && byId.has(r.replaced_by); i++) r = byId.get(r.replaced_by);
-    return r;
-  };
   const groups = new Map();
   const groupOf = new Map();
   for (const p of products) {
     if (p.investment_cents == null || p.components.length) continue;
-    const root = rootOf(p);
-    const g = groups.get(root.id) || { id: root.id, product: root, members: [], cost: 0, revenue: 0, units: 0, stock: 0, royalty: 0 };
+    const g = { id: p.id, product: p, members: [], cost: 0, revenue: 0, units: 0, stock: 0, royalty: 0 };
     g.members.push(p);
     g.cost += p.investment_cents;
     g.stock += p.stock ?? 0;
     g.royalty += royaltyDue[p.id] || 0;
-    groups.set(root.id, g);
+    groups.set(p.id, g);
     groupOf.set(p.id, g);
   }
   const add = (p, revenue, units) => {
@@ -264,7 +263,7 @@ export function payback(sales, products, royaltyDue = {}) {
       const price = g.product.price_cents;
       return {
         ...g,
-        name: g.members.length > 1 ? commonName(g.members.map((m) => m.name)) : g.product.name,
+        name: g.product.name,
         revenue: Math.round(g.revenue),
         repaid: left === 0,
         left,
@@ -272,17 +271,10 @@ export function payback(sales, products, royaltyDue = {}) {
         bonus: Math.round(g.revenue - g.cost - g.royalty),
       };
     })
-    .filter((g) => g.members.some((m) => m.active) || !g.repaid)
-    .sort((a, b) => a.product.sort - b.product.sort);
+    // en vente d'abord ; un tirage épuisé (archivé) reste en bas, avec son bonus
+    .sort((a, b) => b.product.active - a.product.active || a.product.sort - b.product.sort);
 }
 
-// « Vinyle Life Balance vert transparent » + « Vinyle Life Balance swirl » → « Vinyle Life Balance »
-function commonName(names) {
-  const words = names.map((n) => n.split(' '));
-  const out = [];
-  for (let i = 0; words.every((w) => w[i] && w[i] === words[0][i]); i++) out.push(words[0][i]);
-  return out.join(' ') || names[0];
-}
 
 // Par produit : quantités, CA des lignes, coût, marge brute. Les articles non associés gardent leur nom.
 export function byProduct(sales, products) {
