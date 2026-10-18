@@ -12,7 +12,7 @@ const json = (data, status = 200, headers = {}) =>
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...headers },
   });
 
-const CHANNELS = ['shopify', 'sumup', 'bandcamp', 'cash', 'other'];
+const CHANNELS = ['shopify', 'sumup', 'bandcamp', 'cash', 'other', 'wholesale'];
 const MOVES = ['initial', 'restock', 'adjust', 'gift', 'loss'];
 const int = (v) => (v === '' || v === null || v === undefined ? null : Math.round(Number(v)));
 
@@ -52,7 +52,7 @@ const actions = {
     };
   },
 
-  // vente saisie à la main (Bandcamp, espèces, correction)
+  // vente saisie à la main (Bandcamp, espèces, disquaire, correction)
   async sale(b) {
     const channel = CHANNELS.includes(b.channel) ? b.channel : 'other';
     const lines = (b.lines || [])
@@ -133,6 +133,9 @@ const actions = {
       category: b.category || 'merch',
       price_cents: int(b.price_cents),
       cost_cents: int(b.cost_cents),
+      investment_cents: int(b.investment_cents),
+      royalty_cents: int(b.royalty_cents),
+      royalty_after_units: Math.max(0, int(b.royalty_after_units) || 0),
       sumup_names: (b.sumup_names || []).map((s) => String(s).trim()).filter(Boolean),
       shopify_handles: (b.shopify_handles || []).map((s) => String(s).trim()).filter(Boolean),
       components: b.components || [],

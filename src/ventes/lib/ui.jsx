@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { usePref } from '@/lib/prefs'
+import { PRESETS } from '@/calc.js'
 
 const Ctx = createContext(null)
 
@@ -31,7 +32,9 @@ function useTheme() {
 }
 
 export function UIProvider({ children }) {
-  const [period, setPeriod] = usePref('period', '12m')
+  const [stored, setPeriod] = usePref('period', '12m')
+  // une période gardée d'avant et qui n'est plus proposée (24 h, 6 mois) → 12 mois
+  const period = PRESETS.some(([v]) => v === stored) || /^\d{4}$/.test(stored) ? stored : '12m'
   const [theme, setTheme] = useTheme()
   const [dialog, setDialog] = useState(null) // { name, props }
   const [commandOpen, setCommandOpen] = useState(false)

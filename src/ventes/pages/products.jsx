@@ -27,7 +27,7 @@ export function Products() {
   const sold = useMemo(() => Object.fromEntries(byProduct(p.sales, d.products).map((r) => [r.key, r])), [p, d])
   const needle = q.trim().toLowerCase()
   const list = d.products
-    .filter((x) => (show === 'all' || x.active) && (!needle || [x.name, ...x.sumup_names, ...x.shopify_handles].some((v) => v.toLowerCase().includes(needle))))
+    .filter((x) => (show === 'all' || x.active || sold[x.id]) && (!needle || [x.name, ...x.sumup_names, ...x.shopify_handles].some((v) => v.toLowerCase().includes(needle))))
     .sort((a, b) => (sold[b.id]?.revenue || 0) - (sold[a.id]?.revenue || 0))
   const archived = d.products.filter((x) => !x.active).length
 

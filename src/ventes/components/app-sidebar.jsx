@@ -95,7 +95,7 @@ export function AppSidebar() {
           <SidebarGroup key={i} className="py-1">
             {group.label && <SidebarGroupLabel>{group.label}</SidebarGroupLabel>}
             <SidebarMenu>
-              {group.items.map((key) => {
+              {group.items.filter((key) => key !== 'a-traiter' || todo.count > 0 || page === key).map((key) => {
                 const p = PAGES[key]
                 return (
                   <SidebarMenuItem key={key}>

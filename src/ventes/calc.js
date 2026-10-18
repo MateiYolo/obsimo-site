@@ -15,10 +15,11 @@ export const SERIES = [
   { key: 'shopify', label: 'Site', channels: ['shopify'] },
   { key: 'live', label: 'Concerts', channels: ['sumup', 'cash'] },
   { key: 'bandcamp', label: 'Bandcamp', channels: ['bandcamp'] },
+  { key: 'wholesale', label: 'Disquaires', channels: ['wholesale'] },
   { key: 'other', label: 'Autre', channels: ['other'] },
 ];
 // couleur de chaque série (variables du thème, voir index.css)
-export const SERIES_COLOR = { shopify: 'var(--chart-1)', live: 'var(--chart-2)', bandcamp: 'var(--chart-3)', other: 'var(--chart-4)' };
+export const SERIES_COLOR = { shopify: 'var(--chart-1)', live: 'var(--chart-2)', bandcamp: 'var(--chart-3)', wholesale: 'var(--chart-5)', other: 'var(--chart-4)' };
 export const seriesOf = (channel) => SERIES.find((s) => s.channels.includes(channel))?.key || 'other';
 
 export const CHANNELS = {
@@ -26,8 +27,14 @@ export const CHANNELS = {
   sumup: 'Concert (SumUp)',
   cash: 'Concert (espèces)',
   bandcamp: 'Bandcamp',
+  wholesale: 'Disquaire',
   other: 'Autre',
 };
+
+// Sorties de stock sans vente dont le coût de revient est une charge : dons et pertes.
+export const GIFT_REASONS = ['gift', 'loss'];
+// Dépenses qui soldent le reversement au frère : déjà compté comme charge, elles ne sont pas déduites une 2e fois.
+export const PAYOUT_CATEGORY = 'reversement-frere';
 
 const back = (s) => s.status === 'refunded' || s.status === 'cancelled'; // la marchandise est revenue
 
@@ -45,11 +52,10 @@ export function metrics(s) {
 }
 
 // Les périodes proposées : glissantes (24 h, 7 j), mois en cours, N derniers mois, une année 'AAAA', ou tout.
+// (rangeOf sait aussi faire '24h' et '6m', qui ne sont plus proposés : moins de choix, plus lisible)
 export const PRESETS = [
-  ['24h', '24 dernières heures', '24 h'],
   ['7d', '7 derniers jours', '7 j'],
   ['mtd', 'Mois en cours', 'Ce mois'],
-  ['6m', '6 derniers mois', '6 mois'],
   ['12m', '12 derniers mois', '12 mois'],
   ['all', 'Depuis le début', 'Tout'],
 ];
@@ -126,18 +132,71 @@ export function inRange(list, unit, keys, dateKey = 'occurred_at') {
   return list.filter((x) => set.has(keyOf(unit, x[dateKey])));
 }
 
-export function summary(sales, expenses) {
-  const t = { revenue: 0, fees: 0, cogs: 0, items: 0, count: 0, unknownCost: 0 };
+// Coût de revient actuel d'un produit : le sien, sinon la somme de ses composants (comme merch_unit_cost en base).
+export function unitCost(p, products) {
+  if (!p) return null;
+  if (p.cost_cents != null || !p.components?.length) return p.cost_cents ?? null;
+  let t = 0;
+  for (const c of p.components) {
+    const cost = unitCost(products.find((x) => x.id === c.product_id), products);
+    if (cost == null) return null;
+    t += c.qty * cost;
+  }
+  return t;
+}
+
+// Le résultat d'une période. `royalty` : reversement dû par vente (voir royalties), `gifts` : mouvements de stock de la
+// période (seuls les dons et pertes comptent, à leur coût de revient actuel).
+export function summary(sales, expenses, { royalty, gifts = [], products = [] } = {}) {
+  const t = { revenue: 0, fees: 0, cogs: 0, items: 0, count: 0, unknownCost: 0, royalties: 0 };
   for (const s of sales) {
     if (s.status === 'cancelled') continue;
     const m = metrics(s);
     for (const k of ['revenue', 'fees', 'cogs', 'items', 'unknownCost']) t[k] += m[k];
+    t.royalties += royalty?.get(s.id) || 0;
     t.count++;
   }
   t.margin = t.revenue - t.fees - t.cogs;
-  t.expenses = expenses.reduce((a, e) => a + e.amount_cents, 0);
-  t.result = t.margin - t.expenses;
+  t.gifts = gifts
+    .filter((m) => GIFT_REASONS.includes(m.reason))
+    .reduce((a, m) => a + -m.qty * (unitCost(products.find((p) => p.id === m.product_id), products) ?? 0), 0);
+  t.expenses = expenses.filter((e) => e.category !== PAYOUT_CATEGORY).reduce((a, e) => a + e.amount_cents, 0);
+  t.result = t.margin - t.expenses - t.gifts - t.royalties;
   return t;
+}
+
+// Reversement au frère : royalty_cents par exemplaire vendu au-delà des royalty_after_units premiers (seuil de
+// rentabilité du tirage). Les ventes sont comptées dans l'ordre chronologique, précommandes comprises ; un pack compte
+// pour chacun de ses composants. Ne comptent pas : les disquaires, les ventes remboursées ou annulées, et les dons
+// (qui ne sont pas des ventes). Renvoie le dû par vente (pour une période) et l'état de chaque produit (depuis le début).
+export function royalties(sales, products) {
+  const byId = new Map(products.map((p) => [p.id, p]));
+  const rows = new Map();
+  const bySale = new Map();
+  for (const s of [...sales].sort((a, b) => (a.occurred_at < b.occurred_at ? -1 : 1))) {
+    if (back(s) || s.channel === 'wholesale') continue;
+    let due = 0;
+    for (const l of s.lines || []) {
+      const p = byId.get(l.product_id);
+      if (!p) continue;
+      const parts = p.components.length ? p.components.map((c) => [byId.get(c.product_id), c.qty * l.qty]) : [[p, l.qty]];
+      for (const [c, n] of parts) {
+        if (c?.royalty_cents == null) continue;
+        const r = rows.get(c.id) || { product: c, threshold: c.royalty_after_units || 0, units: 0, paidUnits: 0, due: 0 };
+        const over = Math.max(0, r.units + n - Math.max(r.units, r.threshold)); // exemplaires de cette ligne au-delà du seuil
+        r.units += n;
+        r.paidUnits += over;
+        r.due += over * c.royalty_cents;
+        due += over * c.royalty_cents;
+        rows.set(c.id, r);
+      }
+    }
+    if (due) bySale.set(s.id, due);
+  }
+  // les produits à reversement sans aucune vente apparaissent aussi
+  for (const p of products) if (p.royalty_cents != null && !rows.has(p.id)) rows.set(p.id, { product: p, threshold: p.royalty_after_units || 0, units: 0, paidUnits: 0, due: 0 });
+  const list = [...rows.values()].sort((a, b) => a.product.sort - b.product.sort);
+  return { bySale, products: list, total: list.reduce((a, r) => a + r.due, 0) };
 }
 
 // CA par tranche (heure, jour ou mois), par série.
@@ -153,6 +212,76 @@ export function byBucket(sales, unit, keys) {
     r.items += m.items;
   }
   return rows;
+}
+
+// Remboursement des frais : les premières ventes d'un produit remboursent ce qu'il a coûté à produire
+// (investment_cents : le tirage, la SDRM…), ce qui rentre ensuite est du bonus. Un produit et celui qui le remplace
+// (Life Balance vert → swirl) ne font qu'un. Un pack répartit son prix entre ses composants (share_cents, sinon au
+// prorata de leur prix). Compté : le prix des articles vendus, hors port et commissions, ventes remboursées exclues.
+// `royaltyDue` : reversement dû au frère par produit, déduit du bonus.
+export function payback(sales, products, royaltyDue = {}) {
+  const byId = new Map(products.map((p) => [p.id, p]));
+  const rootOf = (p) => {
+    let r = p;
+    for (let i = 0; i < 10 && r.replaced_by && byId.has(r.replaced_by); i++) r = byId.get(r.replaced_by);
+    return r;
+  };
+  const groups = new Map();
+  const groupOf = new Map();
+  for (const p of products) {
+    if (p.investment_cents == null || p.components.length) continue;
+    const root = rootOf(p);
+    const g = groups.get(root.id) || { id: root.id, product: root, members: [], cost: 0, revenue: 0, units: 0, stock: 0, royalty: 0 };
+    g.members.push(p);
+    g.cost += p.investment_cents;
+    g.stock += p.stock ?? 0;
+    g.royalty += royaltyDue[p.id] || 0;
+    groups.set(root.id, g);
+    groupOf.set(p.id, g);
+  }
+  const add = (p, revenue, units) => {
+    const g = p && groupOf.get(p.id);
+    if (g) (g.revenue += revenue), (g.units += units);
+  };
+  for (const s of sales) {
+    if (back(s)) continue;
+    for (const l of s.lines || []) {
+      const p = byId.get(l.product_id);
+      if (!p) continue;
+      const revenue = l.qty * l.unit_price_cents;
+      if (!p.components.length) {
+        add(p, revenue, l.qty);
+        continue;
+      }
+      const weights = p.components.map((c) => c.share_cents ?? (byId.get(c.product_id)?.price_cents || 0) * c.qty);
+      const sum = weights.reduce((a, w) => a + w, 0) || 1;
+      p.components.forEach((c, i) => add(byId.get(c.product_id), (revenue * weights[i]) / sum, l.qty * c.qty));
+    }
+  }
+  return [...groups.values()]
+    .map((g) => {
+      const left = Math.max(0, g.cost - g.revenue);
+      const price = g.product.price_cents;
+      return {
+        ...g,
+        name: g.members.length > 1 ? commonName(g.members.map((m) => m.name)) : g.product.name,
+        revenue: Math.round(g.revenue),
+        repaid: left === 0,
+        left,
+        toSell: left && price ? Math.ceil(left / price) : 0,
+        bonus: Math.round(g.revenue - g.cost - g.royalty),
+      };
+    })
+    .filter((g) => g.members.some((m) => m.active) || !g.repaid)
+    .sort((a, b) => a.product.sort - b.product.sort);
+}
+
+// « Vinyle Life Balance vert transparent » + « Vinyle Life Balance swirl » → « Vinyle Life Balance »
+function commonName(names) {
+  const words = names.map((n) => n.split(' '));
+  const out = [];
+  for (let i = 0; words.every((w) => w[i] && w[i] === words[0][i]); i++) out.push(words[0][i]);
+  return out.join(' ') || names[0];
 }
 
 // Par produit : quantités, CA des lignes, coût, marge brute. Les articles non associés gardent leur nom.

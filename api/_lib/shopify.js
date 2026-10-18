@@ -190,14 +190,16 @@ export async function* ordersSince(sinceIso) {
 }
 
 // Envoie le stock de nos produits (hors packs) vers Shopify, au premier emplacement de la boutique.
-// Produits à une seule variante : on prend celle du premier handle actif.
+// Produits à une seule variante : on prend celle du premier handle actif. Un produit remplacé (Life Balance vert →
+// swirl) garde l'article Shopify, qui reçoit alors le stock de son remplaçant.
 export async function pushStock(products, stock) {
   const loc = (await admin('{ locations(first: 1) { nodes { id name } } }')).locations.nodes[0];
   if (!loc) throw new Error('Shopify : aucun emplacement de stock');
   const quantities = [];
   const done = [];
   for (const p of products) {
-    if (p.components?.length || !p.shopify_handles.length || !p.active) continue;
+    const replaced = p.replaced_by && new Date(p.replaced_at) <= new Date();
+    if (p.components?.length || !p.shopify_handles.length || (!p.active && !replaced)) continue;
     let item = p.shopify_inventory_item_id;
     if (!item) {
       for (const handle of p.shopify_handles) {
@@ -214,8 +216,9 @@ export async function pushStock(products, stock) {
       }
     }
     if (!item) continue;
-    quantities.push({ inventoryItemId: item, locationId: loc.id, quantity: Math.max(0, stock[p.id] ?? 0) });
-    done.push(p.name);
+    const from = replaced ? products.find((x) => x.id === p.replaced_by) || p : p;
+    quantities.push({ inventoryItemId: item, locationId: loc.id, quantity: Math.max(0, stock[from.id] ?? 0) });
+    done.push(from.name);
   }
   if (!quantities.length) return { location: loc.name, products: [] };
   const d = await admin(

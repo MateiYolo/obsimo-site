@@ -119,12 +119,45 @@ le stock, et les comptes (CA, commissions, coût de revient, marge, dépenses) p
 - **Stock** : commencer par un « Inventaire » de chaque produit (ce qu'il reste vraiment), puis « Réassort » à chaque
   livraison. L'onglet Stock peut aussi renvoyer ce stock vers Shopify (accès Admin requis).
 
+L'**accueil** montre l'essentiel, sans réglage : la soirée en cours, puis pour chaque produit si ses frais sont
+remboursés. Tant qu'ils ne le sont pas, « Encore N à vendre » ; ensuite, le bonus. Puis les ventes du mois et les
+dernières ventes. Le détail des comptes (CA, marge, résultat, canaux, reversement, concerts) est dans **Chiffres**.
+
+### Règles de calcul (validées avec Obsimo le 18 oct. 2026)
+
+- **Remboursement des frais** (accueil) : chaque produit a ses frais engagés (fiche produit : tirage, SDRM…, TTC).
+  Le prix des articles vendus les rembourse d'abord, ce qui rentre ensuite est du bonus (après le reversement au
+  frère). « Encore N à vendre » = reste à rembourser ÷ prix de vente. Life Balance vert et swirl ne font qu'un (frais
+  des deux tirages) ; le pack compte 30 € pour 8 Days et 20 € pour Life Balance ; les disquaires comptent (l'argent
+  est rentré) ; port, commissions et ventes remboursées non comptés.
+
+- **Résultat** = CA − commissions − coût de revient des articles vendus − dépenses − coût de revient des dons et
+  pertes − reversement au frère dû sur la période. Le coût de revient est figé sur chaque ligne de vente : changer
+  celui d'un produit ne corrige pas l'historique.
+- **Life Balance** : deux produits, le vert transparent (tirage 2025, épuisé, archivé) et le swirl (reçu le
+  7 sept. 2026). Shopify et la caisse SumUp ne font pas la différence : une vente importée à partir du 7 sept. va
+  sur le swirl (`replaced_by` / `replaced_at` sur le vert). Le pack contient le swirl et 8 Days in Sweden.
+- **Reversement au frère** : 2 € par vinyle vendu au-delà du seuil de rentabilité du tirage (vert : 107, swirl : 0,
+  8 Days : 120 ; champs « Reversement » de la fiche produit). Comptés dans l'ordre chronologique, précommandes
+  comprises ; un pack compte pour ses deux vinyles. Ne comptent pas : les disquaires, les ventes remboursées, les dons.
+  Les versements se saisissent en dépense « versement au frère » (carte « Reversement au frère » de la vue d'ensemble :
+  dû, versé, reste) et ne sont pas déduits une deuxième fois du résultat.
+- **Disquaires** (ex. Hark) : canal « Disquaire » de la saisie, au prix consenti, sans commission ; les vinyles
+  archivés y sont proposés.
+- **Dons** : bouton « Don » de la page Stock (produit, quantité, destinataire).
+- **Bandcamp** : au prix Shopify, sans commission (les prix Bandcamp sont majorés pour la compenser), taxes exclues.
+
+`supabase/migrations/20261018000000_ventes_regles.sql` applique ces règles à la base (catalogue, historique, stocks
+de départ), `20261018000100_bandcamp_import.sql` importe les ventes Bandcamp et `20261018000200_hark.sql` la vente à
+Hark ; `supabase/scripts/20261018_apercu.sql`
+montre, avant, ce qui va bouger. Appliquer les migrations avant de déployer le code qui les utilise.
+
 Navigation : barre latérale, palette ⌘K (pages, actions, produits, ventes récentes), raccourcis « G puis lettre »
 pour changer de page, `?` pour la liste des raccourcis. Les pages ont des liens partageables (`#/ventes?nuit=…`).
 
-Sur téléphone : barre d'onglets en bas (Aperçu, Ventes, « + » au centre pour saisir une vente, Concerts, Menu),
+Sur téléphone : barre d'onglets en bas (Accueil, Ventes, « + » au centre pour saisir une vente, Concerts, Menu),
 fenêtres qui montent du bas, cibles tactiles d'au moins 40 px. Pendant un concert (dernière vente en caisse de moins
-de 12 h), l'aperçu commence par « Ce soir » : total, espèces et carte de la soirée. La saisie remplit le concert en
+de 12 h), l'accueil commence par « Ce soir » : total, espèces et carte de la soirée. La saisie remplit le concert en
 cours, met les produits les plus vendus en concert en premier avec le stock restant, calcule la monnaie à rendre en
 espèces, et la notification propose « Annuler » en cas d'erreur. Les données se rechargent quand on revient sur l'appli. Pour l'installer comme une appli : Safari →
 Partager → « Sur l'écran d'accueil » (Android : menu → « Installer l'application ») ; un appui long sur l'icône

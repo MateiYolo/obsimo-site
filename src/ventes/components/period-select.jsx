@@ -1,5 +1,5 @@
-// Choix de la période, partagé entre les pages. Sur grand écran, les raccourcis (24 h, 7 j, ce mois…) sont à un clic
-// (ou touches 1 à 6) et les années dans un menu ; sur petit écran, tout est dans un seul menu.
+// Choix de la période, partagé entre les pages. Sur grand écran, les raccourcis (7 j, ce mois…) sont à un clic
+// (ou touches 1 à 4) et les années dans un menu ; sur petit écran, tout est dans un seul menu.
 
 import { CalendarRange } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'

@@ -1,10 +1,10 @@
-// Saisie d'une vente (stand en espèces, Bandcamp, autre) : quantités au doigt, total en direct, ⌘↵ pour enregistrer.
+// Saisie d'une vente (stand en espèces, Bandcamp, disquaire, autre) : quantités au doigt, total en direct, ⌘↵ pour enregistrer.
 // Au stand : produits les plus vendus en concert en premier, stock restant, monnaie à rendre, « Annuler » dans la
 // notification si on s'est trompé. Les ventes SumUp et Shopify arrivent toutes seules.
 
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Minus, Plus, ChevronDown, Banknote, Disc3, Shapes } from 'lucide-react'
+import { Minus, Plus, ChevronDown, Banknote, Disc3, Store, Shapes } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,23 +20,27 @@ import { cn } from '@/lib/utils'
 const CHANNELS = [
   ['cash', 'Espèces', Banknote],
   ['bandcamp', 'Bandcamp', Disc3],
+  ['wholesale', 'Disquaire', Store],
   ['other', 'Autre', Shapes],
 ]
 
 export function SaleDialog({ onClose }) {
   const { data: d, run } = useStore()
-  // les plus vendus en concert d'abord : au stand, l'essentiel tient sans faire défiler
+  const [channel, setChannel] = useState('cash')
+  // les plus vendus en concert d'abord : au stand, l'essentiel tient sans faire défiler.
+  // Disquaire : aussi les vinyles archivés (fin d'un tirage épuisé vendue en gros).
   const products = useMemo(() => {
     const sold = {}
     for (const s of d.sales) if (LIVE.includes(s.channel)) for (const l of s.lines) sold[l.product_id] = (sold[l.product_id] || 0) + l.qty
-    return d.products.filter((p) => p.active).sort((a, b) => (sold[b.id] || 0) - (sold[a.id] || 0))
-  }, [d])
+    return d.products
+      .filter((p) => p.active || (channel === 'wholesale' && p.category === 'vinyle' && !isPack(p)))
+      .sort((a, b) => (sold[b.id] || 0) - (sold[a.id] || 0))
+  }, [d, channel])
   const events = useMemo(() => [...new Set(d.sales.map((s) => s.event).filter(Boolean))].slice(0, 30), [d])
   // au stand : le concert de la soirée en cours est déjà rempli
   const current = useTonight()?.event || ''
-  const [channel, setChannel] = useState('cash')
   const [qty, setQty] = useState({})
-  const [price, setPrice] = useState(() => Object.fromEntries(products.map((p) => [p.id, fromCents(p.price_cents)])))
+  const [price, setPrice] = useState(() => Object.fromEntries(d.products.map((p) => [p.id, fromCents(p.price_cents)])))
   const [more, setMore] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -152,13 +156,13 @@ export function SaleDialog({ onClose }) {
               <button type="button" onClick={() => setMore((m) => !m)} className="-my-2 flex items-center gap-1 py-2 text-xs font-medium text-muted-foreground hover:text-foreground">
                 <ChevronDown className={cn('size-3.5 transition-transform', !more && '-rotate-90')} /> Frais de port, commission, note
               </button>
-              <div className={cn('mt-3 grid gap-3 sm:grid-cols-2', !more && 'hidden')}>
+              <div className={cn('mt-3 grid gap-3 sm:grid-cols-2', !more && channel !== 'wholesale' && 'hidden')}>
                 <Field label="Frais de port payés">{(id) => <MoneyInput id={id} value={shipping} onChange={(e) => setShipping(e.target.value)} placeholder="0" />}</Field>
                 <Field label="Commission" hint="Vide : calculée selon le canal">
                   {(id) => <MoneyInput id={id} name="fees" placeholder="auto" />}
                 </Field>
                 <Field label="Note" className="sm:col-span-2">
-                  {(id) => <Input id={id} name="note" placeholder="facultatif" />}
+                  {(id) => <Input id={id} name="note" placeholder={channel === 'wholesale' ? 'Le disquaire, ex. Hark' : 'facultatif'} />}
                 </Field>
               </div>
             </div>

@@ -1,4 +1,4 @@
-// Fiche produit, en panneau latéral : prix, coût (et marge unitaire), noms en caisse, handles Shopify, chiffres de vente.
+// Fiche produit, en panneau latéral : prix, coût (et marge unitaire), reversement, noms en caisse, handles Shopify, chiffres de vente.
 
 import { useMemo, useState } from 'react'
 import { X } from 'lucide-react'
@@ -16,7 +16,7 @@ import { fmt, fromCents, toCents, num } from '@/lib/format'
 import { metrics } from '@/calc.js'
 
 const CATEGORIES = ['vinyle', 'merch', 'sauce', 'textile', 'autre']
-const EMPTY = { name: '', category: 'merch', price_cents: null, cost_cents: null, sumup_names: [], shopify_handles: [], components: [], active: true }
+const EMPTY = { name: '', category: 'merch', price_cents: null, cost_cents: null, investment_cents: null, royalty_cents: null, royalty_after_units: 0, sumup_names: [], shopify_handles: [], components: [], active: true }
 
 // Saisie de plusieurs valeurs : Entrée ou virgule ajoute une étiquette, retour arrière retire la dernière.
 function TagInput({ id, value, onChange, placeholder }) {
@@ -56,7 +56,7 @@ export function ProductSheet({ id, onClose }) {
   const { data: d, run } = useStore()
   const p = d.products.find((x) => x.id === id) || EMPTY
   const isNew = !id
-  const [form, setForm] = useState({ ...p, price: fromCents(p.price_cents), cost: fromCents(p.cost_cents) })
+  const [form, setForm] = useState({ ...p, price: fromCents(p.price_cents), cost: fromCents(p.cost_cents), investment: fromCents(p.investment_cents), royalty: fromCents(p.royalty_cents), after: String(p.royalty_after_units ?? 0) })
   const [busy, setBusy] = useState(false)
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v?.target ? v.target.value : v }))
   const price = toCents(form.price)
@@ -87,6 +87,9 @@ export function ProductSheet({ id, onClose }) {
             category: form.category,
             price_cents: price,
             cost_cents: cost,
+            investment_cents: toCents(form.investment),
+            royalty_cents: toCents(form.royalty),
+            royalty_after_units: Number(form.after) || 0,
             sumup_names: form.sumup_names,
             shopify_handles: form.shopify_handles,
             components: p.components,
@@ -146,6 +149,29 @@ export function ProductSheet({ id, onClose }) {
                 'Sans coût de revient, la marge de ce produit est surestimée.'
               )}
             </p>
+            {!p.components.length && (
+              <Field label="Frais engagés" hint="Ce que la production a coûté en tout (tirage, SDRM…). Les premières ventes la remboursent ; l’accueil montre combien il en reste à vendre, puis le bonus.">
+                {(fid) => <MoneyInput id={fid} value={form.investment} onChange={set('investment')} placeholder="aucun" />}
+              </Field>
+            )}
+            {!p.components.length && (
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Reversement / ex.">{(fid) => <MoneyInput id={fid} value={form.royalty} onChange={set('royalty')} placeholder="aucun" />}</Field>
+                <Field label="À partir du">
+                  {(fid) => (
+                    <div className="relative">
+                      <Input id={fid} type="number" min="0" step="1" inputMode="numeric" value={form.after} onChange={set('after')} className="num pr-14" disabled={!form.royalty} />
+                      <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-sm text-muted-foreground">vendus</span>
+                    </div>
+                  )}
+                </Field>
+              </div>
+            )}
+            {!p.components.length && toCents(form.royalty) != null && (
+              <p className="-mt-3 text-xs text-muted-foreground">
+                {fmt(toCents(form.royalty))} au frère par exemplaire vendu au-delà des {num.format(Number(form.after) || 0)} premiers (seuil de rentabilité), hors disquaires et dons. Un pack compte pour ses composants.
+              </p>
+            )}
             <Field label="Catégorie">
               <Select value={form.category} onValueChange={set('category')}>
                 <SelectTrigger className="w-full capitalize">
