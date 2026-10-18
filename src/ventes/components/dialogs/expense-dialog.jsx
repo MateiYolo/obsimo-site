@@ -17,14 +17,14 @@ export function ExpenseDialog({ category = 'envois', label, onClose }) {
   const payout = category === PAYOUT_CATEGORY
   return (
     <FormDialog
-      title={payout ? 'Versement au frère' : 'Nouvelle dépense'}
+      title={payout ? 'Versement au frère' : 'Nouvelle sortie d’argent'}
       description={payout ? 'Ce qui lui a été versé : déduit du reste à verser, pas une deuxième fois du résultat.' : 'La fabrication des produits vendus est déjà comptée par leur coût de revient.'}
       onClose={onClose}
       onSubmit={(f) =>
-        run(() => api('expense', { label: f.get('label'), amount_cents: toCents(f.get('amount')), occurred_at: f.get('occurred_at'), category: f.get('category') }), 'Dépense enregistrée')
+        run(() => api('expense', { label: f.get('label'), amount_cents: toCents(f.get('amount')), occurred_at: f.get('occurred_at'), category: f.get('category') }), 'Sortie enregistrée')
       }
     >
-      <Field label="Libellé">{(id) => <Input id={id} name="label" required defaultValue={label} placeholder="ex. Enveloppes vinyles, Colissimo" />}</Field>
+      <Field label="Note">{(id) => <Input id={id} name="label" required defaultValue={label} placeholder="ex. Enveloppes vinyles, Colissimo" />}</Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Montant">{(id) => <MoneyInput id={id} name="amount" required />}</Field>
         <Field label="Date">{(id) => <Input id={id} type="date" name="occurred_at" defaultValue={today()} required />}</Field>

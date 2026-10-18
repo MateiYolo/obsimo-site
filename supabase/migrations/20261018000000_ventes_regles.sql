@@ -108,8 +108,13 @@ grant execute on function public.merch_resolve_product(text, timestamptz) to ser
 --   8 Days in Sweden  (2 912 + 115 poster   + 570,92 SDRM) / 500 = 7,20
 -- Reversement : 2 € par vinyle une fois le tirage rentabilisé (seuil = coût du tirage / prix, arrondi à l'unité).
 insert into public.merch_products (id, name, category, price_cents, cost_cents, investment_cents, royalty_cents, royalty_after_units, sort)
-values ('life-balance-swirl', 'Vinyle Life Balance swirl', 'vinyle', 2500, 754, 377079, 200, 0, 10)
+values ('life-balance-swirl', 'Vinyle Life Balance swirl', 'vinyle', 2500, 754, 0, 200, 0, 10)
 on conflict (id) do nothing;
+-- Le swirl existe déjà en base : un compteur par pressage, son tirage (3 770,79 €) a été payé par le vert, donc rien à
+-- rembourser, bonus dès la 1re vente (choix d'Obsimo, 18 oct. 2026).
+update public.merch_products set name = 'Vinyle Life Balance swirl', price_cents = 2500, cost_cents = 754, investment_cents = 0,
+       royalty_cents = 200, royalty_after_units = 0, sort = 10
+ where id = 'life-balance-swirl';
 
 -- L'ancien produit unique devient le vert transparent : ses lignes de vente et mouvements suivent (on update cascade).
 -- Il garde les handles Shopify et le nom en caisse « Vinyle » : Shopify et SumUp ne font pas la différence, c'est la

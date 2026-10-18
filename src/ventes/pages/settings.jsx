@@ -1,4 +1,4 @@
-// Réglages : commissions par canal, connexions (Shopify, SumUp) et imports, apparence, session.
+// Réglages : reversement au frère, commissions par canal, connexions (Shopify, SumUp) et imports, apparence, session.
 
 import { useState } from 'react'
 import { LogOut, Monitor, Moon, Sun } from 'lucide-react'
@@ -16,7 +16,7 @@ import { useStore } from '@/lib/store'
 import { useUI } from '@/lib/ui'
 import { syncShopify, shopifyMessage, syncSumup, sumupMessage } from '@/lib/actions'
 import { PAGES } from '@/lib/nav'
-import { fromCents, toCents } from '@/lib/format'
+import { fromCents, toCents, dateMedium } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 export function Settings() {
@@ -25,6 +25,7 @@ export function Settings() {
   const i = d.integrations
   return (
     <Page title={PAGES.reglages.label} icon={PAGES.reglages.icon} className="mx-auto w-full max-w-3xl space-y-6">
+      <Royalty />
       <Fees />
 
       <Card className="gap-0 py-0">
@@ -68,6 +69,51 @@ export function Settings() {
         </Button>
       </div>
     </Page>
+  )
+}
+
+// Ce qui était dû au frère avant de compter les ventes une à une (modifiable), et depuis quand on les compte.
+function Royalty() {
+  const { data: d, run } = useStore()
+  const r = d.royalty || {}
+  const [name, setName] = useState(r.name || 'Matei')
+  const [opening, setOpening] = useState(fromCents(r.opening_cents) || '0')
+  const [busy, setBusy] = useState(false)
+  const dirty = name !== (r.name || 'Matei') || toCents(opening) !== (r.opening_cents || 0)
+
+  async function save(e) {
+    e.preventDefault()
+    setBusy(true)
+    await run(() => api('royalty', { name, opening_cents: toCents(opening) || 0 }), 'Reversement enregistré').catch(() => {})
+    setBusy(false)
+  }
+
+  return (
+    <Card className="gap-0 py-0">
+      <form onSubmit={save}>
+        <CardHeader className="border-b py-5">
+          <CardTitle className="text-sm font-medium">Reversement au frère</CardTitle>
+          <CardDescription className="text-xs">
+            2 € par vinyle (réglable dans chaque fiche produit), comptés sur les ventes depuis le {r.since ? dateMedium(r.since) : 'premier enregistrement'}. Ce qui était dû avant est le montant de départ.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-3 py-5">
+          <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
+            Prénom
+            <Input value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
+          <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
+            Dû au départ
+            <MoneyInput value={opening} onChange={(e) => setOpening(e.target.value)} />
+          </label>
+        </CardContent>
+        <CardFooter className="justify-end border-t py-3">
+          <Button type="submit" size="sm" disabled={busy || !dirty}>
+            Enregistrer
+          </Button>
+        </CardFooter>
+      </form>
+    </Card>
   )
 }
 

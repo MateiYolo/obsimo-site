@@ -8,7 +8,7 @@ export const PAGES = {
   ventes: { label: 'Ventes', icon: ReceiptText, key: 'v' },
   chiffres: { label: 'Chiffres', icon: ChartColumn, key: 'f' },
   concerts: { label: 'Concerts', icon: Ticket, key: 'c' },
-  depenses: { label: 'Dépenses', icon: Wallet, key: 'd' },
+  depenses: { label: 'Sorties d’argent', icon: Wallet, key: 'd' },
   stock: { label: 'Stock', icon: Boxes, key: 's' },
   produits: { label: 'Produits', icon: Package, key: 'p' },
   reglages: { label: 'Réglages', icon: Settings, key: 'r' },

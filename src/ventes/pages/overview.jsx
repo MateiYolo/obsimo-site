@@ -1,16 +1,17 @@
 // Accueil : l'essentiel, sans réglage de période. La soirée en cours (au stand), où en est chaque produit (frais
-// remboursés ou pas, et combien il en reste à vendre), les ventes du mois et les dernières ventes.
+// remboursés ou pas, et combien il en reste à vendre), ce qui est dû au frère, les ventes du mois et les dernières ventes.
 // Le détail des comptes est dans « Chiffres ».
 
 import { useMemo } from 'react'
-import { AlertTriangle, ArrowRight, Check } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Check, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Page } from '@/components/page'
 import { RevenueChart } from '@/components/revenue-chart'
 import { ChannelIcon } from '@/components/channel'
-import { byBucket, metrics, payback, rangeOf } from '@/calc.js'
+import { byBucket, metrics, payback, rangeOf, PAYOUT_CATEGORY } from '@/calc.js'
 import { useData } from '@/lib/store'
+import { useUI } from '@/lib/ui'
 import { useRoyalties, useTodo, useTonight } from '@/lib/derived'
 import { href } from '@/lib/router'
 import { PAGES } from '@/lib/nav'
@@ -39,6 +40,7 @@ export function Overview() {
       )}
 
       <Payback />
+      <Brother />
       <SalesNow />
 
       <Card className="gap-2 py-5">
@@ -73,10 +75,14 @@ function Payback() {
           <div key={g.id} className="rounded-xl border bg-card p-4 sm:p-5">
             <div className="flex items-start justify-between gap-3">
               <p className="font-medium leading-snug">{g.name}</p>
-              {g.repaid && (
-                <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-success">
-                  <Check className="size-3.5" /> Remboursé
-                </span>
+              {!g.product.active ? (
+                <span className="shrink-0 rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">Épuisé</span>
+              ) : (
+                g.repaid && (
+                  <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-success">
+                    <Check className="size-3.5" /> {g.cost ? 'Remboursé' : 'Déjà financé'}
+                  </span>
+                )
               )}
             </div>
             <p className="mt-3 flex items-baseline gap-1.5">
@@ -97,15 +103,51 @@ function Payback() {
               <div className={cn('h-full rounded-full', g.repaid ? 'bg-success' : 'bg-foreground/70')} style={{ width: `${g.cost ? Math.min(100, (g.revenue / g.cost) * 100) : 100}%` }} />
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              {g.repaid ? `${fmt(g.cost, true)} de frais remboursés` : `${fmt(g.revenue, true)} rentrés sur ${fmt(g.cost, true)} de frais`}
-              {' · '}
-              {g.stock > 0 ? `${num.format(g.stock)} en stock` : g.stock < 0 ? `${num.format(-g.stock)} à envoyer (précommandes)` : 'épuisé'}
+              {!g.cost ? `${plural(g.units, 'vendu')}, tirage payé par le précédent` : g.repaid ? `${fmt(g.cost, true)} de frais remboursés` : `${fmt(g.revenue, true)} rentrés sur ${fmt(g.cost, true)} de frais`}
+              {g.product.active && (g.stock > 0 ? ` · ${num.format(g.stock)} en stock` : g.stock < 0 ? ` · ${num.format(-g.stock)} à envoyer (précommandes)` : ' · plus de stock')}
             </p>
           </div>
         ))}
       </div>
       <p className="text-xs text-muted-foreground">Comptés : le prix des articles vendus. Le bonus est après le reversement au frère.</p>
     </section>
+  )
+}
+
+// Ce qui est dû au frère (reversement depuis le réglage, moins ce qu'on lui a donné) et les derniers versements, avec leur note.
+function Brother() {
+  const d = useData()
+  const { open } = useUI()
+  const r = useRoyalties()
+  const payouts = d.expenses.filter((e) => e.category === PAYOUT_CATEGORY)
+  const given = payouts.reduce((a, e) => a + e.amount_cents, 0)
+  if (!r.total && !given) return null
+  return (
+    <Card className="gap-3 py-5">
+      <CardHeader className="px-5">
+        <CardTitle className="text-base font-semibold">À donner à {r.name}</CardTitle>
+        <CardAction>
+          <Button variant="outline" size="sm" onClick={() => open('payout', { name: r.name, balance: r.total - given })}>
+            <Plus /> J’ai donné de l’argent
+          </Button>
+        </CardAction>
+      </CardHeader>
+      <CardContent className="space-y-3 px-5">
+        <p className={cn('num text-3xl font-semibold tracking-tight', r.total - given < 0 && 'text-destructive')}>{fmt(r.total - given)}</p>
+        {payouts.length > 0 && (
+          <ul className="space-y-1 text-sm">
+            {payouts.slice(0, 5).map((e) => (
+              <li key={e.id} className="flex items-baseline gap-3">
+                <span className="num w-14 shrink-0 text-xs text-muted-foreground">{dateShort(`${String(e.occurred_at).slice(0, 10)}T12:00:00Z`)}</span>
+                <span className="min-w-0 flex-1 truncate">{e.label}</span>
+                <span className="num text-muted-foreground">−{fmt(e.amount_cents)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="text-xs text-muted-foreground">2 € par vinyle vendu, une fois son tirage remboursé.</p>
+      </CardContent>
+    </Card>
   )
 }
 

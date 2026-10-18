@@ -15,10 +15,10 @@ export function periodOptions(sales) {
   return [...PRESETS, ...[...years].sort().reverse().map((y) => [y, `Année ${y}`, y])]
 }
 
-// Le reversement au frère, calculé sur toutes les ventes (le seuil se compte depuis le début).
+// Le reversement au frère, calculé sur toutes les ventes (le seuil se compte depuis le début ; le dû, depuis le réglage).
 export function useRoyalties() {
   const d = useData()
-  return useMemo(() => royalties(d.sales, d.products), [d])
+  return useMemo(() => royalties(d.sales, d.products, d.royalty || {}), [d])
 }
 
 export function usePeriod() {
