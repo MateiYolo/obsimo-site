@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { useData } from '@/lib/store'
 import { useUI } from '@/lib/ui'
-import { monthOf, rangeOf, inRange, unmapped, PRESETS, nightOf, byNight } from '@/calc.js'
+import { monthOf, rangeOf, inRange, unmapped, PRESETS, nightOf, byNight, royalties, GIFT_REASONS } from '@/calc.js'
 
 export const LOW_STOCK = 5
 export const isPack = (p) => p.components.length > 0
@@ -15,11 +15,19 @@ export function periodOptions(sales) {
   return [...PRESETS, ...[...years].sort().reverse().map((y) => [y, `Année ${y}`, y])]
 }
 
+// Le reversement au frère, calculé sur toutes les ventes (le seuil se compte depuis le début).
+export function useRoyalties() {
+  const d = useData()
+  return useMemo(() => royalties(d.sales, d.products), [d])
+}
+
 export function usePeriod() {
   const d = useData()
   const { period } = useUI()
+  const royalty = useRoyalties().bySale
   return useMemo(() => {
     const { unit, keys, prev } = rangeOf(period, d.sales)
+    const gifts = d.movements.filter((m) => GIFT_REASONS.includes(m.reason))
     return {
       period,
       unit,
@@ -29,8 +37,11 @@ export function usePeriod() {
       expenses: inRange(d.expenses, unit, keys),
       prevSales: prev ? inRange(d.sales, unit, prev) : null,
       prevExpenses: prev ? inRange(d.expenses, unit, prev) : null,
+      // pour summary() : reversement dû et dons de la période
+      extra: { royalty, gifts: inRange(gifts, unit, keys), products: d.products },
+      prevExtra: prev ? { royalty, gifts: inRange(gifts, unit, prev), products: d.products } : null,
     }
-  }, [d, period])
+  }, [d, period, royalty])
 }
 
 // Tout ce qui demande une action : articles inconnus, coûts manquants, stock bas ou négatif.

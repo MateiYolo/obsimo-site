@@ -2,7 +2,7 @@
 // meilleurs produits, répartition par canal, derniers concerts et dernières ventes.
 
 import { useMemo } from 'react'
-import { AlertTriangle, ArrowDownRight, ArrowRight, ArrowUpRight, ChartColumn, Download, Info, Table2 } from 'lucide-react'
+import { AlertTriangle, ArrowDownRight, ArrowRight, ArrowUpRight, ChartColumn, Download, Info, Plus, Table2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -13,9 +13,10 @@ import { Page } from '@/components/page'
 import { PeriodSelect } from '@/components/period-select'
 import { RevenueChart, bucketLabel } from '@/components/revenue-chart'
 import { ChannelIcon, ChannelDot } from '@/components/channel'
-import { SERIES, SERIES_COLOR, summary, byBucket, byProduct, byNight, metrics } from '@/calc.js'
+import { SERIES, SERIES_COLOR, PAYOUT_CATEGORY, summary, byBucket, byProduct, byNight, metrics } from '@/calc.js'
 import { useData } from '@/lib/store'
-import { usePeriod, useTodo, useTonight, isPack } from '@/lib/derived'
+import { usePeriod, useRoyalties, useTodo, useTonight, isPack } from '@/lib/derived'
+import { useUI } from '@/lib/ui'
 import { usePref } from '@/lib/prefs'
 import { href } from '@/lib/router'
 import { downloadCsv } from '@/lib/actions'
@@ -30,8 +31,8 @@ export function Overview() {
   const tonight = useTonight()
   const [view, setView] = usePref('chart', 'chart')
 
-  const t = useMemo(() => summary(p.sales, p.expenses), [p])
-  const prev = useMemo(() => (p.prevSales ? summary(p.prevSales, p.prevExpenses) : null), [p])
+  const t = useMemo(() => summary(p.sales, p.expenses, p.extra), [p])
+  const prev = useMemo(() => (p.prevSales ? summary(p.prevSales, p.prevExpenses, p.prevExtra) : null), [p])
   const rows = useMemo(() => byBucket(p.sales, p.unit, p.keys), [p])
   const products = useMemo(() => byProduct(p.sales, d.products), [p, d])
   const nights = useMemo(() => byNight(p.sales), [p])
@@ -88,7 +89,14 @@ export function Overview() {
           help={`CA moins commissions (${fmt(t.fees, true)}) et coût de revient des articles vendus (${fmt(t.cogs, true)}).`}
           warn={t.unknownCost ? `${t.unknownCost} article${t.unknownCost > 1 ? 's' : ''} sans coût de revient : marge surestimée` : null}
         />
-        <Stat label="Résultat" value={fmt(t.result, true)} negative={t.result < 0} delta={delta(t.result, prev?.result)} foot={`après ${fmt(t.expenses, true)} de dépenses`} help="Marge moins les dépenses saisies (envois, stand, pub…)." />
+        <Stat
+          label="Résultat"
+          value={fmt(t.result, true)}
+          negative={t.result < 0}
+          delta={delta(t.result, prev?.result)}
+          foot={`après ${fmt(t.expenses + t.gifts + t.royalties, true)} de charges`}
+          help={`Marge moins les dépenses saisies (${fmt(t.expenses, true)}), le coût de revient des dons et pertes (${fmt(t.gifts, true)}) et le reversement au frère dû sur ces ventes (${fmt(t.royalties, true)}). Les versements au frère soldent ce reversement : ils ne sont pas déduits une deuxième fois.`}
+        />
         <Stat label="Stock" value={fmt(stockValue, true)} foot={`${num.format(stockItems)} articles au prix de revient`} help="Valeur actuelle du stock, au coût de revient. Ne dépend pas de la période." />
       </div>
 
@@ -181,6 +189,8 @@ export function Overview() {
         </Card>
       </div>
 
+      <Royalty />
+
       <div className="grid gap-6 lg:grid-cols-2 *:min-w-0">
         <Card className="gap-2 py-5">
           <CardHeader className="px-5">
@@ -230,6 +240,61 @@ export function Overview() {
 }
 
 const UNIT = { hour: 'heure', day: 'jour', month: 'mois' }
+
+// Reversement au frère, depuis le début : où en est chaque vinyle par rapport à son seuil, dû, versé, reste.
+function Royalty() {
+  const d = useData()
+  const { open } = useUI()
+  const r = useRoyalties()
+  const paid = d.expenses.filter((e) => e.category === PAYOUT_CATEGORY).reduce((a, e) => a + e.amount_cents, 0)
+  if (!r.products.length) return null
+  return (
+    <Card className="gap-4 py-5">
+      <CardHeader className="px-5">
+        <CardTitle className="text-sm font-medium">Reversement au frère</CardTitle>
+        <CardDescription className="text-xs">Par vinyle vendu une fois le tirage rentabilisé · depuis le début, hors disquaires et dons</CardDescription>
+        <CardAction>
+          <Button variant="ghost" size="xs" className="text-muted-foreground pointer-coarse:h-9 pointer-coarse:px-3" onClick={() => open('expense', { category: PAYOUT_CATEGORY, label: 'Reversement au frère' })}>
+            <Plus /> Versement
+          </Button>
+        </CardAction>
+      </CardHeader>
+      <CardContent className="grid gap-5 px-5 lg:grid-cols-[3fr_2fr] lg:items-center">
+        <ul className="space-y-3">
+          {r.products.map((x) => {
+            const left = x.threshold - x.units
+            return (
+              <li key={x.product.id} className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1.5 text-sm">
+                <span className="min-w-0 truncate">{x.product.name}</span>
+                <span className="num text-right">{fmt(x.due)}</span>
+                <div className="col-span-2 h-1 overflow-hidden rounded-full bg-muted">
+                  <div className={cn('h-full rounded-full', left > 0 ? 'bg-foreground/40' : 'bg-success')} style={{ width: `${x.threshold ? Math.min(100, (x.units / x.threshold) * 100) : 100}%` }} />
+                </div>
+                <span className="col-span-2 text-xs text-muted-foreground">
+                  {left > 0
+                    ? `${num.format(x.units)} / ${num.format(x.threshold)} vendus · reversement à partir du ${num.format(x.threshold + 1)}ᵉ`
+                    : `${plural(x.units, 'vendu')} · ${plural(x.paidUnits, 'exemplaire')} × ${fmt(x.product.royalty_cents)}`}
+                </span>
+              </li>
+            )
+          })}
+        </ul>
+        <dl className="grid grid-cols-3 gap-px overflow-hidden rounded-lg border bg-border text-sm">
+          {[
+            ['Dû', r.total],
+            ['Versé', paid],
+            ['Reste à verser', r.total - paid],
+          ].map(([k, v]) => (
+            <div key={k} className="bg-card px-3 py-2">
+              <dt className="text-xs text-muted-foreground">{k}</dt>
+              <dd className={cn('num font-medium', k === 'Reste à verser' && v < 0 && 'text-destructive')}>{fmt(v)}</dd>
+            </div>
+          ))}
+        </dl>
+      </CardContent>
+    </Card>
+  )
+}
 
 // La soirée en cours : le total qui monte, et ce qu'il doit y avoir dans la caisse
 function Tonight({ n }) {

@@ -1,6 +1,6 @@
 // Palette ⌘K : aller à une page, lancer une action, ouvrir un produit ou une vente récente.
 
-import { Download, Moon, Plus, RefreshCw, Sun, Package, Wallet, Boxes } from 'lucide-react'
+import { Download, Gift, Moon, Plus, RefreshCw, Sun, Package, Wallet, Boxes } from 'lucide-react'
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator, CommandShortcut } from '@/components/ui/command'
 import { Keys } from '@/components/shortcut'
 import { ChannelIcon } from '@/components/channel'
@@ -40,6 +40,9 @@ export function CommandMenu() {
           </CommandItem>
           <CommandItem onSelect={go(() => open('move', { reason: 'restock' }))}>
             <Boxes /> Réassort…
+          </CommandItem>
+          <CommandItem onSelect={go(() => open('move', { reason: 'gift' }))}>
+            <Gift /> Ajouter un don…
           </CommandItem>
           {d.integrations.sumup && (
             <CommandItem onSelect={go(() => run(() => syncSumup(), sumupMessage))}>

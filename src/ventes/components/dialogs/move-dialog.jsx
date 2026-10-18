@@ -1,4 +1,4 @@
-// Mouvement de stock hors vente : réassort, inventaire (« il en reste N »), cadeau ou perte.
+// Mouvement de stock hors vente : réassort, inventaire (« il en reste N »), don ou perte.
 
 import { useState } from 'react'
 import { Input } from '@/components/ui/input'
@@ -15,7 +15,7 @@ import { toast } from 'sonner'
 const KINDS = {
   restock: { label: 'Réassort', title: 'Réassort', hint: 'Combien d’exemplaires arrivent ?' },
   adjust: { label: 'Inventaire', title: 'Inventaire', hint: 'Combien il en reste vraiment ?' },
-  gift: { label: 'Sortie', title: 'Cadeau ou perte', hint: 'Combien sortent du stock ?' },
+  gift: { label: 'Don / perte', title: 'Don ou perte', hint: 'Combien sortent du stock ? Leur coût de revient est déduit du résultat ; un don ne compte pas pour le reversement au frère.' },
 }
 
 export function MoveDialog({ id, reason: initial = 'restock', onClose }) {
@@ -29,7 +29,7 @@ export function MoveDialog({ id, reason: initial = 'restock', onClose }) {
 
   return (
     <FormDialog
-      title={id ? `${k.title} · ${p.name}` : 'Mouvement de stock'}
+      title={id ? `${k.title} · ${p.name}` : kind === 'gift' && out === 'gift' ? 'Don' : 'Mouvement de stock'}
       description={p ? `Stock actuel : ${p.stock}` : null}
       onClose={onClose}
       onSubmit={async (f) => {
@@ -78,7 +78,7 @@ export function MoveDialog({ id, reason: initial = 'restock', onClose }) {
       )}
       {kind === 'gift' && (
         <ToggleGroup type="single" size="sm" value={out} onValueChange={(v) => v && setOut(v)} className="justify-start">
-          <ToggleGroupItem value="gift" className="px-3 text-xs">Cadeau (promo, invités…)</ToggleGroupItem>
+          <ToggleGroupItem value="gift" className="px-3 text-xs">Don (promo, invités…)</ToggleGroupItem>
           <ToggleGroupItem value="loss" className="px-3 text-xs">Perte / casse</ToggleGroupItem>
         </ToggleGroup>
       )}
@@ -88,7 +88,9 @@ export function MoveDialog({ id, reason: initial = 'restock', onClose }) {
         </Field>
         <Field label="Date">{(fid) => <Input id={fid} type="datetime-local" name="occurred_at" defaultValue={localInput()} required />}</Field>
       </div>
-      <Field label="Note">{(fid) => <Input id={fid} name="note" placeholder={kind === 'restock' ? 'ex. repressage, livraison' : 'facultatif'} />}</Field>
+      <Field label={kind === 'gift' && out === 'gift' ? 'Destinataire' : 'Note'}>
+        {(fid) => <Input id={fid} name="note" placeholder={kind === 'restock' ? 'ex. repressage, livraison' : kind === 'gift' && out === 'gift' ? 'ex. radio, programmateur, invité' : 'facultatif'} />}
+      </Field>
       <p className="-mt-1 text-xs text-muted-foreground">{k.hint}</p>
     </FormDialog>
   )

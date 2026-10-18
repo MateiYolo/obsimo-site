@@ -14,6 +14,7 @@ import { useUI } from '@/lib/ui'
 import { usePeriod } from '@/lib/derived'
 import { PAGES } from '@/lib/nav'
 import { fmt, dateShort } from '@/lib/format'
+import { categoryLabel } from '@/components/dialogs/expense-dialog'
 
 export function Expenses() {
   const { run } = useStore()
@@ -60,7 +61,7 @@ export function Expenses() {
             <div className="mt-4 flex flex-wrap gap-2">
               {byCat.map(([c, v]) => (
                 <Badge key={c} variant="secondary" className="gap-1.5 font-normal">
-                  <span className="capitalize">{c}</span>
+                  <span className="capitalize">{categoryLabel(c)}</span>
                   <span className="num text-muted-foreground">{fmt(v)}</span>
                 </Badge>
               ))}
@@ -78,7 +79,7 @@ export function Expenses() {
                     <span className="num w-14 shrink-0 text-xs text-muted-foreground">{dateShort(`${String(e.occurred_at).slice(0, 10)}T12:00:00Z`)}</span>
                     <span className="min-w-0 flex-1 truncate">{e.label}</span>
                     <Badge variant="outline" className="hidden font-normal text-muted-foreground capitalize sm:inline-flex">
-                      {e.category}
+                      {categoryLabel(e.category)}
                     </Badge>
                     <span className="num w-20 text-right">{fmt(e.amount_cents)}</span>
                     <Confirm title="Supprimer cette dépense ?" description={`${e.label} · ${fmt(e.amount_cents)}`} onConfirm={() => run(() => api('expense-delete', { id: e.id }), 'Dépense supprimée')}>

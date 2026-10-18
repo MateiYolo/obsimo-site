@@ -20,7 +20,7 @@ import { PAGES } from '@/lib/nav'
 import { fmt, num, dateMedium } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
-const MOVES = { initial: 'Stock de départ', restock: 'Réassort', adjust: 'Inventaire', gift: 'Cadeau', loss: 'Perte / casse' }
+const MOVES = { initial: 'Stock de départ', restock: 'Réassort', adjust: 'Inventaire', gift: 'Don', loss: 'Perte / casse' }
 
 export function Stock() {
   const { data: d, run } = useStore()
@@ -54,6 +54,9 @@ export function Stock() {
               </Button>
             </Confirm>
           )}
+          <Button variant="outline" size="sm" onClick={() => open('move', { reason: 'gift' })} aria-label="Ajouter un don">
+            <Gift /> <span className="hidden sm:inline">Don</span>
+          </Button>
           <Button size="sm" onClick={() => open('move', { reason: 'restock' })} aria-label="Réassort">
             <Plus /> <span className="hidden sm:inline">Réassort</span>
           </Button>
@@ -143,7 +146,7 @@ export function Stock() {
                                 <ClipboardCheck /> Inventaire
                               </DropdownMenuItem>
                               <DropdownMenuItem onSelect={() => open('move', { id: p.id, reason: 'gift' })}>
-                                <Gift /> Cadeau / perte
+                                <Gift /> Don / perte
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem onSelect={() => open('product', { id: p.id })}>Fiche produit</DropdownMenuItem>
