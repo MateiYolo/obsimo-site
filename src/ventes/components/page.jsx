@@ -1,16 +1,28 @@
 // Gabarit d'une page : barre du haut collante (menu, titre, actions), barre de filtres facultative, contenu.
 
-import { SidebarTrigger } from '@/components/ui/sidebar'
+import { Menu } from 'lucide-react'
+import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 
-export function Page({ title, icon: Icon, count, actions, toolbar, children, className }) {
+export function Page({ title, icon: Icon, count, actions, toolbar, children, className, home }) {
+  const { setOpenMobile } = useSidebar()
   return (
     <>
       <header className="sticky top-0 z-20 flex h-12 shrink-0 items-center gap-2 border-b pointer-coarse:h-14 bg-background/85 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/70 md:rounded-t-xl md:px-4">
         <SidebarTrigger className="-ml-1 text-muted-foreground max-md:hidden" />
         <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-4 max-md:hidden" />
-        <h1 className="flex min-w-0 shrink-0 items-center gap-2 text-sm font-medium max-sm:max-w-[50%] max-sm:text-base max-sm:font-semibold">
+        {/* téléphone : le menu en haut à gauche (toutes les pages, réglages) */}
+        <button
+          type="button"
+          onClick={() => setOpenMobile(true)}
+          aria-label="Menu"
+          className="-ml-1 flex h-10 shrink-0 items-center gap-2 rounded-md px-1.5 text-base font-semibold active:bg-accent md:hidden"
+        >
+          <Menu className="size-5" /> {home && 'Menu'}
+        </button>
+        {!home && <Separator orientation="vertical" className="mx-0.5 data-[orientation=vertical]:h-5 md:hidden" />}
+        <h1 className={cn('flex min-w-0 shrink-0 items-center gap-2 text-sm font-medium max-sm:max-w-[50%] max-sm:text-base max-sm:font-semibold', home && 'max-md:sr-only')}>
           {Icon && <Icon className="size-4 shrink-0 text-muted-foreground" />}
           <span className="truncate">{title}</span>
           {count != null && <span className="num text-muted-foreground">{count}</span>}

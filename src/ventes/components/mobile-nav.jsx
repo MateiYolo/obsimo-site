@@ -1,4 +1,4 @@
-// Téléphone : barre d'onglets en bas, à portée du pouce, avec « + » au centre (vente, don, versement à Matei, synchro).
+// Téléphone : barre d'onglets en bas, à portée du pouce, avec « + » au centre (vente ou don).
 // « Menu » ouvre la barre latérale (toutes les pages, réglages) ; sa pastille signale ce qui est à traiter.
 
 import { Menu, Plus } from 'lucide-react'
@@ -32,7 +32,7 @@ export function MobileNav() {
             <div key="new" className="flex items-center justify-center">
               <button
                 onClick={() => open('quick')}
-                aria-label="Noter une vente, un don, un versement"
+                aria-label="Noter une vente ou un don"
                 className="flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-black/30 transition-transform active:scale-95"
               >
                 <Plus className="size-6" strokeWidth={2.25} />

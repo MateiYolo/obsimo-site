@@ -28,7 +28,7 @@ export function Overview() {
   const missing = todo.unmapped.length + todo.noCost.length
 
   return (
-    <Page title={PAGES.apercu.label} icon={PAGES.apercu.icon} className="mx-auto w-full max-w-4xl space-y-8">
+    <Page home title={PAGES.apercu.label} icon={PAGES.apercu.icon} className="mx-auto w-full max-w-4xl space-y-8">
       {tonight && <Tonight n={tonight} />}
 
       {missing > 0 && (
@@ -111,7 +111,7 @@ function Payback() {
               <div className={cn('h-full rounded-full', g.repaid ? 'bg-success' : 'bg-foreground/70')} style={{ width: `${g.cost ? Math.min(100, (g.revenue / g.cost) * 100) : 100}%` }} />
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              {!g.cost ? `${plural(g.units, 'vendu')}, tirage payé par le précédent` : g.repaid ? `${fmt(g.cost, true)} de frais remboursés` : `${fmt(g.revenue, true)} rentrés sur ${fmt(g.cost, true)} de frais`}
+              {!g.cost ? `${plural(g.units, 'vendu')}, sans frais : tout est du bonus` : g.repaid ? `${fmt(g.cost, true)} de frais remboursés` : `${fmt(g.revenue, true)} rentrés sur ${fmt(g.cost, true)} de frais`}
               {g.product.active && (g.stock > 0 ? ` · ${num.format(g.stock)} en stock` : g.stock < 0 ? ` · ${num.format(-g.stock)} à envoyer (précommandes)` : ' · plus de stock')}
             </p>
             {g.product.active && (

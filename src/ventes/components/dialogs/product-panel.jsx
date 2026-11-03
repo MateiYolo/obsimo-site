@@ -14,7 +14,7 @@ import { Field, MoneyInput } from '@/components/field'
 import { Confirm } from '@/components/confirm'
 import { payback } from '@/calc.js'
 import { api, dropQueued } from '@/lib/api'
-import { useStore } from '@/lib/store'
+import { useData, useStore } from '@/lib/store'
 import { useUI } from '@/lib/ui'
 import { useRoyalties } from '@/lib/derived'
 import { fmt, fromCents, localInput, num, plural, toCents } from '@/lib/format'
@@ -42,6 +42,7 @@ export function ProductPanel({ id, tab: initial = 'sell', onClose }) {
             {p.stock > 0 ? `${num.format(p.stock)} en stock` : p.stock < 0 ? `${num.format(-p.stock)} précommandes à envoyer` : 'plus de stock'}
             {p.price_cents != null && ` · ${fmt(p.price_cents)} pièce`}
           </SheetDescription>
+          <Potential p={p} />
           <ToggleGroup type="single" variant="outline" value={tab} onValueChange={(v) => v && setTab(v)} className="mt-3 w-full">
             {TABS.map(([v, l, Icon]) => (
               <ToggleGroupItem key={v} value={v} className="h-10 flex-1 gap-1.5 text-sm data-[state=on]:bg-accent data-[state=on]:text-foreground">
@@ -236,16 +237,7 @@ function Costs({ p, onDone }) {
   const perSale = unitPrice != null && perUnit != null ? unitPrice - perUnit : null
   const breakEven = unitPrice ? Math.ceil(total / unitPrice) : null
 
-  // où on en est (même calcul que l'accueil)
-  const g = useMemo(() => payback(d.sales, d.products, Object.fromEntries(r.products.map((x) => [x.product.id, x.due]))).find((x) => x.id === p.id), [d, r, p.id])
-
-  // si tout le stock part : ce qui reviendrait encore à Matei (seulement au-delà du seuil du tirage)
-  const rr = r.products.find((x) => x.product.id === p.id)
-  // tirage partagé (8 Days avec Téo et Tim) : seule ta part du stock restant est à toi de vendre
-  const share = shareOf(d.shares?.[p.id], p.stock, g ? Math.ceil(Math.max(0, total - g.revenue) / (unitPrice || 1)) : 0)
-  const mine = share ? share.mine : p.stock
-  const moreForMatei = rr && mine > 0 ? Math.max(0, rr.units + mine - Math.max(rr.units, rr.threshold)) * (p.royalty_cents || 0) : 0
-  const sellOut = g && unitPrice > 0 && mine > 0 ? g.revenue + mine * unitPrice - total - g.royalty - moreForMatei : null
+  const { g, share, mine, sellOut } = usePotential(p, total, unitPrice)
 
   const set = (i, k) => (e) => setItems((xs) => xs.map((x, j) => (j === i ? { ...x, [k]: e.target.value } : x)))
 
@@ -398,6 +390,41 @@ function SharePart({ p, share }) {
             J’ai remis leurs vinyles
           </Button>
         </Confirm>
+      )}
+    </div>
+  )
+}
+
+// Ce que le stock restant peut encore rapporter : ta part du stock (tirage partagé : après remboursement, seulement la
+// tienne) × le prix, et le bonus total si tout part (frais et part de Matei déduits, seuil du tirage respecté).
+function usePotential(p, total = p.investment_cents || 0, unitPrice = p.price_cents) {
+  const d = useData()
+  const r = useRoyalties()
+  return useMemo(() => {
+    const g = payback(d.sales, d.products, Object.fromEntries(r.products.map((x) => [x.product.id, x.due]))).find((x) => x.id === p.id)
+    const rr = r.products.find((x) => x.product.id === p.id)
+    const share = shareOf(d.shares?.[p.id], p.stock, g ? Math.ceil(Math.max(0, total - g.revenue) / (unitPrice || 1)) : 0)
+    const mine = Math.max(0, share ? share.mine : p.stock)
+    const moreForMatei = rr && mine > 0 ? Math.max(0, rr.units + mine - Math.max(rr.units, rr.threshold)) * (p.royalty_cents || 0) : 0
+    const sales = unitPrice > 0 ? mine * unitPrice : null
+    const sellOut = g && sales != null && mine > 0 ? g.revenue + sales - total - g.royalty - moreForMatei : null
+    return { g, share, mine, sales, moreForMatei, sellOut }
+  }, [d, r, p, total, unitPrice])
+}
+
+// En haut de la fiche : combien le stock restant peut encore rapporter.
+function Potential({ p }) {
+  const { mine, sales, sellOut, share } = usePotential(p)
+  if (p.components.length || !mine || sales == null) return null
+  return (
+    <div className="mt-3 rounded-xl border bg-muted/40 px-3.5 py-3">
+      <p className="text-xs text-muted-foreground">{share && !share.handed ? `Ta part du stock (${num.format(mine)})` : `Le stock restant (${num.format(mine)})`} peut encore rapporter</p>
+      <p className="num mt-0.5 text-2xl font-semibold tracking-tight">{fmt(sales, true)}</p>
+      {sellOut != null && (
+        <p className="text-xs text-muted-foreground">
+          soit <span className={cn('num font-medium', sellOut >= 0 ? 'text-success' : 'text-destructive')}>{sellOut >= 0 ? '+' : ''}{fmt(sellOut, true)}</span> de bonus au total si tout part
+          {p.royalty_cents != null ? ', part de Matei déduite' : ''}
+        </p>
       )}
     </div>
   )

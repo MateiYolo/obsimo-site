@@ -1,19 +1,14 @@
 // Le « + » de la barre du bas : tout ce qu'on note au téléphone, en deux touches.
 
-import { Banknote, Clapperboard, Gift, ShoppingBag } from 'lucide-react'
+import { Gift, ShoppingBag } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useUI } from '@/lib/ui'
-import { useMatei } from '@/lib/derived'
-import { fmt } from '@/lib/format'
 
 export function QuickMenu({ onClose }) {
   const { open } = useUI()
-  const m = useMatei()
   const items = [
     ['sale', {}, ShoppingBag, 'Vente', 'espèces, Bandcamp, disquaire…'],
     ['move', { reason: 'gift' }, Gift, 'Don', 'un vinyle offert, une perte'],
-    ['payout', {}, Banknote, `J’ai payé ${m.name}`, m.balance > 0 ? `il reste ${fmt(m.balance)}` : 'à jour'],
-    ['synchro', {}, Clapperboard, 'Synchro', `sa part d’une pub, d’une série`],
   ]
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
