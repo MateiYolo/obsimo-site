@@ -251,6 +251,7 @@ function soldByProduct(sales, products) {
     r.units += units
     out.set(id, r)
   }
+  for (const p of products) if (p.prior) add(p.id, p.prior.revenue_cents || 0, p.prior.units || 0) // avant le suivi
   for (const s of sales) {
     if (s.status === 'refunded' || s.status === 'cancelled') continue
     for (const l of s.lines || []) {

@@ -1,3 +1,5 @@
+-- ⚠️ NE PLUS LANCER À LA MAIN : appliqué automatiquement par le serveur (api/_lib/patches.js) au premier chargement
+-- du dashboard. Gardé pour mémoire.
 -- Mise à jour du 3 nov. 2026, chiffres donnés par Obsimo. À appliquer UNE SEULE fois (relancé, il remettrait à
 -- maintenant la date à partir de laquelle les ventes comptent pour le frère) (Supabase → SQL Editor), avant ou
 -- après le déploiement : l'ancien code ignore ce qu'il ne connaît pas (merch_settings.costs, .synchros, .shares).

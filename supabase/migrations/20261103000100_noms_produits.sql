@@ -1,3 +1,5 @@
+-- ⚠️ NE PLUS LANCER À LA MAIN : appliqué automatiquement par le serveur (api/_lib/patches.js) au premier chargement
+-- du dashboard. Gardé pour mémoire.
 -- Noms des produits au même format partout : « Type / Nom » (3 nov. 2026). Peut être relancé sans risque.
 -- Le nom sert à l'affichage et aux ventes saisies à la main ; Shopify et SumUp sont reliés par leurs handles et noms
 -- en caisse, qui ne changent pas.

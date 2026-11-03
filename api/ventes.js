@@ -5,6 +5,7 @@ import { checkPassword, sessionCookie, logoutCookie, isLoggedIn } from './_lib/a
 import { db, q, products as loadProducts, setting, feeFor, recordSale, setStatus } from './_lib/db.js';
 import { adminConfigured, ordersSince, syncOrder, pushStock } from './_lib/shopify.js';
 import { sumupConfigured, syncSumup, sumupMessage } from './_lib/sumup.js';
+import { applyPatches } from './_lib/patches.js';
 import { vapid, subscribe, unsubscribe, subscribers, notify, saleMessage } from './_lib/push.js';
 
 const json = (data, status = 200, headers = {}) =>
@@ -25,6 +26,7 @@ async function stockMap() {
 const actions = {
   // tout ce que le dashboard affiche, en un appel (quelques milliers de lignes au plus)
   async data() {
+    await applyPatches(); // corrections de données en attente (une seule fois chacune)
     const [products, stock, sales, movements, expenses, fees, royalty, synchros, costs, push, shares] = await Promise.all([
       loadProducts(),
       stockMap(),
@@ -45,7 +47,8 @@ const actions = {
       setting('shares'),
     ]);
     return {
-      products: products.map((p) => ({ ...p, stock: stock[p.id] ?? 0 })),
+      // prior : ventes d'avant le suivi, comptées d'un bloc (merch_settings.costs)
+      products: products.map((p) => ({ ...p, stock: stock[p.id] ?? 0, prior: costs?.[p.id]?.prior || null })),
       sales,
       movements,
       expenses,
@@ -227,7 +230,7 @@ const actions = {
     if (items.some((x) => x.amount_cents == null || x.amount_cents < 0)) throw new Error('Un montant manque');
     const made = int(b.made) > 0 ? int(b.made) : null;
     const all = (await setting('costs')) || {};
-    all[b.product_id] = { items, made };
+    all[b.product_id] = { ...all[b.product_id], items, made }; // garde les ventes d'avant le suivi (prior)
     await q(db().from('merch_settings').upsert({ key: 'costs', value: all }));
     const total = items.reduce((a, x) => a + x.amount_cents, 0);
     const patch = {};

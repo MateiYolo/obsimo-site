@@ -233,6 +233,8 @@ export function payback(sales, products, royaltyDue = {}) {
     const g = { id: p.id, product: p, members: [], cost: 0, revenue: 0, units: 0, stock: 0, royalty: 0 };
     g.members.push(p);
     g.cost += p.investment_cents;
+    // ventes d'avant le suivi, comptées d'un bloc (ex. vieux tirage de cartes postales)
+    if (p.prior) (g.revenue += p.prior.revenue_cents || 0), (g.units += p.prior.units || 0);
     g.stock += p.stock ?? 0;
     g.royalty += royaltyDue[p.id] || 0;
     groups.set(p.id, g);
