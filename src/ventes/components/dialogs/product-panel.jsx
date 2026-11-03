@@ -230,6 +230,11 @@ function Costs({ p, onDone }) {
   // où on en est (même calcul que l'accueil)
   const g = useMemo(() => payback(d.sales, d.products, Object.fromEntries(r.products.map((x) => [x.product.id, x.due]))).find((x) => x.id === p.id), [d, r, p.id])
 
+  // si tout le stock part : ce qui reviendrait encore à Matei (seulement au-delà du seuil du tirage)
+  const rr = r.products.find((x) => x.product.id === p.id)
+  const moreForMatei = rr && p.stock > 0 ? Math.max(0, rr.units + p.stock - Math.max(rr.units, rr.threshold)) * (p.royalty_cents || 0) : 0
+  const sellOut = g && unitPrice > 0 && p.stock > 0 ? g.revenue + p.stock * unitPrice - total - g.royalty - moreForMatei : null
+
   const set = (i, k) => (e) => setItems((xs) => xs.map((x, j) => (j === i ? { ...x, [k]: e.target.value } : x)))
 
   async function save() {
@@ -311,6 +316,16 @@ function Costs({ p, onDone }) {
                 {unitPrice ? ` (≈ ${plural(Math.ceil((total - g.revenue) / unitPrice), 'vente')})` : ''}.
               </>
             )}
+          </p>
+        )}
+        {sellOut != null && (
+          <p className="rounded-lg bg-muted/50 px-3 py-2 text-sm">
+            Si les {num.format(p.stock)} restants partent à {fmt(unitPrice)} :{' '}
+            <span className={cn('num font-semibold', sellOut >= 0 ? 'text-success' : 'text-destructive')}>
+              {sellOut >= 0 ? '+' : ''}
+              {fmt(sellOut, true)}
+            </span>{' '}
+            de bonus au total{p.royalty_cents != null ? ', part de Matei déduite' : ''}.
           </p>
         )}
         <p className="text-xs text-muted-foreground">

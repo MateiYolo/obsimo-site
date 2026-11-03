@@ -124,7 +124,16 @@ export function Stock() {
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="num hidden text-right text-muted-foreground md:table-cell">{p.cost_cents != null ? fmt(Math.max(0, p.stock) * p.cost_cents, true) : '—'}</TableCell>
+                      <TableCell className="num hidden text-right text-muted-foreground md:table-cell">
+                        {p.cost_cents != null ? (
+                          <>
+                            {fmt(Math.max(0, p.stock) * p.cost_cents, true)}
+                            <span className="block text-[11px] font-normal">de stock</span>
+                          </>
+                        ) : (
+                          '—'
+                        )}
+                      </TableCell>
                       <TableCell className="pr-2 text-right">
                         <div className="flex justify-end gap-0.5">
                           <Hint label="Réassort">
