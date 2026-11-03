@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Field, MoneyInput } from '@/components/field'
 import { Keys } from '@/components/shortcut'
-import { api } from '@/lib/api'
+import { api, dropQueued } from '@/lib/api'
 import { useStore } from '@/lib/store'
 import { useTonight, isPack, LIVE, LOW_STOCK } from '@/lib/derived'
 import { fmt, fromCents, localInput, toCents } from '@/lib/format'
@@ -63,7 +63,8 @@ export function SaleDialog({ onClose }) {
     const f = new FormData(e.currentTarget)
     setBusy(true)
     try {
-      const out = await run(() =>
+      const out = await run(
+        () =>
         api('sale', {
           channel,
           payment_method: channel === 'cash' ? 'cash' : null,
@@ -74,10 +75,17 @@ export function SaleDialog({ onClose }) {
           note: f.get('note'),
           lines,
         }),
+        false,
       )
-      toast.success(`Vente de ${fmt(total)} enregistrée`, {
-        action: { label: 'Annuler', onClick: () => run(() => api('sale-delete', { id: out.id }), 'Vente annulée').catch(() => {}) },
-      })
+      if (out.queued)
+        toast(`Vente de ${fmt(total)} gardée sur le téléphone`, {
+          description: 'Pas de réseau : elle part toute seule dès que ça capte.',
+          action: { label: 'Annuler', onClick: () => (dropQueued(out.qid), toast('Vente annulée')) },
+        })
+      else
+        toast.success(`Vente de ${fmt(total)} enregistrée`, {
+          action: { label: 'Annuler', onClick: () => run(() => api('sale-delete', { id: out.id }), 'Vente annulée').catch(() => {}) },
+        })
       onClose()
     } catch {
       setBusy(false)

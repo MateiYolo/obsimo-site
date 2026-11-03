@@ -1,4 +1,5 @@
-// Stock : niveau de chaque produit physique (rupture / bas / ok), valeur, gestes rapides, historique des mouvements.
+// Stock : niveau de chaque produit physique (rupture / bas / ok), ce qu'il a rapporté (CA), gestes rapides,
+// historique des mouvements.
 
 import { useMemo } from 'react'
 import { ArrowUpFromLine, Boxes, Gift, MoreHorizontal, Plus, ClipboardCheck, Undo2, History } from 'lucide-react'
@@ -28,7 +29,8 @@ export function Stock() {
   const [tab, setTab] = usePref('stock-tab', 'levels')
   const physical = useMemo(() => d.products.filter((p) => !isPack(p)).sort((a, b) => b.active - a.active || a.stock - b.stock), [d])
   const active = physical.filter((p) => p.active)
-  const value = active.reduce((a, p) => a + Math.max(0, p.stock) * (p.cost_cents || 0), 0)
+  const sold = useMemo(() => soldByProduct(d.sales, d.products), [d])
+  const revenue = [...sold.values()].reduce((a, r) => a + r.revenue, 0)
   const items = active.reduce((a, p) => a + Math.max(0, p.stock), 0)
   const out = active.filter((p) => p.stock <= 0).length
   const low = active.filter((p) => p.stock > 0 && p.stock <= LOW_STOCK).length
@@ -65,7 +67,7 @@ export function Stock() {
       className="space-y-6"
     >
       <div className="grid grid-cols-2 overflow-hidden rounded-xl border bg-card sm:grid-cols-4 max-sm:[&>*:nth-child(-n+2)]:border-b max-sm:[&>*:nth-child(odd)]:border-r sm:[&>*:not(:last-child)]:border-r">
-        <Metric label="Valeur (prix de revient)" value={fmt(value, true)} />
+        <Metric label="Chiffre d’affaires" value={fmt(revenue, true)} />
         <Metric label="Articles en stock" value={num.format(items)} />
         <Metric label="En rupture" value={out} tone={out ? 'text-destructive' : ''} />
         <Metric label={`Stock bas (≤ ${LOW_STOCK})`} value={low} tone={low ? 'text-warning' : ''} />
@@ -89,7 +91,7 @@ export function Stock() {
                   <TableHead className="pl-4">Produit</TableHead>
                   <TableHead className="w-48 max-sm:hidden" />
                   <TableHead className="text-right">Stock</TableHead>
-                  <TableHead className="hidden text-right md:table-cell">Valeur</TableHead>
+                  <TableHead className="hidden text-right md:table-cell">Chiffre d’affaires</TableHead>
                   <TableHead className="w-24" />
                 </TableRow>
               </TableHeader>
@@ -103,9 +105,14 @@ export function Stock() {
                           {p.name}
                         </button>
                         <span className="text-xs text-muted-foreground">
-                          {p.cost_cents != null ? `coût ${fmt(p.cost_cents)}` : <span className="text-warning">coût inconnu</span>}
-                          {p.price_cents != null && ` · vendu ${fmt(p.price_cents)}`}
+                          {p.price_cents != null ? `${fmt(p.price_cents)} pièce` : 'sans prix'}
+                          {` · ${num.format(sold.get(p.id)?.units || 0)} vendus`}
+                          <span className="md:hidden">
+                            {' · '}
+                            <span className="font-medium text-foreground">{fmt(sold.get(p.id)?.revenue || 0, true)}</span> de CA
+                          </span>
                           {!p.active && ' · archivé'}
+                          {p.cost_cents == null && p.active && <span className="text-warning"> · coût inconnu</span>}
                         </span>
                       </TableCell>
                       <TableCell className="max-sm:hidden">
@@ -124,7 +131,7 @@ export function Stock() {
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="num hidden text-right text-muted-foreground md:table-cell">{p.cost_cents != null ? fmt(Math.max(0, p.stock) * p.cost_cents, true) : '—'}</TableCell>
+                      <TableCell className="num hidden text-right font-medium md:table-cell">{fmt(sold.get(p.id)?.revenue || 0, true)}</TableCell>
                       <TableCell className="pr-2 text-right">
                         <div className="flex justify-end gap-0.5">
                           <Hint label="Réassort">
@@ -214,4 +221,33 @@ function Metric({ label, value, tone }) {
       <p className={cn('num mt-1 text-lg font-semibold tracking-tight sm:text-xl', tone)}>{value}</p>
     </div>
   )
+}
+
+// Ce que chaque produit a rapporté depuis le début (prix des articles, hors port ; ventes remboursées ou annulées
+// exclues). Un pack partage son prix entre ses composants (share_cents, sinon au prorata de leurs prix).
+function soldByProduct(sales, products) {
+  const byId = new Map(products.map((p) => [p.id, p]))
+  const out = new Map()
+  const add = (id, revenue, units) => {
+    const r = out.get(id) || { revenue: 0, units: 0 }
+    r.revenue += revenue
+    r.units += units
+    out.set(id, r)
+  }
+  for (const s of sales) {
+    if (s.status === 'refunded' || s.status === 'cancelled') continue
+    for (const l of s.lines || []) {
+      const p = byId.get(l.product_id)
+      if (!p) continue
+      const revenue = l.qty * l.unit_price_cents
+      if (!p.components.length) {
+        add(p.id, revenue, l.qty)
+        continue
+      }
+      const weights = p.components.map((c) => c.share_cents ?? (byId.get(c.product_id)?.price_cents || 0) * c.qty)
+      const sum = weights.reduce((a, w) => a + w, 0) || 1
+      p.components.forEach((c, i) => add(c.product_id, Math.round((revenue * weights[i]) / sum), l.qty * c.qty))
+    }
+  }
+  return out
 }

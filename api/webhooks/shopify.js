@@ -3,6 +3,7 @@
 
 import { verifyWebhook, syncOrder } from '../_lib/shopify.js';
 import { products, setting } from '../_lib/db.js';
+import { notify, saleMessage } from '../_lib/push.js';
 
 const TOPICS = ['orders/paid', 'orders/updated', 'orders/cancelled', 'orders/create'];
 
@@ -15,7 +16,8 @@ export async function POST(request) {
   if (!TOPICS.includes(topic)) return new Response('ignoré');
   try {
     const [list, fees] = await Promise.all([products(), setting('fees')]);
-    const result = await syncOrder(JSON.parse(raw), list, fees);
+    // une nouvelle commande : notification sur les téléphones abonnés
+    const result = await syncOrder(JSON.parse(raw), list, fees, { onCreated: (sale) => notify(saleMessage(sale)) });
     return new Response(result);
   } catch (e) {
     // une erreur renvoie 500 : Shopify réessaiera (jusqu'à 8 fois sur 4 h), l'import est idempotent

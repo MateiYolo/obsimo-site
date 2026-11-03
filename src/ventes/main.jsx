@@ -15,3 +15,8 @@ createRoot(document.getElementById('app')).render(
     <App />
   </StrictMode>,
 )
+
+// hors réseau : l'appli s'ouvre quand même ; et les notifications de vente (voir public/ventes/sw.js)
+if ('serviceWorker' in navigator && !import.meta.env.DEV) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/ventes/sw.js', { scope: '/ventes/' }).catch(() => {}))
+}

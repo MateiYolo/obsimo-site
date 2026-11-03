@@ -4,7 +4,8 @@
 import { checkPassword, sessionCookie, logoutCookie, isLoggedIn } from './_lib/auth.js';
 import { db, q, products as loadProducts, setting, feeFor, recordSale, setStatus } from './_lib/db.js';
 import { adminConfigured, ordersSince, syncOrder, pushStock } from './_lib/shopify.js';
-import { sumupConfigured, syncSumup } from './_lib/sumup.js';
+import { sumupConfigured, syncSumup, sumupMessage } from './_lib/sumup.js';
+import { vapid, subscribe, unsubscribe, subscribers, notify, saleMessage } from './_lib/push.js';
 
 const json = (data, status = 200, headers = {}) =>
   new Response(JSON.stringify(data), {
@@ -24,7 +25,7 @@ async function stockMap() {
 const actions = {
   // tout ce que le dashboard affiche, en un appel (quelques milliers de lignes au plus)
   async data() {
-    const [products, stock, sales, movements, expenses, fees, royalty] = await Promise.all([
+    const [products, stock, sales, movements, expenses, fees, royalty, synchros, costs, push, shares] = await Promise.all([
       loadProducts(),
       stockMap(),
       q(
@@ -38,6 +39,10 @@ const actions = {
       q(db().from('merch_expenses').select('*').order('occurred_at', { ascending: false })),
       setting('fees'),
       setting('royalty'),
+      setting('synchros'),
+      setting('costs'),
+      subscribers(),
+      setting('shares'),
     ]);
     return {
       products: products.map((p) => ({ ...p, stock: stock[p.id] ?? 0 })),
@@ -46,6 +51,10 @@ const actions = {
       expenses,
       fees,
       royalty: royalty || {},
+      synchros: synchros || [],
+      costs: costs || {},
+      push,
+      shares: shares || {},
       integrations: {
         shopifyWebhook: !!process.env.SHOPIFY_WEBHOOK_SECRET,
         shopifyAdmin: adminConfigured(),
@@ -66,9 +75,11 @@ const actions = {
     const subtotal = lines.reduce((s, l) => s + l.qty * l.unit_price_cents, 0);
     const total = int(b.total_cents) ?? subtotal + (int(b.shipping_cents) || 0);
     const fees = int(b.fees_cents) ?? feeFor(await setting('fees'), channel, total);
+    // saisie depuis l'appli : un identifiant par vente, pour qu'un renvoi (réseau capricieux) ne la compte pas deux fois
+    const clientId = /^[\w-]{8,64}$/.test(String(b.client_id || '')) ? `app-${b.client_id}` : null;
     const id = await recordSale({
       channel,
-      external_id: null,
+      external_id: clientId,
       occurred_at: b.occurred_at || new Date().toISOString(),
       payment_method: b.payment_method || null,
       total_cents: total,
@@ -78,6 +89,8 @@ const actions = {
       note: b.note || null,
       lines,
     });
+    // prévient les autres téléphones (pas celui qui vient de saisir)
+    await notify(saleMessage({ channel, total_cents: total, note: b.note, lines, external_id: clientId }), { exceptDevice: b.device });
     return { id };
   },
 
@@ -184,6 +197,47 @@ const actions = {
     return { ok: true };
   },
 
+  // synchro (pub, série…) : ce qui en revient au frère, saisi directement, avec une description. Hors comptes du merch.
+  async synchro(b) {
+    const list = (await setting('synchros')) || [];
+    const row = {
+      id: b.id || crypto.randomUUID(),
+      date: String(b.date || new Date().toISOString().slice(0, 10)).slice(0, 10),
+      label: String(b.label || '').trim(),
+      due_cents: int(b.due_cents),
+    };
+    if (!row.label || !row.due_cents) throw new Error('Description et montant requis');
+    const next = [...list.filter((x) => x.id !== row.id), row].sort((a, z) => (a.date < z.date ? 1 : -1));
+    await q(db().from('merch_settings').upsert({ key: 'synchros', value: next }));
+    return { id: row.id };
+  },
+
+  async 'synchro-delete'(b) {
+    const list = (await setting('synchros')) || [];
+    await q(db().from('merch_settings').upsert({ key: 'synchros', value: list.filter((x) => x.id !== b.id) }));
+    return { ok: true };
+  },
+
+  // détail de ce qu'un produit a coûté (postes + exemplaires fabriqués) : met à jour ses frais engagés (la somme)
+  // et, si on sait combien ont été fabriqués, son coût de revient par exemplaire (les ventes passées gardent l'ancien)
+  async costs(b) {
+    const items = (b.items || [])
+      .map((x) => ({ label: String(x.label || '').trim(), amount_cents: int(x.amount_cents) }))
+      .filter((x) => x.label || x.amount_cents);
+    if (items.some((x) => x.amount_cents == null || x.amount_cents < 0)) throw new Error('Un montant manque');
+    const made = int(b.made) > 0 ? int(b.made) : null;
+    const all = (await setting('costs')) || {};
+    all[b.product_id] = { items, made };
+    await q(db().from('merch_settings').upsert({ key: 'costs', value: all }));
+    const total = items.reduce((a, x) => a + x.amount_cents, 0);
+    const patch = {};
+    if (items.length) patch.investment_cents = total;
+    if (items.length && made) patch.cost_cents = Math.round(total / made);
+    if ('price_cents' in b && int(b.price_cents) != null) patch.price_cents = int(b.price_cents);
+    if (Object.keys(patch).length) await q(db().from('merch_products').update(patch).eq('id', b.product_id));
+    return { ok: true };
+  },
+
   async fees(b) {
     await q(db().from('merch_settings').upsert({ key: 'fees', value: b.fees }));
     return { ok: true };
@@ -191,7 +245,40 @@ const actions = {
 
   async 'sync-sumup'(b) {
     if (!sumupConfigured()) throw new Error('SUMUP_API_KEY n’est pas configurée');
-    return syncSumup({ since: b.since });
+    const out = await syncSumup({ since: b.since });
+    if (out.created) await notify(sumupMessage(out), { exceptDevice: b.device });
+    return out;
+  },
+
+  // tirage partagé (8 Days avec Téo et Tim) : leurs vinyles leur ont été remis ; sort leur part du stock
+  async 'share-handed'(b) {
+    const all = (await setting('shares')) || {};
+    const cfg = all[b.product_id];
+    if (!cfg) throw new Error('Pas de partage pour ce produit');
+    if (cfg.handed_at) throw new Error('Déjà noté');
+    const qty = int(b.qty);
+    if (!(qty > 0)) throw new Error('Quantité invalide');
+    await q(db().from('merch_stock_movements').insert({ product_id: b.product_id, qty: -qty, reason: 'adjust', note: `Part de ${cfg.partners.join(' et ')}` }));
+    all[b.product_id] = { ...cfg, handed_at: new Date().toISOString(), handed_units: qty };
+    await q(db().from('merch_settings').upsert({ key: 'shares', value: all }));
+    return { ok: true };
+  },
+
+  // notifications de vente sur ce téléphone
+  async 'push-key'() {
+    return { publicKey: (await vapid()).publicKey };
+  },
+  async 'push-subscribe'(b) {
+    await subscribe(b.subscription, b.device, b.name);
+    return { ok: true };
+  },
+  async 'push-unsubscribe'(b) {
+    await unsubscribe(b.device, b.endpoint);
+    return { ok: true };
+  },
+  async 'push-test'(b) {
+    const n = await notify({ title: 'Ça marche 🎉', body: 'Tu seras prévenu à chaque vente.', tag: 'test', url: '/ventes/' }, { only: b.device });
+    return { sent: n };
   },
 
   // import de l'historique Shopify (les nouvelles commandes arrivent par le webhook)

@@ -6,10 +6,12 @@ import { FormDialog } from './form-dialog'
 import { PAYOUT_CATEGORY } from '@/calc.js'
 import { api } from '@/lib/api'
 import { useStore } from '@/lib/store'
+import { useMatei } from '@/lib/derived'
 import { fmt, today, toCents } from '@/lib/format'
 
-export function PayoutDialog({ name, balance, onClose }) {
+export function PayoutDialog({ onClose }) {
   const { run } = useStore()
+  const { name, balance } = useMatei()
   return (
     <FormDialog
       title={`Argent donné à ${name}`}

@@ -102,7 +102,7 @@ export async function syncSumup({ since } = {}) {
     ).map((s) => [nightOf(s.occurred_at), s.event]),
   );
   const eventOf = (timestamp) => (timestamp && named.get(nightOf(timestamp))) || bandsintown(timestamp);
-  const out = { created: 0, updated: 0, skipped: 0, since: from.toISOString() };
+  const out = { created: 0, updated: 0, skipped: 0, total_cents: 0, event: null, since: from.toISOString() };
 
   let url = `${base}/history?oldest_time=${encodeURIComponent(from.toISOString())}&order=ascending&limit=100`;
   for (let page = 0; url && page < 50; page++) {
@@ -124,11 +124,25 @@ export async function syncSumup({ since } = {}) {
         continue;
       }
       const tx = await get(`${base}?id=${encodeURIComponent(id)}`); // le détail porte les articles
-      await recordSale(txToSale({ ...item, ...tx }, products, fees, eventOf(item.timestamp)));
+      const sale = txToSale({ ...item, ...tx }, products, fees, eventOf(item.timestamp));
+      await recordSale(sale);
       out.created++;
+      out.total_cents += sale.total_cents || 0;
+      if (sale.event) out.event = sale.event;
     }
     const next = (res.links || []).find((l) => l.rel === 'next')?.href;
     url = next ? (next.startsWith('http') || next.startsWith('/') ? next : `${base}/history?${next.replace(/^\?/, '')}`) : null;
   }
   return out;
+}
+
+// Notification pour un import SumUp : « 7 ventes en concert · 165 € » (une seule, pas une par vente)
+export function sumupMessage(out) {
+  const euros = `${(out.total_cents / 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} €`;
+  return {
+    title: `${out.created} vente${out.created > 1 ? 's' : ''} en concert · ${euros}`,
+    body: out.event ? `${out.event} (caisse SumUp)` : 'Caisse SumUp',
+    tag: `sumup-${out.since}`,
+    url: '/ventes/#/concerts',
+  };
 }

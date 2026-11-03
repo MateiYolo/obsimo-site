@@ -85,10 +85,10 @@ export function SaleSheet({ id, onClose }) {
             </dl>
           </section>
 
-          {(s.note || s.external_id) && (
+          {(s.note || (s.external_id && !s.external_id.startsWith('app-'))) && (
             <section className="space-y-1 text-xs text-muted-foreground">
               {s.note && <p>Note : {s.note}</p>}
-              {s.external_id && <p className="font-mono">Réf. {s.external_id}</p>}
+              {s.external_id && !s.external_id.startsWith('app-') && <p className="font-mono">Réf. {s.external_id}</p>}
             </section>
           )}
         </div>
@@ -104,7 +104,7 @@ export function SaleSheet({ id, onClose }) {
           )}
           <Confirm
             title="Supprimer cette vente ?"
-            description={`Ses articles reviennent dans le stock.${s.external_id ? ' Une vente importée reviendra au prochain import : pour une commande annulée, préfère « Rembourser ».' : ''}`}
+            description={`Ses articles reviennent dans le stock.${s.external_id && !s.external_id.startsWith('app-') ? ' Une vente importée reviendra au prochain import : pour une commande annulée, préfère « Rembourser ».' : ''}`}
             onConfirm={() => run(() => api('sale-delete', { id }), 'Vente supprimée').then(onClose)}
           >
             <Button variant="ghost" size="sm" className="ml-auto text-destructive hover:text-destructive" aria-label="Supprimer la vente">

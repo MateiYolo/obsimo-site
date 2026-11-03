@@ -146,6 +146,20 @@ dernières ventes. Le détail des comptes (CA, marge, résultat, canaux, reverse
   archivés y sont proposés.
 - **Dons** : bouton « Don » de la page Stock (produit, quantité, destinataire).
 - **Bandcamp** : au prix Shopify, sans commission (les prix Bandcamp sont majorés pour la compenser), taxes exclues.
+- **Page Matei** (menu → Matei) : son ardoise complète. Dû = départ + vinyles + synchros ; moins les versements
+  (« Je l’ai payé »). Les **synchros** se saisissent avec le montant qui lui revient et une description libre
+  (`merch_settings.synchros`) : elles ne comptent pas dans les chiffres du merch.
+- **Sans réseau** (cave, club) : l'appli s'ouvre quand même (service worker `public/ventes/sw.js`, dernières données
+  gardées) et les saisies (vente, don, versement, synchro) sont gardées sur le téléphone puis envoyées dès que ça
+  capte (bandeau orange en haut). Une vente porte un identifiant (`external_id` = `app-…`) : renvoyée deux fois, elle
+  n'est comptée qu'une fois.
+- **Notifications** (Réglages → Notifications de vente, à activer sur chaque téléphone ; iPhone : iOS 16.4+, appli
+  ajoutée à l'écran d'accueil). Une notif par commande du site (webhook), par vente saisie (sauf sur le téléphone
+  qui l'a saisie), et une seule pour l'import SumUp du matin. Rien à configurer : les clés VAPID sont créées au
+  premier abonnement et gardées dans `merch_settings.push_vapid`, les abonnements dans `merch_settings.push_subs`.
+- **Fiche rapide** (toucher un produit à l'accueil) : vendre (espèces, Lydia…), donner, et détailler les coûts poste
+  par poste (`merch_settings.costs`). Enregistrer les coûts met les frais engagés du produit au total et, si le nombre
+  d'exemplaires fabriqués est indiqué, son coût de revient au coût par exemplaire.
 
 `supabase/migrations/20261018000000_ventes_regles.sql` applique ces règles à la base (catalogue, historique, stocks
 de départ), `20261018000100_bandcamp_import.sql` importe les ventes Bandcamp et `20261018000200_hark.sql` la vente à
@@ -155,7 +169,7 @@ montre, avant, ce qui va bouger. Appliquer les migrations avant de déployer le 
 Navigation : barre latérale, palette ⌘K (pages, actions, produits, ventes récentes), raccourcis « G puis lettre »
 pour changer de page, `?` pour la liste des raccourcis. Les pages ont des liens partageables (`#/ventes?nuit=…`).
 
-Sur téléphone : barre d'onglets en bas (Accueil, Ventes, « + » au centre pour saisir une vente, Concerts, Menu),
+Sur téléphone : barre d'onglets en bas (Accueil, Ventes, « + » au centre pour noter une vente, un don, un versement à Matei ou une synchro, Concerts, Menu),
 fenêtres qui montent du bas, cibles tactiles d'au moins 40 px. Pendant un concert (dernière vente en caisse de moins
 de 12 h), l'accueil commence par « Ce soir » : total, espèces et carte de la soirée. La saisie remplit le concert en
 cours, met les produits les plus vendus en concert en premier avec le stock restant, calcule la monnaie à rendre en
