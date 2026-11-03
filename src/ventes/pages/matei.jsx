@@ -1,5 +1,5 @@
 // L'ardoise de Matei, sur une page à part (discrète, dans le menu) : ce qu'on lui doit et d'où ça vient (départ,
-// vinyles, synchros), ce qu'on lui a donné, et tout l'historique. Les synchros n'entrent pas dans les chiffres du merch.
+// ventes de merch, synchros), ce qu'on lui a donné, et tout l'historique. Les synchros n'entrent pas dans les chiffres du merch.
 
 import { useMemo, useState } from 'react'
 import { Banknote, Clapperboard, Disc3, Flag, Plus, Trash2 } from 'lucide-react'
@@ -40,8 +40,8 @@ export function Matei() {
         {m.balance < 0 && <p className="mt-1 text-sm text-destructive">Tu lui as donné {fmt(-m.balance)} d’avance.</p>}
 
         <dl className="mt-5 space-y-2 text-sm">
-          {m.opening > 0 && <Row icon={Flag} label="Dû au départ" hint={m.royalties.since ? `au ${dateMedium(m.royalties.since)}` : null} value={m.opening} />}
-          <Row icon={Disc3} label="Vinyles" hint={`${fmt(m.royalties.products[0]?.product.royalty_cents ?? 200)} par vinyle, une fois le tirage remboursé`} value={m.vinyls} />
+          {m.opening > 0 && <Row icon={Flag} label="Gagné avant le suivi" hint={m.royalties.since ? `au ${dateMedium(m.royalties.since)}` : null} value={m.opening} />}
+          <Row icon={Disc3} label="Ventes de merch" hint="2 € par vinyle, 1 € par sauce ou carte postale" value={m.vinyls} />
           <Row icon={Clapperboard} label="Synchros" hint={m.synchros.length ? plural(m.synchros.length, 'synchro') : 'aucune pour l’instant'} value={m.fromSynchros} />
           <div className="border-t pt-2">
             <Row icon={Banknote} label="Déjà donné" hint={m.payouts.length ? plural(m.payouts.length, 'versement') : null} value={-m.paid} />
@@ -80,7 +80,7 @@ function Row({ icon: Icon, label, hint, value }) {
   )
 }
 
-// Tout ce qui a fait bouger l'ardoise, du plus récent au plus ancien. Les vinyles sont regroupés par mois.
+// Tout ce qui a fait bouger l'ardoise, du plus récent au plus ancien. Les ventes sont regroupées par mois.
 function History() {
   const d = useData()
   const m = useMatei()
@@ -95,7 +95,7 @@ function History() {
       const due = m.royalties.bySale.get(s.id)
       if (!due) continue
       const key = monthOf(s.occurred_at)
-      const r = byMonth.get(key) || { key: `v-${key}`, kind: 'vinyl', date: `${key}-01`, sort: s.occurred_at, amount: 0, label: `Vinyles · ${monthLabel(key)}` }
+      const r = byMonth.get(key) || { key: `v-${key}`, kind: 'vinyl', date: `${key}-01`, sort: s.occurred_at, amount: 0, label: `Merch · ${monthLabel(key)}` }
       r.amount += due
       r.count = (r.count || 0) + 1
       if (s.occurred_at > r.sort) r.sort = s.occurred_at
@@ -104,7 +104,7 @@ function History() {
     out.push(...byMonth.values())
     for (const s of m.synchros) out.push({ key: `s-${s.id}`, kind: 'synchro', sort: s.date, date: s.date, amount: synchroDue(s), label: s.label, item: s })
     for (const e of m.payouts) out.push({ key: `p-${e.id}`, kind: 'payout', sort: String(e.occurred_at), date: String(e.occurred_at).slice(0, 10), amount: -e.amount_cents, label: e.label, item: e })
-    if (m.opening && m.royalties.since) out.push({ key: 'opening', kind: 'opening', sort: m.royalties.since, date: m.royalties.since.slice(0, 10), amount: m.opening, label: 'Dû au départ', detail: 'les ventes d’avant, comptées d’un bloc' })
+    if (m.opening && m.royalties.since) out.push({ key: 'opening', kind: 'opening', sort: m.royalties.since, date: m.royalties.since.slice(0, 10), amount: m.opening, label: 'Gagné avant le suivi', detail: 'les ventes d’avant, comptées d’un bloc' })
     return out.sort((a, b) => (a.sort < b.sort ? 1 : -1))
   }, [d, m])
 
@@ -122,7 +122,7 @@ function History() {
             ['all', 'Tout'],
             ['payout', 'Versements'],
             ['synchro', 'Synchros'],
-            ['vinyl', 'Vinyles'],
+            ['vinyl', 'Merch'],
           ].map(([v, l]) => (
             <ToggleGroupItem key={v} value={v} className="px-3 text-xs data-[state=on]:bg-accent data-[state=on]:text-foreground">
               {l}
@@ -177,14 +177,14 @@ function History() {
   )
 }
 
-// Où en est chaque vinyle : le reversement démarre une fois son tirage rentabilisé.
+// Où en est chaque produit : le reversement démarre une fois son tirage rentabilisé (seuil), sinon dès le premier.
 function Vinyls() {
   const { royalties: r } = useMatei()
   if (!r.products.length) return null
   return (
     <Card className="gap-3 py-5">
       <CardHeader className="px-5">
-        <CardTitle className="text-sm font-medium">Par vinyle</CardTitle>
+        <CardTitle className="text-sm font-medium">Par produit</CardTitle>
         <CardDescription className="text-xs">Hors disquaires et dons.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 px-5">

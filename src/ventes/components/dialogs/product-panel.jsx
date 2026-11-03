@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Field, MoneyInput } from '@/components/field'
+import { Confirm } from '@/components/confirm'
 import { payback } from '@/calc.js'
 import { api, dropQueued } from '@/lib/api'
 import { useStore } from '@/lib/store'
@@ -240,8 +241,11 @@ function Costs({ p, onDone }) {
 
   // si tout le stock part : ce qui reviendrait encore à Matei (seulement au-delà du seuil du tirage)
   const rr = r.products.find((x) => x.product.id === p.id)
-  const moreForMatei = rr && p.stock > 0 ? Math.max(0, rr.units + p.stock - Math.max(rr.units, rr.threshold)) * (p.royalty_cents || 0) : 0
-  const sellOut = g && unitPrice > 0 && p.stock > 0 ? g.revenue + p.stock * unitPrice - total - g.royalty - moreForMatei : null
+  // tirage partagé (8 Days avec Téo et Tim) : seule ta part du stock restant est à toi de vendre
+  const share = shareOf(d.shares?.[p.id], p.stock, g ? Math.ceil(Math.max(0, total - g.revenue) / (unitPrice || 1)) : 0)
+  const mine = share ? share.mine : p.stock
+  const moreForMatei = rr && mine > 0 ? Math.max(0, rr.units + mine - Math.max(rr.units, rr.threshold)) * (p.royalty_cents || 0) : 0
+  const sellOut = g && unitPrice > 0 && mine > 0 ? g.revenue + mine * unitPrice - total - g.royalty - moreForMatei : null
 
   const set = (i, k) => (e) => setItems((xs) => xs.map((x, j) => (j === i ? { ...x, [k]: e.target.value } : x)))
 
@@ -326,9 +330,10 @@ function Costs({ p, onDone }) {
             )}
           </p>
         )}
+        {share && <SharePart p={p} share={share} />}
         {sellOut != null && (
           <p className="rounded-lg bg-muted/50 px-3 py-2 text-sm">
-            Si les {num.format(p.stock)} restants partent à {fmt(unitPrice)} :{' '}
+            Si {share ? `tes ${num.format(mine)}` : `les ${num.format(p.stock)} restants`} partent à {fmt(unitPrice)} :{' '}
             <span className={cn('num font-semibold', sellOut >= 0 ? 'text-success' : 'text-destructive')}>
               {sellOut >= 0 ? '+' : ''}
               {fmt(sellOut, true)}
@@ -345,6 +350,55 @@ function Costs({ p, onDone }) {
           Enregistrer les coûts
         </Button>
       </Footer>
+    </div>
+  )
+}
+
+// Tirage partagé : une fois le pressage remboursé, ce qui reste se partage. label_pct % pour le label, puis le reste à
+// parts égales entre toi et les partenaires. `toRepay` : vinyles encore à vendre pour rembourser le pressage.
+function shareOf(cfg, stock, toRepay) {
+  if (!cfg) return null
+  if (cfg.handed_at) return { ...cfg, handed: true, mine: stock }
+  const repay = Math.min(stock, toRepay)
+  const left = Math.max(0, stock - repay)
+  const each = Math.floor((left * (1 - cfg.label_pct / 100)) / (cfg.partners.length + 1))
+  const theirs = each * cfg.partners.length
+  return { ...cfg, handed: false, repay, left, each, theirs, mine: stock - theirs }
+}
+
+function SharePart({ p, share }) {
+  const { run } = useStore()
+  const names = share.partners.join(' et ')
+  if (share.handed)
+    return (
+      <p className="rounded-lg border px-3 py-2 text-sm">
+        Partage fait le {new Date(share.handed_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} : {names} ont eu {num.format(share.handed_units / share.partners.length)} vinyles chacun. Le stock affiché est le tien.
+      </p>
+    )
+  return (
+    <div className="space-y-2 rounded-lg border px-3 py-2.5 text-sm">
+      <p className="font-medium">Partage avec {names}</p>
+      <p className="text-muted-foreground">
+        {share.repay > 0 ? `Encore ${num.format(share.repay)} à vendre pour rembourser le pressage. Ensuite, sur les ≈ ${num.format(share.left)} restants : ` : `Pressage remboursé ! Les ${num.format(share.left)} restants se partagent : `}
+        <span className="text-foreground">
+          toi {num.format(share.left - share.theirs)}
+        </span>
+        {share.partners.map((n) => ` · ${n} ${num.format(share.each)}`)}
+        {` (${share.label_pct} % pour le label, le reste en ${share.partners.length + 1}).`}
+      </p>
+      {share.repay === 0 && share.theirs > 0 && (
+        <Confirm
+          title={`Remettre leurs vinyles à ${names} ?`}
+          description={`${num.format(share.theirs)} vinyles sortent de ton stock (${num.format(share.each)} chacun). À faire le jour où tu leur donnes.`}
+          confirm="C’est fait"
+          destructive={false}
+          onConfirm={() => run(() => api('share-handed', { product_id: p.id, qty: share.theirs }), 'Partage noté')}
+        >
+          <Button type="button" variant="outline" size="sm">
+            J’ai remis leurs vinyles
+          </Button>
+        </Confirm>
+      )}
     </div>
   )
 }

@@ -25,7 +25,7 @@ async function stockMap() {
 const actions = {
   // tout ce que le dashboard affiche, en un appel (quelques milliers de lignes au plus)
   async data() {
-    const [products, stock, sales, movements, expenses, fees, royalty, synchros, costs, push] = await Promise.all([
+    const [products, stock, sales, movements, expenses, fees, royalty, synchros, costs, push, shares] = await Promise.all([
       loadProducts(),
       stockMap(),
       q(
@@ -42,6 +42,7 @@ const actions = {
       setting('synchros'),
       setting('costs'),
       subscribers(),
+      setting('shares'),
     ]);
     return {
       products: products.map((p) => ({ ...p, stock: stock[p.id] ?? 0 })),
@@ -53,6 +54,7 @@ const actions = {
       synchros: synchros || [],
       costs: costs || {},
       push,
+      shares: shares || {},
       integrations: {
         shopifyWebhook: !!process.env.SHOPIFY_WEBHOOK_SECRET,
         shopifyAdmin: adminConfigured(),
@@ -246,6 +248,20 @@ const actions = {
     const out = await syncSumup({ since: b.since });
     if (out.created) await notify(sumupMessage(out), { exceptDevice: b.device });
     return out;
+  },
+
+  // tirage partagé (8 Days avec Téo et Tim) : leurs vinyles leur ont été remis ; sort leur part du stock
+  async 'share-handed'(b) {
+    const all = (await setting('shares')) || {};
+    const cfg = all[b.product_id];
+    if (!cfg) throw new Error('Pas de partage pour ce produit');
+    if (cfg.handed_at) throw new Error('Déjà noté');
+    const qty = int(b.qty);
+    if (!(qty > 0)) throw new Error('Quantité invalide');
+    await q(db().from('merch_stock_movements').insert({ product_id: b.product_id, qty: -qty, reason: 'adjust', note: `Part de ${cfg.partners.join(' et ')}` }));
+    all[b.product_id] = { ...cfg, handed_at: new Date().toISOString(), handed_units: qty };
+    await q(db().from('merch_settings').upsert({ key: 'shares', value: all }));
+    return { ok: true };
   },
 
   // notifications de vente sur ce téléphone
