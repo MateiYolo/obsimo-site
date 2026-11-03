@@ -146,6 +146,12 @@ dernières ventes. Le détail des comptes (CA, marge, résultat, canaux, reverse
   archivés y sont proposés.
 - **Dons** : bouton « Don » de la page Stock (produit, quantité, destinataire).
 - **Bandcamp** : au prix Shopify, sans commission (les prix Bandcamp sont majorés pour la compenser), taxes exclues.
+- **Page Matei** (menu → Matei) : son ardoise complète. Dû = départ + vinyles + synchros ; moins les versements
+  (« Je l’ai payé »). Les **synchros** se saisissent avec le montant qui lui revient et une description libre
+  (`merch_settings.synchros`) : elles ne comptent pas dans les chiffres du merch.
+- **Fiche rapide** (toucher un produit à l'accueil) : vendre (espèces, Lydia…), donner, et détailler les coûts poste
+  par poste (`merch_settings.costs`). Enregistrer les coûts met les frais engagés du produit au total et, si le nombre
+  d'exemplaires fabriqués est indiqué, son coût de revient au coût par exemplaire.
 
 `supabase/migrations/20261018000000_ventes_regles.sql` applique ces règles à la base (catalogue, historique, stocks
 de départ), `20261018000100_bandcamp_import.sql` importe les ventes Bandcamp et `20261018000200_hark.sql` la vente à
@@ -155,7 +161,7 @@ montre, avant, ce qui va bouger. Appliquer les migrations avant de déployer le 
 Navigation : barre latérale, palette ⌘K (pages, actions, produits, ventes récentes), raccourcis « G puis lettre »
 pour changer de page, `?` pour la liste des raccourcis. Les pages ont des liens partageables (`#/ventes?nuit=…`).
 
-Sur téléphone : barre d'onglets en bas (Accueil, Ventes, « + » au centre pour saisir une vente, Concerts, Menu),
+Sur téléphone : barre d'onglets en bas (Accueil, Ventes, « + » au centre pour noter une vente, un don, un versement à Matei ou une synchro, Concerts, Menu),
 fenêtres qui montent du bas, cibles tactiles d'au moins 40 px. Pendant un concert (dernière vente en caisse de moins
 de 12 h), l'accueil commence par « Ce soir » : total, espèces et carte de la soirée. La saisie remplit le concert en
 cours, met les produits les plus vendus en concert en premier avec le stock restant, calcule la monnaie à rendre en

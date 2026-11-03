@@ -25,8 +25,9 @@ import { Expenses } from '@/pages/expenses'
 import { Stock } from '@/pages/stock'
 import { Products } from '@/pages/products'
 import { Settings } from '@/pages/settings'
+import { Matei } from '@/pages/matei'
 
-const VIEWS = { apercu: Overview, 'a-traiter': Todo, ventes: Sales, chiffres: Figures, concerts: Concerts, depenses: Expenses, stock: Stock, produits: Products, reglages: Settings }
+const VIEWS = { apercu: Overview, 'a-traiter': Todo, ventes: Sales, chiffres: Figures, concerts: Concerts, depenses: Expenses, stock: Stock, produits: Products, reglages: Settings, matei: Matei }
 
 export function App() {
   return (

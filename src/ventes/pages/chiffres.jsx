@@ -13,9 +13,9 @@ import { Page } from '@/components/page'
 import { PeriodSelect } from '@/components/period-select'
 import { RevenueChart, bucketLabel } from '@/components/revenue-chart'
 import { ChannelDot } from '@/components/channel'
-import { SERIES, SERIES_COLOR, PAYOUT_CATEGORY, summary, byBucket, byProduct, byNight } from '@/calc.js'
+import { SERIES, SERIES_COLOR, summary, byBucket, byProduct, byNight } from '@/calc.js'
 import { useData } from '@/lib/store'
-import { usePeriod, useRoyalties, isPack } from '@/lib/derived'
+import { usePeriod, useRoyalties, useMatei, isPack } from '@/lib/derived'
 import { useUI } from '@/lib/ui'
 import { usePref } from '@/lib/prefs'
 import { href } from '@/lib/router'
@@ -205,10 +205,9 @@ const UNIT = { hour: 'heure', day: 'jour', month: 'mois' }
 
 // Reversement au frère, depuis le début : où en est chaque vinyle par rapport à son seuil, dû, versé, reste.
 function Royalty() {
-  const d = useData()
   const { open } = useUI()
   const r = useRoyalties()
-  const paid = d.expenses.filter((e) => e.category === PAYOUT_CATEGORY).reduce((a, e) => a + e.amount_cents, 0)
+  const m = useMatei()
   if (!r.products.length) return null
   return (
     <Card className="gap-4 py-5">
@@ -216,7 +215,7 @@ function Royalty() {
         <CardTitle className="text-sm font-medium">Reversement au frère</CardTitle>
         <CardDescription className="text-xs">Par vinyle vendu une fois le tirage rentabilisé, hors disquaires et dons{r.since ? ` · ventes depuis le ${dateMedium(r.since)}` : ''}{r.opening ? `, plus ${fmt(r.opening)} dus avant` : ''}</CardDescription>
         <CardAction>
-          <Button variant="ghost" size="xs" className="text-muted-foreground pointer-coarse:h-9 pointer-coarse:px-3" onClick={() => open('payout', { name: r.name, balance: r.total - paid })}>
+          <Button variant="ghost" size="xs" className="text-muted-foreground pointer-coarse:h-9 pointer-coarse:px-3" onClick={() => open('payout')}>
             <Plus /> Versement
           </Button>
         </CardAction>
@@ -241,18 +240,12 @@ function Royalty() {
             )
           })}
         </ul>
-        <dl className="grid grid-cols-3 gap-px overflow-hidden rounded-lg border bg-border text-sm">
-          {[
-            ['Dû', r.total],
-            ['Versé', paid],
-            ['Reste à verser', r.total - paid],
-          ].map(([k, v]) => (
-            <div key={k} className="bg-card px-3 py-2">
-              <dt className="text-xs text-muted-foreground">{k}</dt>
-              <dd className={cn('num font-medium', k === 'Reste à verser' && v < 0 && 'text-destructive')}>{fmt(v)}</dd>
-            </div>
-          ))}
-        </dl>
+        <a href={href('matei')} className="flex items-center justify-between rounded-lg border px-3 py-2.5 text-sm transition-colors hover:bg-accent/40">
+          <span>
+            Reste à donner à {m.name} <span className="text-muted-foreground">(vinyles + synchros)</span>
+          </span>
+          <span className="num font-medium">{fmt(m.balance)}</span>
+        </a>
       </CardContent>
     </Card>
   )

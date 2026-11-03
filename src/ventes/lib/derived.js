@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { useData } from '@/lib/store'
 import { useUI } from '@/lib/ui'
-import { monthOf, rangeOf, inRange, unmapped, PRESETS, nightOf, byNight, royalties, GIFT_REASONS } from '@/calc.js'
+import { monthOf, rangeOf, inRange, unmapped, PRESETS, nightOf, byNight, royalties, GIFT_REASONS, PAYOUT_CATEGORY } from '@/calc.js'
 
 export const LOW_STOCK = 5
 export const isPack = (p) => p.components.length > 0
@@ -74,4 +74,21 @@ export function useTonight() {
     // le nom le plus récent saisi ce soir-là
     return n && { ...n, event: sales.find((s) => s.event)?.event || '' }
   }, [d])
+}
+
+// L'ardoise de Matei : ce qui était dû au départ, 2 € par vinyle (voir royalties), sa part des synchros (saisie telle quelle),
+// moins ce qu'on lui a déjà donné (dépenses « reversement-frere »). Les synchros ne touchent pas aux chiffres du merch.
+export const synchroDue = (s) => s.due_cents || 0
+export function useMatei() {
+  const d = useData()
+  const r = useRoyalties()
+  return useMemo(() => {
+    const synchros = d.synchros || []
+    const payouts = d.expenses.filter((e) => e.category === PAYOUT_CATEGORY)
+    const vinyls = r.total - r.opening
+    const fromSynchros = synchros.reduce((a, s) => a + synchroDue(s), 0)
+    const paid = payouts.reduce((a, e) => a + e.amount_cents, 0)
+    const due = r.opening + vinyls + fromSynchros
+    return { name: r.name, royalties: r, opening: r.opening, vinyls, synchros, fromSynchros, payouts, paid, due, balance: due - paid }
+  }, [d, r])
 }

@@ -24,7 +24,7 @@ async function stockMap() {
 const actions = {
   // tout ce que le dashboard affiche, en un appel (quelques milliers de lignes au plus)
   async data() {
-    const [products, stock, sales, movements, expenses, fees, royalty] = await Promise.all([
+    const [products, stock, sales, movements, expenses, fees, royalty, synchros, costs] = await Promise.all([
       loadProducts(),
       stockMap(),
       q(
@@ -38,6 +38,8 @@ const actions = {
       q(db().from('merch_expenses').select('*').order('occurred_at', { ascending: false })),
       setting('fees'),
       setting('royalty'),
+      setting('synchros'),
+      setting('costs'),
     ]);
     return {
       products: products.map((p) => ({ ...p, stock: stock[p.id] ?? 0 })),
@@ -46,6 +48,8 @@ const actions = {
       expenses,
       fees,
       royalty: royalty || {},
+      synchros: synchros || [],
+      costs: costs || {},
       integrations: {
         shopifyWebhook: !!process.env.SHOPIFY_WEBHOOK_SECRET,
         shopifyAdmin: adminConfigured(),
@@ -181,6 +185,47 @@ const actions = {
     const cur = (await setting('royalty')) || {};
     const value = { ...cur, name: String(b.name || cur.name || '').trim() || 'Matei', opening_cents: int(b.opening_cents) || 0, since: cur.since || new Date().toISOString() };
     await q(db().from('merch_settings').upsert({ key: 'royalty', value }));
+    return { ok: true };
+  },
+
+  // synchro (pub, série…) : ce qui en revient au frère, saisi directement, avec une description. Hors comptes du merch.
+  async synchro(b) {
+    const list = (await setting('synchros')) || [];
+    const row = {
+      id: b.id || crypto.randomUUID(),
+      date: String(b.date || new Date().toISOString().slice(0, 10)).slice(0, 10),
+      label: String(b.label || '').trim(),
+      due_cents: int(b.due_cents),
+    };
+    if (!row.label || !row.due_cents) throw new Error('Description et montant requis');
+    const next = [...list.filter((x) => x.id !== row.id), row].sort((a, z) => (a.date < z.date ? 1 : -1));
+    await q(db().from('merch_settings').upsert({ key: 'synchros', value: next }));
+    return { id: row.id };
+  },
+
+  async 'synchro-delete'(b) {
+    const list = (await setting('synchros')) || [];
+    await q(db().from('merch_settings').upsert({ key: 'synchros', value: list.filter((x) => x.id !== b.id) }));
+    return { ok: true };
+  },
+
+  // détail de ce qu'un produit a coûté (postes + exemplaires fabriqués) : met à jour ses frais engagés (la somme)
+  // et, si on sait combien ont été fabriqués, son coût de revient par exemplaire (les ventes passées gardent l'ancien)
+  async costs(b) {
+    const items = (b.items || [])
+      .map((x) => ({ label: String(x.label || '').trim(), amount_cents: int(x.amount_cents) }))
+      .filter((x) => x.label || x.amount_cents);
+    if (items.some((x) => x.amount_cents == null || x.amount_cents < 0)) throw new Error('Un montant manque');
+    const made = int(b.made) > 0 ? int(b.made) : null;
+    const all = (await setting('costs')) || {};
+    all[b.product_id] = { items, made };
+    await q(db().from('merch_settings').upsert({ key: 'costs', value: all }));
+    const total = items.reduce((a, x) => a + x.amount_cents, 0);
+    const patch = {};
+    if (items.length) patch.investment_cents = total;
+    if (items.length && made) patch.cost_cents = Math.round(total / made);
+    if ('price_cents' in b && int(b.price_cents) != null) patch.price_cents = int(b.price_cents);
+    if (Object.keys(patch).length) await q(db().from('merch_products').update(patch).eq('id', b.product_id));
     return { ok: true };
   },
 
