@@ -341,7 +341,7 @@ export function toCsv(sales, products) {
       rows.push([
         new Date(s.occurred_at).toLocaleString('fr-FR', { timeZone: TZ }),
         CHANNELS[s.channel] || s.channel,
-        s.note || s.external_id || '',
+        s.note || (s.external_id && !s.external_id.startsWith('app-') ? s.external_id : '') || '',
         s.event || '',
         s.status,
         s.payment_method || '',

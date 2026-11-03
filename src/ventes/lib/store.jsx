@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { api, AuthError } from '@/lib/api'
+import { api, AuthError, flushQueue, readQueue } from '@/lib/api'
 
 const Ctx = createContext(null)
 
@@ -11,6 +11,7 @@ export function DataProvider({ children }) {
   const [status, setStatus] = useState('loading') // loading | ready | login
   const [loginError, setLoginError] = useState(null)
   const loadedAt = useRef(0)
+  const [pending, setPending] = useState(() => readQueue())
 
   const reload = useCallback(async () => {
     try {
@@ -18,11 +19,39 @@ export function DataProvider({ children }) {
       loadedAt.current = Date.now()
       setStatus('ready')
     } catch (e) {
-      if (!(e instanceof AuthError)) setLoginError(e.message)
+      // pas de réseau : on garde ce qui est affiché plutôt que de renvoyer vers la connexion
+      if (e instanceof TypeError && loadedAt.current) return
+      if (!(e instanceof AuthError)) setLoginError(e instanceof TypeError ? 'Pas de réseau' : e.message)
       setData(null)
       setStatus('login')
     }
   }, [])
+
+  // ce qui a été saisi hors réseau part dès que ça capte
+  const flush = useCallback(async () => {
+    if (!readQueue().length || !navigator.onLine) return
+    const out = await flushQueue()
+    if (out.sent) {
+      toast.success(out.sent > 1 ? `${out.sent} saisies hors réseau envoyées` : 'Saisie hors réseau envoyée')
+      await reload()
+    }
+    for (const m of out.failed) toast.error(`Saisie hors réseau refusée : ${m}`)
+  }, [reload])
+
+  useEffect(() => {
+    const sync = () => setPending(readQueue())
+    const tick = setInterval(flush, 20000)
+    window.addEventListener('ventes-queue', sync)
+    window.addEventListener('storage', sync)
+    window.addEventListener('online', flush)
+    flush()
+    return () => {
+      clearInterval(tick)
+      window.removeEventListener('ventes-queue', sync)
+      window.removeEventListener('storage', sync)
+      window.removeEventListener('online', flush)
+    }
+  }, [flush])
 
   useEffect(() => {
     reload()
@@ -30,15 +59,24 @@ export function DataProvider({ children }) {
 
   // de retour sur l'appli après plus de 30 s : on recharge (une vente SumUp a pu arriver entre-temps)
   useEffect(() => {
-    const onShow = () => document.visibilityState === 'visible' && loadedAt.current && Date.now() - loadedAt.current > 30000 && reload()
+    const onShow = () => {
+      if (document.visibilityState !== 'visible') return
+      flush()
+      if (loadedAt.current && Date.now() - loadedAt.current > 30000) reload()
+    }
     document.addEventListener('visibilitychange', onShow)
     return () => document.removeEventListener('visibilitychange', onShow)
-  }, [reload])
+  }, [reload, flush])
 
   const run = useCallback(
     async (fn, done) => {
       try {
         const out = await fn()
+        if (out?.queued) {
+          // pas de réseau : gardé sur le téléphone, rien à recharger (une vente a son propre message, avec « Annuler »)
+          if (done !== false) toast('Pas de réseau : c’est gardé sur le téléphone', { description: 'Ça part tout seul dès que ça capte.' })
+          return out
+        }
         await reload()
         if (done) toast.success(typeof done === 'function' ? done(out) : done)
         return out
@@ -69,7 +107,7 @@ export function DataProvider({ children }) {
     setStatus('login')
   }, [])
 
-  const value = useMemo(() => ({ data, status, loginError, reload, run, login, logout }), [data, status, loginError, reload, run, login, logout])
+  const value = useMemo(() => ({ data, status, loginError, reload, run, login, logout, pending, flush }), [data, status, loginError, reload, run, login, logout, pending, flush])
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
 

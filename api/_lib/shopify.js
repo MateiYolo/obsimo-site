@@ -118,7 +118,7 @@ export function productFinder(products) {
 
 // Enregistre une commande, ou met à jour son statut si elle est déjà là (remboursement, annulation).
 // Sert au webhook et à l'import de l'historique. Renvoie ce qui a été fait.
-export async function syncOrder(order, products, fees) {
+export async function syncOrder(order, products, fees, { onCreated } = {}) {
   if (order.test) return 'test';
   const status = statusOf(order);
   const existing = await q(
@@ -126,7 +126,9 @@ export async function syncOrder(order, products, fees) {
   );
   if (!existing) {
     if (!status) return 'pending';
-    await recordSale(await orderToSale(order, productFinder(products), fees));
+    const sale = await orderToSale(order, productFinder(products), fees);
+    await recordSale(sale);
+    if (onCreated) await onCreated(sale);
     return 'created';
   }
   const refunded = refundedCents(order);

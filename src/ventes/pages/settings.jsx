@@ -1,4 +1,4 @@
-// Réglages : reversement au frère, commissions par canal, connexions (Shopify, SumUp) et imports, apparence, session.
+// Réglages : notifications de vente, reversement au frère, commissions par canal, connexions (Shopify, SumUp) et imports, apparence, session.
 
 import { useState } from 'react'
 import { LogOut, Monitor, Moon, Sun } from 'lucide-react'
@@ -16,6 +16,7 @@ import { useStore } from '@/lib/store'
 import { useUI } from '@/lib/ui'
 import { syncShopify, shopifyMessage, syncSumup, sumupMessage } from '@/lib/actions'
 import { PAGES } from '@/lib/nav'
+import { PushCard } from '@/components/push-card'
 import { fromCents, toCents, dateMedium } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
@@ -25,6 +26,7 @@ export function Settings() {
   const i = d.integrations
   return (
     <Page title={PAGES.reglages.label} icon={PAGES.reglages.icon} className="mx-auto w-full max-w-3xl space-y-6">
+      <PushCard />
       <Royalty />
       <Fees />
 

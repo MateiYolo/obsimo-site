@@ -149,6 +149,14 @@ dernières ventes. Le détail des comptes (CA, marge, résultat, canaux, reverse
 - **Page Matei** (menu → Matei) : son ardoise complète. Dû = départ + vinyles + synchros ; moins les versements
   (« Je l’ai payé »). Les **synchros** se saisissent avec le montant qui lui revient et une description libre
   (`merch_settings.synchros`) : elles ne comptent pas dans les chiffres du merch.
+- **Sans réseau** (cave, club) : l'appli s'ouvre quand même (service worker `public/ventes/sw.js`, dernières données
+  gardées) et les saisies (vente, don, versement, synchro) sont gardées sur le téléphone puis envoyées dès que ça
+  capte (bandeau orange en haut). Une vente porte un identifiant (`external_id` = `app-…`) : renvoyée deux fois, elle
+  n'est comptée qu'une fois.
+- **Notifications** (Réglages → Notifications de vente, à activer sur chaque téléphone ; iPhone : iOS 16.4+, appli
+  ajoutée à l'écran d'accueil). Une notif par commande du site (webhook), par vente saisie (sauf sur le téléphone
+  qui l'a saisie), et une seule pour l'import SumUp du matin. Rien à configurer : les clés VAPID sont créées au
+  premier abonnement et gardées dans `merch_settings.push_vapid`, les abonnements dans `merch_settings.push_subs`.
 - **Fiche rapide** (toucher un produit à l'accueil) : vendre (espèces, Lydia…), donner, et détailler les coûts poste
   par poste (`merch_settings.costs`). Enregistrer les coûts met les frais engagés du produit au total et, si le nombre
   d'exemplaires fabriqués est indiqué, son coût de revient au coût par exemplaire.

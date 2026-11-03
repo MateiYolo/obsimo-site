@@ -1,6 +1,7 @@
 // Coquille : connexion, barre latérale, page courante, palette ⌘K, fenêtres et raccourcis globaux.
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { CloudOff } from 'lucide-react'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
@@ -81,12 +82,49 @@ function Shell() {
       <AppSidebar />
       {/* sur téléphone, de la place en bas pour la barre d'onglets */}
       <SidebarInset className="min-w-0 pb-[calc(4rem+env(safe-area-inset-bottom))] md:border md:pb-0">
+        <Pending />
         <View />
       </SidebarInset>
       <MobileNav />
       <CommandMenu />
       <DialogHost />
     </SidebarProvider>
+  )
+}
+
+// Saisies faites sans réseau, pas encore envoyées
+function Pending() {
+  const { pending, flush } = useStore()
+  const [online, setOnline] = useState(() => navigator.onLine)
+  useEffect(() => {
+    const on = () => setOnline(true)
+    const off = () => setOnline(false)
+    window.addEventListener('online', on)
+    window.addEventListener('offline', off)
+    return () => (window.removeEventListener('online', on), window.removeEventListener('offline', off))
+  }, [])
+  if (!pending.length && online) return null
+  return (
+    <div className="flex items-center gap-2 border-b border-warning/30 bg-warning/10 px-3 py-2 text-sm md:rounded-t-xl md:px-4">
+      <CloudOff className="size-4 shrink-0 text-warning" />
+      <span className="min-w-0 flex-1">
+        {pending.length ? (
+          <>
+            {pending.length > 1 ? `${pending.length} saisies attendent` : '1 saisie attend'} le réseau{' '}
+            <span className="text-muted-foreground">· elles partent toutes seules</span>
+          </>
+        ) : (
+          <>
+            Pas de réseau <span className="text-muted-foreground">· tu peux quand même noter des ventes</span>
+          </>
+        )}
+      </span>
+      {pending.length > 0 && online && (
+        <button type="button" onClick={flush} className="shrink-0 text-xs font-medium underline-offset-2 hover:underline">
+          Réessayer
+        </button>
+      )}
+    </div>
   )
 }
 

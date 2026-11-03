@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { Field, MoneyInput } from '@/components/field'
 import { payback } from '@/calc.js'
-import { api } from '@/lib/api'
+import { api, dropQueued } from '@/lib/api'
 import { useStore } from '@/lib/store'
 import { useUI } from '@/lib/ui'
 import { useRoyalties } from '@/lib/derived'
@@ -106,7 +106,8 @@ function Sell({ p, onDone }) {
     const f = new FormData(e.currentTarget)
     setBusy(true)
     try {
-      const out = await run(() =>
+      const out = await run(
+        () =>
         api('sale', {
           channel: how === 'cash' ? 'cash' : 'other',
           payment_method: how === 'cash' ? 'cash' : f.get('method') || null,
@@ -114,10 +115,17 @@ function Sell({ p, onDone }) {
           note: f.get('note'),
           lines: [{ product_id: p.id, qty, unit_price_cents: unit }],
         }),
+        false,
       )
-      toast.success(`Vente de ${fmt(total)} enregistrée`, {
-        action: { label: 'Annuler', onClick: () => run(() => api('sale-delete', { id: out.id }), 'Vente annulée').catch(() => {}) },
-      })
+      if (out.queued)
+        toast(`Vente de ${fmt(total)} gardée sur le téléphone`, {
+          description: 'Pas de réseau : elle part toute seule dès que ça capte.',
+          action: { label: 'Annuler', onClick: () => (dropQueued(out.qid), toast('Vente annulée')) },
+        })
+      else
+        toast.success(`Vente de ${fmt(total)} enregistrée`, {
+          action: { label: 'Annuler', onClick: () => run(() => api('sale-delete', { id: out.id }), 'Vente annulée').catch(() => {}) },
+        })
       onDone()
     } catch {
       setBusy(false)
