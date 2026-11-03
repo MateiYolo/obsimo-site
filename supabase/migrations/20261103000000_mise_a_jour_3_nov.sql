@@ -1,4 +1,5 @@
--- Mise à jour du 3 nov. 2026, chiffres donnés par Obsimo. À appliquer une fois (Supabase → SQL Editor), avant ou
+-- Mise à jour du 3 nov. 2026, chiffres donnés par Obsimo. À appliquer UNE SEULE fois (relancé, il remettrait à
+-- maintenant la date à partir de laquelle les ventes comptent pour le frère) (Supabase → SQL Editor), avant ou
 -- après le déploiement : l'ancien code ignore ce qu'il ne connaît pas (merch_settings.costs, .synchros, .shares).
 -- Les ventes déjà faites gardent leur coût de revient (figé sur chaque ligne).
 
@@ -48,7 +49,7 @@ update public.merch_products set royalty_cents = 100, royalty_after_units = 0 wh
 /* ---------- Life Balance + : 490 vinyles vert transparent, sans frais, pas encore en vente ---------- */
 -- Prix provisoire 25 € (à régler le jour de la mise en vente) ; 2 € pour Matei par vinyle, dès le premier.
 insert into public.merch_products (id, name, category, price_cents, cost_cents, investment_cents, royalty_cents, royalty_after_units, sort)
-values ('life-balance-plus', 'Vinyle / Life Balance + (transparent édition 2)', 'vinyle', 2500, 0, 0, 200, 0, 15)
+values ('life-balance-plus', 'Vinyle Life Balance +', 'vinyle', 2500, 0, 0, 200, 0, 15)
 on conflict (id) do nothing;
 insert into public.merch_stock_movements (product_id, qty, reason, note)
 select 'life-balance-plus', 490, 'initial', 'Édition vert transparent, sans frais'
@@ -61,18 +62,3 @@ insert into public.merch_settings (key, value)
 values ('shares', '{"8-days-in-sweden": {"label_pct": 30, "partners": ["Téo", "Tim"]}}')
 on conflict (key) do update set value = public.merch_settings.value || excluded.value;
 
-/* ---------- Noms des produits : même format partout, « Type / Nom » ---------- */
--- Le nom sert à l'affichage et aux ventes saisies à la main ; Shopify et SumUp sont reliés par leurs handles et noms
--- en caisse, qui ne changent pas.
-update public.merch_products as p set name = v.name
-  from (values
-    ('8-days-in-sweden', 'Vinyle / 8 Days in Sweden'),
-    ('life-balance-swirl', 'Vinyle / Life Balance (swirl)'),
-    ('life-balance-plus', 'Vinyle / Life Balance + (transparent édition 2)'),
-    ('life-balance-vert', 'Vinyle / Life Balance (transparent édition 1)'),
-    ('bundle-vinyles', 'Pack / 8 Days in Sweden + Life Balance'),
-    ('sauce-piquhans', 'Hot sauce / Piqu''hans'),
-    ('carte-postale', 'Carte postale / Vinyle'),
-    ('affiche', 'Affiche / Tournée')
-  ) as v(id, name)
- where p.id = v.id;
