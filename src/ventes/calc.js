@@ -271,8 +271,13 @@ export function payback(sales, products, royaltyDue = {}) {
         bonus: Math.round(g.revenue - g.cost - g.royalty),
       };
     })
-    // en vente d'abord ; un tirage épuisé (archivé) reste en bas, avec son bonus
-    .sort((a, b) => b.product.active - a.product.active || a.product.sort - b.product.sort);
+    .sort(byProfit);
+}
+
+// Ordre des produits : le plus loin d'être rentable d'abord (bilan = rentré − frais − part du frère, du plus négatif au
+// plus positif), puis ceux qui n'ont rien coûté (édition offerte), et les tirages épuisés (archivés) tout en bas.
+export function byProfit(a, b) {
+  return b.product.active - a.product.active || (a.cost === 0) - (b.cost === 0) || a.bonus - b.bonus || a.product.sort - b.product.sort;
 }
 
 

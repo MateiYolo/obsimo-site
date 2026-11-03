@@ -15,7 +15,9 @@ export function DataProvider({ children }) {
 
   const reload = useCallback(async () => {
     try {
-      setData(await api())
+      const next = await api()
+      if (!Array.isArray(next?.sales) || !Array.isArray(next?.products)) throw new TypeError('Réponse inattendue du serveur')
+      setData(next)
       loadedAt.current = Date.now()
       setStatus('ready')
     } catch (e) {

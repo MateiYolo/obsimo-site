@@ -14,7 +14,8 @@ import { Hint } from '@/components/shortcut'
 import { api } from '@/lib/api'
 import { useStore } from '@/lib/store'
 import { useUI } from '@/lib/ui'
-import { isPack, LOW_STOCK } from '@/lib/derived'
+import { isPack, LOW_STOCK, useRoyalties } from '@/lib/derived'
+import { payback, byProfit } from '@/calc.js'
 import { usePref } from '@/lib/prefs'
 import { pushStock, pushMessage } from '@/lib/actions'
 import { PAGES } from '@/lib/nav'
@@ -27,10 +28,24 @@ export function Stock() {
   const { data: d, run } = useStore()
   const { open } = useUI()
   const [tab, setTab] = usePref('stock-tab', 'levels')
-  const physical = useMemo(() => d.products.filter((p) => !isPack(p)).sort((a, b) => b.active - a.active || a.stock - b.stock), [d])
+  const r = useRoyalties()
+  // bilan de chaque produit : ce qui est rentré − ses frais − la part de Matei (négatif tant que pas remboursé)
+  const groups = useMemo(() => new Map(payback(d.sales, d.products, Object.fromEntries(r.products.map((x) => [x.product.id, x.due]))).map((g) => [g.id, g])), [d, r])
+  // le plus loin d'être rentable d'abord ; les produits sans frais renseignés après ; les archivés tout en bas
+  const physical = useMemo(
+    () =>
+      d.products
+        .filter((p) => !isPack(p))
+        .sort((a, b) => {
+          const ga = groups.get(a.id)
+          const gb = groups.get(b.id)
+          return b.active - a.active || !ga - !gb || (ga && gb ? byProfit(ga, gb) : a.stock - b.stock)
+        }),
+    [d, groups],
+  )
   const active = physical.filter((p) => p.active)
   const sold = useMemo(() => soldByProduct(d.sales, d.products), [d])
-  const revenue = [...sold.values()].reduce((a, r) => a + r.revenue, 0)
+  const balance = [...groups.values()].reduce((a, g) => a + net(g), 0)
   const items = active.reduce((a, p) => a + Math.max(0, p.stock), 0)
   const out = active.filter((p) => p.stock <= 0).length
   const low = active.filter((p) => p.stock > 0 && p.stock <= LOW_STOCK).length
@@ -67,7 +82,7 @@ export function Stock() {
       className="space-y-6"
     >
       <div className="grid grid-cols-2 overflow-hidden rounded-xl border bg-card sm:grid-cols-4 max-sm:[&>*:nth-child(-n+2)]:border-b max-sm:[&>*:nth-child(odd)]:border-r sm:[&>*:not(:last-child)]:border-r">
-        <Metric label="Chiffre d’affaires" value={fmt(revenue, true)} />
+        <Metric label="Bilan des produits" value={signed(balance)} tone={balance < 0 ? 'text-destructive' : 'text-success'} />
         <Metric label="Articles en stock" value={num.format(items)} />
         <Metric label="En rupture" value={out} tone={out ? 'text-destructive' : ''} />
         <Metric label={`Stock bas (≤ ${LOW_STOCK})`} value={low} tone={low ? 'text-warning' : ''} />
@@ -91,7 +106,7 @@ export function Stock() {
                   <TableHead className="pl-4">Produit</TableHead>
                   <TableHead className="w-48 max-sm:hidden" />
                   <TableHead className="text-right">Stock</TableHead>
-                  <TableHead className="hidden text-right md:table-cell">Chiffre d’affaires</TableHead>
+                  <TableHead className="hidden text-right md:table-cell">Bilan</TableHead>
                   <TableHead className="w-24" />
                 </TableRow>
               </TableHeader>
@@ -107,10 +122,12 @@ export function Stock() {
                         <span className="text-xs text-muted-foreground">
                           {p.price_cents != null ? `${fmt(p.price_cents)} pièce` : 'sans prix'}
                           {` · ${num.format(sold.get(p.id)?.units || 0)} vendus`}
-                          <span className="md:hidden">
-                            {' · '}
-                            <span className="font-medium text-foreground">{fmt(sold.get(p.id)?.revenue || 0, true)}</span> de CA
-                          </span>
+                          {groups.get(p.id) && (
+                            <span className="md:hidden">
+                              {' · '}
+                              <Balance g={groups.get(p.id)} />
+                            </span>
+                          )}
                           {!p.active && ' · archivé'}
                           {p.cost_cents == null && p.active && <span className="text-warning"> · coût inconnu</span>}
                         </span>
@@ -131,7 +148,7 @@ export function Stock() {
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="num hidden text-right font-medium md:table-cell">{fmt(sold.get(p.id)?.revenue || 0, true)}</TableCell>
+                      <TableCell className="hidden text-right md:table-cell">{groups.get(p.id) ? <Balance g={groups.get(p.id)} /> : <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell className="pr-2 text-right">
                         <div className="flex justify-end gap-0.5">
                           <Hint label="Réassort">
@@ -250,4 +267,20 @@ function soldByProduct(sales, products) {
     }
   }
   return out
+}
+
+const signed = (c) => `${c > 0 ? '+' : c < 0 ? '−' : ''}${fmt(Math.abs(c), true)}`
+
+// −2 803 € tant que les frais ne sont pas remboursés, +1 300 € ensuite (part de Matei déduite)
+// pas encore remboursé : ce qu'il manque ; ensuite : le bonus
+const net = (g) => (g.repaid ? g.bonus : -g.left)
+
+function Balance({ g }) {
+  const v = net(g)
+  return (
+    <span className={cn('num font-medium', v < 0 ? 'text-destructive' : 'text-success')}>
+      {signed(v)}
+      <span className="font-normal text-muted-foreground"> {v < 0 ? 'à rembourser' : g.cost ? 'gagnés' : 'gagnés (sans frais)'}</span>
+    </span>
+  )
 }
