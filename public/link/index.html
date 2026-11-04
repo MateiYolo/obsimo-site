@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Obsimo · Links</title>
+<meta name="description" content="Obsimo: new single −10°, listen on every platform, live shows, listening party and shop.">
+<meta name="theme-color" content="#efefea">
+<meta property="og:title" content="Obsimo">
+<meta property="og:description" content="New single −10° out now. Listen, shows, shop.">
+<meta property="og:image" content="https://www.obsimo.com/og-image.jpg">
+<meta property="og:url" content="https://www.obsimo.com/link/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap">
+<style>
+html,body{margin:0}*{box-sizing:border-box}
+/* Layout : un seul écran. Le nom en haut, toi au centre avec les objets en orbite, en bas un seul libellé + un bouton. */
+:root{ --wall1:#efefea; --wall2:#e6dfbf; --ink:#141412; --muted:#6f6c62; --line:#d6d1bd; --btn:#141412; --btn-fg:#f4f2ec;
+  --label:"Space Grotesk", system-ui, sans-serif; --serif:"Space Grotesk", system-ui, sans-serif; color-scheme:light }
+html,body{height:100%}
+body{color:var(--ink);overflow:hidden;-webkit-user-select:none;user-select:none;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(0,0,0,.05) 1px, transparent 1.4px) 0 0/4px 4px,
+    linear-gradient(100deg,var(--wall1) 0%,var(--wall1) 35%,var(--wall2) 100%);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;opacity:0;transition:opacity 1s ease}
+canvas.on{opacity:1}
+.ui{position:fixed;left:0;right:0;pointer-events:none;display:flex;flex-direction:column;align-items:center;text-align:center}
+.top{top:calc(18px + env(safe-area-inset-top,0px));font-family:var(--label);font-size:24px;line-height:1;letter-spacing:-0.04em;font-weight:600}
+.foot{bottom:calc(26px + env(safe-area-inset-bottom,0px));gap:6px;padding-inline:16px}
+#kick{font-family:var(--label);font-size:11px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)}
+#title{font-family:var(--serif);font-weight:500;font-size:clamp(40px,11vw,64px);line-height:.92;letter-spacing:-0.04em;margin:6px 0 18px;text-wrap:balance;max-width:11ch}
+.fade{transition:opacity .3s, transform .45s cubic-bezier(.2,.8,.2,1)}
+.out{opacity:0;transform:translateY(8px)}
+#cta{pointer-events:auto;display:inline-flex;align-items:center;gap:10px;padding:14px 24px;border-radius:999px;border:0;cursor:pointer;
+  background:var(--btn);color:var(--btn-fg);text-decoration:none;font-family:var(--label);font-size:11px;font-weight:500;letter-spacing:0.12em;
+  text-transform:uppercase;transition:transform .3s cubic-bezier(.2,.8,.2,1),opacity .3s,background .3s}
+#cta:hover{transform:scale(1.04)}#cta:active{transform:scale(.96)}
+#cta:focus-visible{outline:2px solid var(--ink);outline-offset:4px}
+#cta[aria-disabled="true"]{background:transparent;color:var(--muted);box-shadow:inset 0 0 0 1px var(--line);pointer-events:none}
+.dots{display:flex;gap:7px;margin-top:16px}
+.dots i{width:5px;height:5px;border-radius:50%;background:var(--ink);opacity:.18;transition:opacity .3s,transform .3s}
+.dots i.on{opacity:1;transform:scale(1.25)}
+/* panneau plateformes */
+#sheet{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;pointer-events:none;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))}
+#sheet .in{width:100%;max-width:460px;display:flex;flex-direction:column}
+#stitle{font-family:var(--label);font-size:11px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;opacity:0;transition:opacity .4s}
+.pl{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:10px 2px;border-top:1px solid var(--line);
+  color:var(--ink);text-decoration:none;font-family:var(--serif);font-weight:500;letter-spacing:-0.04em;font-size:clamp(28px,8.4vw,38px);line-height:1;
+  opacity:0;transform:translateY(26px);transition:transform .6s cubic-bezier(.2,.8,.2,1),opacity .45s}
+.pl:last-of-type{border-bottom:1px solid var(--line)}
+.pl small{font-family:var(--label);font-size:10px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:#8a7a3e}
+.pl .ar{font-family:var(--label);font-size:16px;font-weight:400;color:var(--muted);transition:transform .3s}
+.pl:hover .ar,.pl:focus-visible .ar{transform:translateX(4px);color:var(--ink)}
+.pl:focus-visible{outline:none;color:#8a7a3e}
+#close{align-self:center;margin-top:12px;background:none;border:0;color:var(--muted);font-family:var(--label);font-size:11px;font-weight:500;
+  letter-spacing:0.14em;text-transform:uppercase;padding:12px 18px;cursor:pointer;opacity:0;transition:opacity .4s}
+#close:focus-visible{outline:1px solid var(--ink)}
+body.open #sheet{pointer-events:auto}
+body.open #stitle,body.open #close{opacity:1;transition-delay:.15s}
+body.open .pl{opacity:1;transform:none;transition-delay:var(--d)}
+.foot{transition:opacity .35s}
+body.open .foot{opacity:0}body.open #cta{pointer-events:none}
+@media (prefers-reduced-motion:reduce){canvas,.fade,.pl,#cta{transition:none}}
+</style>
+</head>
+<body>
+<div class="ui top">Obsimo</div>
+<div class="ui foot">
+  <span id="kick" class="fade"></span>
+  <span id="title" class="fade"></span>
+  <a id="cta" href="#" target="_blank" rel="noopener"><span id="ctaT"></span><span>→</span></a>
+  <div class="dots" id="dots"></div>
+</div>
+<div id="sheet" aria-hidden="true"><div class="in"><p id="stitle"></p><nav id="slist" aria-label="Platforms"></nav><button id="close" type="button">Close</button></div></div>
+<canvas id="c" aria-label="Obsimo sitting, with objects orbiting around him: new single, listen, listening party, concert, shop"></canvas>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const IMG={me:"/link/me.webp",cover:"/link/cover-10.jpg",sleeve:"/link/life-balance-sleeve.jpg",disc:"/link/life-balance-disc.jpg"};
+const cv=document.getElementById("c");
+const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(2,devicePixelRatio||1));
+renderer.outputEncoding=THREE.sRGBEncoding;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.0;
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(28,1,0.1,100);
+(function(){const c=document.createElement("canvas");c.width=512;c.height=256;const x=c.getContext("2d");
+  const g=x.createLinearGradient(0,0,0,256);g.addColorStop(0,"#ffffff");g.addColorStop(.5,"#d8d4c4");g.addColorStop(1,"#8a8778");
+  x.fillStyle=g;x.fillRect(0,0,512,256);
+  const t=new THREE.CanvasTexture(c);t.mapping=THREE.EquirectangularReflectionMapping;t.encoding=THREE.sRGBEncoding;
+  scene.environment=new THREE.PMREMGenerator(renderer).fromEquirectangular(t).texture;})();
+const key=new THREE.DirectionalLight(0xffffff,0.7);key.position.set(2,3,4);scene.add(key);
+
+const FONT="'Space Grotesk', system-ui, sans-serif";
+const loader=new THREE.TextureLoader();
+function img(src){const t=loader.load(src);t.encoding=THREE.sRGBEncoding;t.anisotropy=8;return t;}
+const TEX=[];
+function tex(w,h,draw){const c=document.createElement("canvas");c.width=w;c.height=h;const x=c.getContext("2d");draw(x,w,h);
+  const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=8;TEX.push(()=>{x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,w,h);draw(x,w,h);t.needsUpdate=true;});return t;}
+Promise.all(["600 40px 'Space Grotesk'","500 40px 'Space Grotesk'"].map(f=>document.fonts?document.fonts.load(f):0)).then(()=>TEX.forEach(f=>f())).catch(()=>{});
+const wrapA=a=>Math.atan2(Math.sin(a),Math.cos(a));
+
+/* ---------- Toi, détouré ---------- */
+const ME_W=1.55,ME_H=ME_W*744/900,ME_Y=0.15;
+const me=new THREE.Mesh(new THREE.PlaneGeometry(ME_W,ME_H),
+  new THREE.MeshBasicMaterial({map:img(IMG.me),transparent:true,alphaTest:0.45,toneMapped:false}));
+me.position.set(0,ME_Y,0);scene.add(me);
+// ombre au sol, très douce
+const sh=new THREE.Mesh(new THREE.PlaneGeometry(2.2,0.5),new THREE.MeshBasicMaterial({transparent:true,depthWrite:false,toneMapped:false,
+  map:tex(512,128,(x,w,h)=>{const g=x.createRadialGradient(w/2,h/2,4,w/2,h/2,w/2);g.addColorStop(0,"rgba(40,36,20,.30)");g.addColorStop(1,"rgba(40,36,20,0)");
+    x.setTransform(1,0,0,0.25,0,h*0.375);x.fillStyle=g;x.beginPath();x.arc(w/2,h/2,w/2,0,7);x.fill();})}));
+sh.position.set(0,ME_Y-ME_H/2+0.02,-0.02);scene.add(sh);
+
+/* ---------- Objets ---------- */
+function cover(){
+  const back=tex(512,512,(x,w,h)=>{x.fillStyle="#efede8";x.fillRect(0,0,w,h);x.fillStyle="#111";x.font=`600 24px ${FONT}`;x.fillText("OBSIMO",40,64);
+    x.font=`600 140px ${FONT}`;x.fillText("−10°",36,330);});
+  const e=new THREE.MeshStandardMaterial({color:0xefede8,roughness:0.6});
+  return new THREE.Mesh(new THREE.BoxGeometry(1,1,0.03),[e,e,e,e,new THREE.MeshStandardMaterial({map:img(IMG.cover),roughness:0.45}),new THREE.MeshStandardMaterial({map:back,roughness:0.6})]);
+}
+let flyerGeo,flyerBase;
+function flyer(){
+  const art=tex(512,724,(x,w,h)=>{x.fillStyle="#f3ead6";x.fillRect(0,0,w,h);
+    x.fillStyle="#0f7a55";x.beginPath();x.arc(w*0.62,h*0.36,170,0,7);x.fill();x.fillStyle="#c9a24a";x.beginPath();x.arc(w*0.62,h*0.36,46,0,7);x.fill();
+    x.fillStyle="#0d2a1f";x.font=`600 78px ${FONT}`;x.fillText("LISTENING",30,h-210);x.fillText("PARTY",30,h-135);
+    x.font=`600 24px ${FONT}`;x.fillText("PARIS · TBA",34,h-74);});
+  flyerGeo=new THREE.PlaneGeometry(0.76,1.07,28,40);flyerBase=flyerGeo.attributes.position.array.slice();
+  return new THREE.Mesh(flyerGeo,new THREE.MeshStandardMaterial({map:art,roughness:0.8,side:THREE.DoubleSide}));
+}
+function ticket(d){
+  const t=tex(800,370,(x,w,h)=>{x.fillStyle="#efede8";x.fillRect(0,0,w,h);x.fillStyle="#111";x.fillRect(w-190,0,190,h);
+    x.setLineDash([6,8]);x.strokeStyle="#999";x.lineWidth=2;x.beginPath();x.moveTo(w-200,0);x.lineTo(w-200,h);x.stroke();x.setLineDash([]);
+    x.fillStyle="#111";x.font=`600 24px ${FONT}`;x.fillText("OBSIMO · LIVE",40,60);
+    let fs=130;do{x.font=`600 ${fs}px ${FONT}`;fs-=4;}while(x.measureText(d.city.toUpperCase()).width>w-260&&fs>50);
+    x.fillText(d.city.toUpperCase(),34,210);x.font=`600 40px ${FONT}`;x.fillText(d.date,40,282);
+    
+    x.save();x.translate(w-95,h/2);x.rotate(-Math.PI/2);x.fillStyle="#f4f1ea";x.textAlign="center";x.font=`600 26px ${FONT}`;x.fillText("ADMIT ONE",0,9);x.restore();});
+  const g=new THREE.PlaneGeometry(1.05,0.485,30,1),p=g.attributes.position;
+  for(let i=0;i<p.count;i++){const X=p.getX(i);p.setZ(i,-X*X*0.12);}g.computeVertexNormals();
+  return new THREE.Mesh(g,new THREE.MeshStandardMaterial({map:t,roughness:0.75,side:THREE.DoubleSide}));
+}
+const discM=()=>new THREE.MeshPhysicalMaterial({map:img(IMG.disc),roughness:0.18,clearcoat:1,clearcoatRoughness:0.06});
+let record;
+function vinyl(){
+  const g=new THREE.Group(),T=0.024,paper=new THREE.MeshStandardMaterial({color:0x1f9447,roughness:0.75});
+  const front=new THREE.Mesh(new THREE.BoxGeometry(1,1,0.004),[paper,paper,paper,paper,new THREE.MeshStandardMaterial({map:img(IMG.sleeve),roughness:0.7}),paper]);front.position.z=T/2;
+  const back=new THREE.Mesh(new THREE.BoxGeometry(1,1,0.004),paper);back.position.z=-T/2;
+  const sp=new THREE.Mesh(new THREE.BoxGeometry(0.004,1,T),paper);sp.position.x=-0.498;
+  const tp=new THREE.Mesh(new THREE.BoxGeometry(1,0.004,T),paper);tp.position.y=0.498;const bt=tp.clone();bt.position.y=-0.498;
+  const s=new THREE.Group();[front,back,sp,tp,bt].forEach(m=>s.add(m));s.position.x=-0.14;g.add(s);
+  const f=discM();record=new THREE.Mesh(new THREE.CylinderGeometry(0.475,0.475,0.008,96),[new THREE.MeshPhysicalMaterial({color:0x2fae74,roughness:0.15}),f,f]);
+  record.rotation.x=Math.PI/2;record.position.set(0.2,0,0);g.add(record);return g;
+}
+/* ---------- Lecteur MP3 clé USB, vert ---------- */
+function stadium(L,W){const r=W/2,s=new THREE.Shape();s.moveTo(-L/2+r,-r);s.lineTo(L/2-r,-r);s.absarc(L/2-r,0,r,-Math.PI/2,Math.PI/2,false);
+  s.lineTo(-L/2+r,r);s.absarc(-L/2+r,0,r,Math.PI/2,Math.PI*1.5,false);return s;}
+let lcdDraw,lcdTex;
+function mp3(){
+  const g=new THREE.Group();
+  const green=new THREE.MeshPhysicalMaterial({color:0x0b5e33,roughness:0.5,clearcoat:0.25,clearcoatRoughness:0.5,envMapIntensity:0.6});
+  const metal=new THREE.MeshStandardMaterial({color:0xcfd2d6,metalness:1,roughness:0.25});
+  const black=new THREE.MeshStandardMaterial({color:0x050506,roughness:0.6,envMapIntensity:0.25});
+  const L=1.0,W=0.34,D=0.11,B=0.03;
+  const body=new THREE.Mesh(new THREE.ExtrudeGeometry(stadium(L,W),{depth:D,bevelEnabled:true,bevelThickness:B,bevelSize:B,bevelSegments:6,curveSegments:24}),green);
+  body.position.z=-D/2;g.add(body);
+  const band=new THREE.Mesh(new THREE.ExtrudeGeometry(stadium(L+2*B+0.012,W+2*B+0.012),{depth:0.035,bevelEnabled:false,curveSegments:24}),metal);
+  band.position.z=-0.0175;g.add(band);
+  const zf=D/2+B+0.001;
+  // façade noire + écran
+  const panel=new THREE.Mesh(new THREE.ShapeGeometry(stadium(0.66,0.27),24),black);panel.position.set(0.13,0,zf);g.add(panel);
+  const pText=tex(512,210,(x,w,h)=>{x.clearRect(0,0,w,h);x.fillStyle="#e9e7e1";x.textAlign="center";
+    x.font=`600 30px ${FONT}`;x.fillText("OBSIMO",w/2,40);x.font=`500 20px ${FONT}`;x.fillText("OSR RECORDS",w/2,196);});
+  const pl=new THREE.Mesh(new THREE.PlaneGeometry(0.62,0.255),new THREE.MeshBasicMaterial({map:pText,transparent:true,toneMapped:false}));pl.position.set(0.13,0,zf+0.001);g.add(pl);
+  lcdDraw=(x,w,h,off)=>{x.fillStyle="#a9c2a4";x.fillRect(0,0,w,h);x.fillStyle="#1d2a1f";
+    x.font=`600 44px ${FONT}`;const t="  ▶ OBSIMO — −10°   ";const tw=x.measureText(t).width;
+    for(let k=-1;k<3;k++)x.fillText(t,-((off||0)%tw)+k*tw,82);
+    x.font=`500 22px ${FONT}`;x.fillText("PLAY   02:41",18,124);x.fillStyle="rgba(0,0,0,.06)";for(let i=0;i<h;i+=3)x.fillRect(0,i,w,1);};
+  const lc=document.createElement("canvas");lc.width=420;lc.height=140;lcdTex=new THREE.CanvasTexture(lc);lcdTex.encoding=THREE.sRGBEncoding;
+  lcdTex.userData={c:lc,off:0};lcdDraw(lc.getContext("2d"),420,140,0);
+  const lcd=new THREE.Mesh(new THREE.PlaneGeometry(0.38,0.125),new THREE.MeshStandardMaterial({map:lcdTex,roughness:0.3,emissive:0x203020,emissiveIntensity:0.2}));
+  lcd.position.set(0.13,0,zf+0.002);g.add(lcd);
+  // bouton lecture
+  const ring=new THREE.Mesh(new THREE.CylinderGeometry(0.085,0.085,0.02,40),metal);ring.rotation.x=Math.PI/2;ring.position.set(-0.33,0,zf+0.004);g.add(ring);
+  const btn=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.065,0.03,40),new THREE.MeshStandardMaterial({color:0xb9bcc0,metalness:0.8,roughness:0.35}));
+  btn.rotation.x=Math.PI/2;btn.position.set(-0.33,0,zf+0.012);g.add(btn);
+  const tri=new THREE.Mesh(new THREE.CircleGeometry(0.022,3),new THREE.MeshBasicMaterial({color:0x6c6f73}));tri.position.set(-0.326,0,zf+0.028);g.add(tri);
+  for(let k=0;k<6;k++){const a=Math.PI*0.62+k*0.17;const d=new THREE.Mesh(new THREE.CircleGeometry(0.008,10),black);
+    d.position.set(-0.33+Math.cos(a)*0.125,Math.sin(a)*0.125,zf);g.add(d);}
+  // prise USB
+  const col=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.2,0.1),metal);col.position.set(L/2+B+0.02,0,0);g.add(col);
+  const usb=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.16,0.06),metal);usb.position.set(L/2+B+0.14,0,0);g.add(usb);
+  const tong=new THREE.Mesh(new THREE.BoxGeometry(0.17,0.13,0.02),new THREE.MeshStandardMaterial({color:0xf2f2ee,roughness:0.6}));tong.position.set(L/2+B+0.15,0,-0.005);g.add(tong);
+  [-0.035,0.035].forEach(y=>{const h=new THREE.Mesh(new THREE.PlaneGeometry(0.035,0.028),black);h.position.set(L/2+B+0.17,y,0.031);g.add(h);});
+  // anneau de dragonne
+  const lan=new THREE.Mesh(new THREE.TorusGeometry(0.04,0.009,8,24),metal);lan.position.set(-L/2-B-0.03,0,0);lan.rotation.y=Math.PI/2;g.add(lan);
+  g.rotation.z=0.22;g.position.x=-0.08;return g;
+}
+
+/* ---------- Contenu ---------- */
+const PLATFORMS=[
+  {n:"Spotify",u:"https://open.spotify.com/artist/3zHiZOMFJFL3GjWwsmYEJy"},
+  {n:"Apple Music",u:"https://music.apple.com/artist/obsimo/1165449125"},
+  {n:"YouTube",u:"https://www.youtube.com/c/ObsimoMusic"},
+  {n:"Deezer",u:"https://www.deezer.com/artist/11200756"},
+  {n:"SoundCloud",u:"https://soundcloud.com/obsimo"},
+  {n:"Bandcamp",u:"https://obsimo.bandcamp.com"}];
+const SINGLE=[
+  {n:"Spotify",u:"https://open.spotify.com/album/3VQKWkMHGoHzWu0Xo1ONyT"},
+  {n:"Apple Music",u:"https://music.apple.com/album/6819230182"},
+  {n:"YouTube Music",u:"https://music.youtube.com/playlist?list=OLAK5uy_nDbmm3qm3SUmIKXNjj6i6k7pSxkGet5ro"},
+  {n:"Deezer",u:"https://www.deezer.com/album/1113999162"},
+  {n:"Tidal",u:"https://tidal.com/album/567231785"},
+  {n:"Beatport",u:"https://www.beatport.com/release/10/7574189"}];
+const items=[
+  {kick:"New single · with Monoko & Inkkø",title:"−10°",cta:"Listen",make:cover,size:0.62,listen:{title:"Listen to −10° on",links:SINGLE}},
+  {kick:"Streaming",title:"Listen to my music",cta:"Pick your platform",make:mp3,size:0.6,listen:{title:"Listen to Obsimo on",links:PLATFORMS}},
+  {kick:"Paris · TBA",title:"Listening Party",cta:"Coming soon",url:null,make:flyer,size:0.6},
+  {kick:"On tour",title:"Live shows",cta:"See all shows",url:"https://www.obsimo.com/#tour",make:()=>ticket({city:"Live",date:"See all shows"}),size:0.62},
+  {kick:"Vinyl & merch",title:"Shop",cta:"Visit the shop",url:"https://www.obsimo.com/",make:vinyl,size:0.6}
+].map(it=>{const pivot=new THREE.Group(),spin=new THREE.Group();spin.add(it.make());spin.scale.setScalar(it.size);pivot.add(spin);scene.add(pivot);
+  return Object.assign(it,{pivot,spin});});
+const N=items.length,STEP=Math.PI*2/N;
+
+/* ---------- Orbite ---------- */
+const RX=0.86,RZ=0.85,CY=ME_Y-0.05,TILT=0.42;   // l'avant de l'anneau passe bas (sur tes jambes), l'arrière passe derrière ta tête
+let rot=0,rv=0,rtarget=0;                       // rot : combien d'objets on a fait tourner
+function layout(){
+  const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;
+  const vF=camera.fov*Math.PI/180,needW=2.55,needH=4.4;
+  const d=Math.max((needW/2)/(Math.tan(vF/2)*camera.aspect),(needH/2)/Math.tan(vF/2));
+  const cy=w/h<0.8?-0.3:-0.15;camera.position.set(0,cy,d);camera.lookAt(0,cy,0);camera.updateProjectionMatrix();
+}
+addEventListener("resize",layout);layout();
+
+/* ---------- Textes ---------- */
+const kick=document.getElementById("kick"),title=document.getElementById("title"),cta=document.getElementById("cta"),ctaT=document.getElementById("ctaT"),dots=document.getElementById("dots");
+dots.innerHTML=items.map(()=>"<i></i>").join("");
+let shown=-1;
+function show(i){
+  if(i===shown)return;shown=i;const it=items[i];
+  [kick,title,cta].forEach(el=>el.classList.add("out"));
+  setTimeout(()=>{kick.textContent=it.kick;title.textContent=it.title;ctaT.textContent=it.cta;
+    if(it.listen||it.url){cta.href=it.url||"#";cta.removeAttribute("aria-disabled");cta.removeAttribute("tabindex");}
+    else{cta.removeAttribute("href");cta.setAttribute("aria-disabled","true");cta.setAttribute("tabindex","-1");}
+    [kick,title,cta].forEach((el,k)=>setTimeout(()=>el.classList.remove("out"),k*60));},220);
+  [...dots.children].forEach((d,k)=>d.classList.toggle("on",k===i));
+}
+
+/* ---------- Panneau plateformes ---------- */
+const sheet=document.getElementById("sheet"),slist=document.getElementById("slist"),stitle=document.getElementById("stitle");
+let open=null,focus=0,fv=0;
+const last=()=>{try{return localStorage.getItem("obsimo-platform");}catch(e){return null;}};
+function openSheet(it){
+  if(open)return;open=it;const l=last();
+  const links=[...it.listen.links].sort((a,b)=>(b.n===l)-(a.n===l));
+  stitle.textContent=it.listen.title;
+  slist.innerHTML=links.map((p,i)=>`<a class="pl" href="${p.u}" target="_blank" rel="noopener" style="--d:${120+i*55}ms" data-n="${p.n}"><span>${p.n}</span><span>${p.n===l?"<small>Your last pick</small> ":""}<span class="ar">→</span></span></a>`).join("");
+  document.body.classList.add("open");sheet.setAttribute("aria-hidden","false");
+  setTimeout(()=>slist.querySelector("a")?.focus({preventScroll:true}),350);
+}
+function closeSheet(){if(!open)return;open=null;document.body.classList.remove("open");sheet.setAttribute("aria-hidden","true");}
+slist.addEventListener("click",e=>{const a=e.target.closest("a.pl");if(!a)return;try{localStorage.setItem("obsimo-platform",a.dataset.n);}catch(err){}setTimeout(closeSheet,400);});
+document.getElementById("close").addEventListener("click",closeSheet);
+const active=()=>((Math.round(-rot)%N)+N)%N;
+cta.addEventListener("click",e=>{const it=items[active()];if(it.listen){e.preventDefault();openSheet(it);}});
+
+/* ---------- Gestes : glisser à gauche / à droite fait tourner l'orbite ---------- */
+let drag=false,moved=false,sx=0,lx=0,lt=0,dv=0,idle=0;
+cv.addEventListener("pointerdown",e=>{if(open){closeSheet();return;}drag=true;moved=false;sx=lx=e.clientX;lt=performance.now();dv=0;idle=0;cv.setPointerCapture(e.pointerId);});
+cv.addEventListener("pointermove",e=>{if(!drag)return;const now=performance.now(),dt=Math.max(8,now-lt)/1000,dx=e.clientX-lx;
+  if(Math.abs(e.clientX-sx)>6)moved=true;
+  const per=innerWidth*0.33;rot+=dx/per;dv=dv*0.6+(dx/per/dt)*0.4;rv=dv;lx=e.clientX;lt=now;});
+function up(e){if(!drag)return;drag=false;
+  if(moved)rtarget=Math.round(rot+rv*0.15);
+  else{ // simple toucher : sur l'objet de devant → action
+    const it=items[active()],v=new THREE.Vector3();it.pivot.getWorldPosition(v);v.project(camera);
+    const px=(v.x+1)/2*innerWidth,py=(1-v.y)/2*innerHeight;
+    if(Math.hypot(e.clientX-px,e.clientY-py)<Math.min(innerWidth,innerHeight)*0.22){
+      it.bump=1;if(it.listen)setTimeout(()=>openSheet(it),140);else if(it.url)cta.click();}
+  }}
+cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",()=>{drag=false;rtarget=Math.round(rot);});
+let acc=0,cool=0;
+cv.addEventListener("wheel",e=>{e.preventDefault();if(open)return;idle=0;const now=performance.now();acc+=Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY;
+  if(Math.abs(acc)>35&&now>cool){rtarget-=Math.sign(acc);acc=0;cool=now+260;}},{passive:false});
+addEventListener("keydown",e=>{if(e.key==="Escape")closeSheet();if(open)return;
+  if(e.key==="ArrowRight"){rtarget--;idle=0;}if(e.key==="ArrowLeft"){rtarget++;idle=0;}});
+
+/* ---------- Animation ---------- */
+const still=matchMedia("(prefers-reduced-motion: reduce)").matches;
+function spring(x,v,to,dt,k,c){const a=(to-x)*k-v*c;v+=a*dt;return[x+v*dt,v];}
+let prev=performance.now(),t=0;rot=1.2;
+function tick(now){
+  const dt=Math.min(0.033,(now-prev)/1000);prev=now;t+=dt;
+  // tourne tout seul vers l'objet suivant toutes les 4,5 s si personne ne touche
+  if(!drag&&!open&&!still){idle+=dt;if(idle>4.5){rtarget--;idle=0;}}
+  if(!drag)[rot,rv]=still?[rtarget,0]:spring(rot,rv,rtarget,dt,60,13);
+  [focus,fv]=spring(focus,fv,open?1:0,dt,90,17);
+  const a=active();show(a);
+  items.forEach((it,i)=>{
+    const th=(i+rot)*STEP, z=Math.cos(th)*RZ, x=Math.sin(th)*RX, y=CY-Math.cos(th)*TILT+Math.sin(t*0.9+i*1.7)*0.03;
+    it.pivot.position.set(x,y,z);
+    const front=Math.max(0,Math.cos(th)), isA=i===a;
+    it.bump=(it.bump||0)*Math.exp(-dt*7);
+    const s=(0.82+front*0.32)*(1+Math.sin((1-it.bump)*Math.PI)*it.bump*0.1)*(open&&!isA?0.0001:1);
+    it.pivot.scale.setScalar(Math.max(0.0001,s));
+    // chaque objet se tourne vers toi en passant devant, et se présente de profil sur les côtés
+    it.spin.rotation.y=-Math.sin(th)*0.6+(isA&&!still?Math.sin(t*0.8)*0.18:0);
+    it.spin.rotation.x=-0.12+Math.sin(t*0.6+i)*0.04;
+  });
+  // en ouvrant le panneau, l'objet choisi monte au-dessus de toi
+  const A=items[a];A.pivot.position.y+=focus*(innerHeight>innerWidth?0.95:0.8);A.pivot.position.z+=focus*0.35;
+  me.material.opacity=1-Math.min(1,focus)*0.82;sh.material.opacity=1-Math.min(1,focus);
+  if(!still&&lcdTex){const u=lcdTex.userData;u.off+=dt*60;lcdDraw(u.c.getContext('2d'),420,140,u.off);lcdTex.needsUpdate=true;}
+  if(!still){record.rotation.y+=dt*0.8;
+    const p=flyerGeo.attributes.position.array;
+    for(let i=0;i<p.length;i+=3){const X=flyerBase[i],Y=flyerBase[i+1];p[i+2]=Math.sin(X*5+t*1.7)*0.035+Math.sin(Y*3.5+t*1.1)*0.03;}
+    flyerGeo.attributes.position.needsUpdate=true;flyerGeo.computeVertexNormals();}
+  renderer.render(scene,camera);requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);requestAnimationFrame(()=>cv.classList.add("on"));
+</script>
+</body>
+</html>

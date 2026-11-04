@@ -1,7 +1,8 @@
 {
   "redirects": [
     { "source": "/rider", "destination": "/rider/", "permanent": true },
-    { "source": "/ventes", "destination": "/ventes/", "permanent": true }
+    { "source": "/ventes", "destination": "/ventes/", "permanent": true },
+    { "source": "/link", "destination": "/link/", "permanent": true }
   ],
   "rewrites": [
     { "source": "/rider/(.*)", "destination": "https://obsimo-rider.vercel.app/$1" }
