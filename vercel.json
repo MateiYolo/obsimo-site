@@ -5,6 +5,7 @@
     { "source": "/link", "destination": "/link/", "permanent": true }
   ],
   "rewrites": [
+    { "source": "/new", "destination": "/link/index.html" },
     { "source": "/rider/(.*)", "destination": "https://obsimo-rider.vercel.app/$1" }
   ],
   "headers": [

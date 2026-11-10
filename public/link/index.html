@@ -230,7 +230,7 @@ const SINGLE=[
   {n:"Tidal",u:"https://tidal.com/album/567231785"},
   {n:"Beatport",u:"https://www.beatport.com/release/10/7574189"}];
 const items=[
-  {kick:"New single · with Monoko & Inkkø",title:"−10°",cta:"Listen",make:cover,size:0.62,listen:{title:"Listen to −10° on",links:SINGLE}},
+  {latest:true,kick:"New single · with Monoko & Inkkø",title:"−10°",cta:"Listen",make:cover,size:0.62,listen:{title:"Listen to −10° on",links:SINGLE}},
   {kick:"Streaming",title:"Listen to my music",cta:"Pick your platform",make:mp3,size:0.6,listen:{title:"Listen to Obsimo on",links:PLATFORMS}},
   {kick:"Sat 28 Nov · 4 PM · Paris 18",title:"Listening Party",cta:"Book your free spot",url:"https://shotgun.live/events/listening-party-8-days-in-sweden-obsimo-monoko-inkko",make:flyer,size:0.6},
   {kick:"On tour",title:"Live shows",cta:"See all shows",url:"https://www.obsimo.com/#tour",make:()=>ticket({city:"Live",date:"See all shows"}),size:0.62},
@@ -312,6 +312,10 @@ addEventListener("keydown",e=>{if(e.key==="Escape")closeSheet();if(open)return;
 const still=matchMedia("(prefers-reduced-motion: reduce)").matches;
 function spring(x,v,to,dt,k,c){const a=(to-x)*k-v*c;v+=a*dt;return[x+v*dt,v];}
 let prev=performance.now(),t=0;rot=1.2;
+// obsimo.com/new : arrive directement sur la dernière sortie (objet marqué latest), plateformes ouvertes
+if(/^\/new\/?$/.test(location.pathname)||location.hash==="#new"){
+  const L=Math.max(0,items.findIndex(it=>it.latest));rtarget=-L;rot=-L+0.6;
+  setTimeout(()=>openSheet(items[L]),700);}
 function tick(now){
   const dt=Math.min(0.033,(now-prev)/1000);prev=now;t+=dt;
   // tourne tout seul vers l'objet suivant toutes les 4,5 s si personne ne touche
