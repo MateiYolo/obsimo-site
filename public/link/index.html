@@ -86,7 +86,7 @@ body.open #bubble{opacity:0;pointer-events:none;transition-delay:0s}
 </head>
 <body>
 <div class="ui top">Obsimo</div>
-<a id="bubble" href="https://www.8daysinsweden.com" target="_blank" rel="noopener" aria-label="We made a game: play 8 Days in Sweden"><span class="b"><b>We made a game!</b><small>8 Days in Sweden ↗</small></span></a>
+<a id="bubble" href="/link/play/" aria-label="We made a game: play 8 Days in Sweden"><span class="b"><b>We made a game!</b><small>8 Days in Sweden ↗</small></span></a>
 <div class="ui foot">
   <span id="kick" class="fade"></span>
   <span id="title" class="fade"></span>
@@ -94,11 +94,11 @@ body.open #bubble{opacity:0;pointer-events:none;transition-delay:0s}
   <div class="dots" id="dots"></div>
 </div>
 <div id="sheet" aria-hidden="true"><div class="in"><p id="stitle"></p><nav id="slist" aria-label="Platforms"></nav><button id="close" type="button">Close</button></div></div>
-<canvas id="c" aria-label="Obsimo sitting, with objects orbiting around him: new single, listen, listening party, concert, shop"></canvas>
+<canvas id="c" aria-label="Obsimo sitting, with objects orbiting around him: new single, listen, listening party, concert, game, shop"></canvas>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-const IMG={me:"/link/me.webp",cover:"/link/cover-10.jpg",sleeve:"/link/life-balance-sleeve.jpg",disc:"/link/life-balance-disc.jpg",party:"/link/listening-party.jpg"};
+const IMG={me:"/link/me.webp",cover:"/link/cover-10.jpg",sleeve:"/link/life-balance-sleeve.jpg",disc:"/link/life-balance-disc.jpg",party:"/link/listening-party.jpg",game:"/link/game.jpg"};
 const cv=document.getElementById("c");
 const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
 renderer.setPixelRatio(Math.min(2,devicePixelRatio||1));
@@ -158,6 +158,10 @@ function ticket(d){
   return new THREE.Mesh(g,new THREE.MeshStandardMaterial({map:t,roughness:0.75,side:THREE.DoubleSide}));
 }
 const discM=()=>new THREE.MeshPhysicalMaterial({map:img(IMG.disc),roughness:0.18,clearcoat:1,clearcoatRoughness:0.06});
+function game(){ // miniature du jeu, comme une cartouche
+  const e=new THREE.MeshStandardMaterial({color:0x0d1118,roughness:0.5});
+  return new THREE.Mesh(new THREE.BoxGeometry(1.1,0.55,0.04),[e,e,e,e,new THREE.MeshStandardMaterial({map:img(IMG.game),roughness:0.35}),e]);
+}
 let record;
 function vinyl(){
   const g=new THREE.Group(),T=0.024,paper=new THREE.MeshStandardMaterial({color:0x1f9447,roughness:0.75});
@@ -234,6 +238,7 @@ const items=[
   {kick:"Streaming",title:"Listen to my music",cta:"Pick your platform",make:mp3,size:0.6,listen:{title:"Listen to Obsimo on",links:PLATFORMS}},
   {kick:"Sat 28 Nov · 4 PM · Paris 18",title:"Listening Party",cta:"Book your free spot",url:"https://shotgun.live/events/listening-party-8-days-in-sweden-obsimo-monoko-inkko",make:flyer,size:0.6},
   {kick:"On tour",title:"Live shows",cta:"See all shows",url:"https://www.obsimo.com/#tour",make:()=>ticket({city:"Live",date:"See all shows"}),size:0.62},
+  {kick:"New game · 8 Days in Sweden",title:"Play",cta:"Play the game",url:"/link/play/",make:game,size:0.66},
   {kick:"Vinyl & merch",title:"Shop",cta:"Visit the shop",url:"https://www.obsimo.com/",make:vinyl,size:0.6}
 ].map(it=>{const pivot=new THREE.Group(),spin=new THREE.Group();spin.add(it.make());spin.scale.setScalar(it.size);pivot.add(spin);scene.add(pivot);
   return Object.assign(it,{pivot,spin});});
@@ -263,7 +268,7 @@ function show(i){
   if(i===shown)return;shown=i;const it=items[i];
   [kick,title,cta].forEach(el=>el.classList.add("out"));
   setTimeout(()=>{kick.textContent=it.kick;title.textContent=it.title;ctaT.textContent=it.cta;
-    if(it.listen||it.url){cta.href=it.url||"#";cta.removeAttribute("aria-disabled");cta.removeAttribute("tabindex");}
+    if(it.listen||it.url){cta.href=it.url||"#";cta.target=(it.url||"").startsWith("/")?"_self":"_blank";cta.removeAttribute("aria-disabled");cta.removeAttribute("tabindex");}
     else{cta.removeAttribute("href");cta.setAttribute("aria-disabled","true");cta.setAttribute("tabindex","-1");}
     [kick,title,cta].forEach((el,k)=>setTimeout(()=>el.classList.remove("out"),k*60));},220);
   [...dots.children].forEach((d,k)=>d.classList.toggle("on",k===i));
