@@ -66,11 +66,27 @@ body.open #stitle,body.open #close{opacity:1;transition-delay:.15s}
 body.open .pl{opacity:1;transform:none;transition-delay:var(--d)}
 .foot{transition:opacity .35s}
 body.open .foot{opacity:0}body.open #cta{pointer-events:none}
-@media (prefers-reduced-motion:reduce){canvas,.fade,.pl,#cta{transition:none}}
+/* bulle BD temporaire : le jeu */
+#bubble{position:fixed;z-index:3;left:0;top:0;transform:translate(-32px,-100%);pointer-events:auto;text-decoration:none;color:var(--ink);
+  opacity:0;transition:opacity .6s .8s}
+#bubble.on{opacity:1}
+#bubble .b{position:relative;display:block;background:#fff;border:2px solid var(--ink);border-radius:22px;padding:9px 15px 10px;
+  font-family:var(--label);text-align:left;white-space:nowrap;animation:bob 3.2s ease-in-out infinite;transform-origin:0 100%}
+#bubble .b::before,#bubble .b::after{content:"";position:absolute;left:14px;bottom:-14px;border:8px solid transparent;border-top:14px solid var(--ink);border-bottom:0;transform:skewX(-28deg)}
+#bubble .b::after{left:16px;bottom:-10px;border-width:6px;border-top-width:11px;border-top-color:#fff}
+#bubble b{display:block;font-size:17px;font-weight:600;letter-spacing:-0.03em;line-height:1.05}
+#bubble small{display:block;margin-top:4px;font-size:10px;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted)}
+#bubble:hover .b,#bubble:focus-visible .b{background:var(--ink);color:#fff}
+#bubble:hover small,#bubble:focus-visible small{color:#cfcabb}
+#bubble:hover .b::after{border-top-color:var(--ink)}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-5px) rotate(1deg)}}
+body.open #bubble{opacity:0;pointer-events:none;transition-delay:0s}
+@media (prefers-reduced-motion:reduce){canvas,.fade,.pl,#cta{transition:none}#bubble .b{animation:none}}
 </style>
 </head>
 <body>
 <div class="ui top">Obsimo</div>
+<a id="bubble" href="https://www.8daysinsweden.com" target="_blank" rel="noopener" aria-label="We made a game: play 8 Days in Sweden"><span class="b"><b>We made a game!</b><small>8 Days in Sweden ↗</small></span></a>
 <div class="ui foot">
   <span id="kick" class="fade"></span>
   <span id="title" class="fade"></span>
@@ -232,7 +248,12 @@ function layout(){
   const d=Math.max((needW/2)/(Math.tan(vF/2)*camera.aspect),(needH/2)/Math.tan(vF/2));
   const cy=w/h<0.8?-0.3:-0.15;camera.position.set(0,cy,d);camera.lookAt(0,cy,0);camera.updateProjectionMatrix();
 }
-addEventListener("resize",layout);layout();
+// bulle du jeu, accrochée près de la tête
+const bubble=document.getElementById("bubble");
+function placeBubble(){const v=new THREE.Vector3(0.12,ME_Y+ME_H/2+0.1,0.05).project(camera);
+  let x=Math.round((v.x+1)/2*innerWidth);const y=Math.round((1-v.y)/2*innerHeight),bw=bubble.offsetWidth;
+  x=Math.min(x,innerWidth-bw+32-14);bubble.style.left=x+"px";bubble.style.top=y+"px";bubble.classList.add("on");}
+addEventListener("resize",()=>{layout();placeBubble();});layout();placeBubble();
 
 /* ---------- Textes ---------- */
 const kick=document.getElementById("kick"),title=document.getElementById("title"),cta=document.getElementById("cta"),ctaT=document.getElementById("ctaT"),dots=document.getElementById("dots");
