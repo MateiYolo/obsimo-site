@@ -399,8 +399,16 @@ $('#d-add').onclick = (e) => addToCart(e.currentTarget);
 const pages = {
   tour: { el: $('#tour'), scroller: $('#t-scroll'), make: () => makeTourTitle(), render: () => renderTour() },
   contact: { el: $('#contact'), scroller: $('#c-scroll'), make: () => new OsrLogo($('#c-3d')) },
+  play: { el: $('#play'), scroller: $('#p-scroll'), make: () => ({ start() {}, stop() {} }) },
 };
 let page = null; // name of the open page
+
+// copy the game link on the Play page (the game is made for a computer)
+$('#p-copy').onclick = async (e) => {
+  const b = e.currentTarget;
+  try { await navigator.clipboard.writeText('https://www.8daysinsweden.com'); b.textContent = t('play.copied'); }
+  catch { b.textContent = 'www.8daysinsweden.com'; }
+};
 
 // Easter egg: spinning the 3D "TOUR" fast for a while unlocks an unreleased track
 function makeTourTitle() {

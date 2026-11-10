@@ -72,6 +72,7 @@
     <header class="bar">
       <a class="logo" href="#" id="logo">Obsimo</a>
       <nav class="menu" aria-label="Rubriques" data-i18n-aria="nav.sections">
+        <a href="#play" data-view="play">Play</a>
         <a href="#" class="on" aria-current="page" data-view="shop">Shop</a>
         <a href="#tour" data-view="tour">Tour</a>
       </nav>
@@ -137,6 +138,27 @@
           <canvas class="t-3d" id="t-3d" aria-hidden="true"></canvas>
         </header>
         <ol class="dates" id="dates"></ol>
+      </div>
+    </section>
+
+    <section id="play" class="page" aria-hidden="true" aria-labelledby="play-title">
+      <div class="t-scroll" id="p-scroll">
+        <div class="p-body">
+          <a class="p-thumb" href="https://www.8daysinsweden.com" target="_blank" rel="noopener" aria-label="Jouer à 8 Days in Sweden" data-i18n-aria="play.thumb">
+            <img src="/play-8-days-in-sweden.jpg" alt="" width="1400" height="696" loading="lazy">
+            <span class="p-scan"></span><span class="p-tag" data-i18n="play.new">Nouveau jeu</span><span class="p-play"><i></i>Play</span>
+          </a>
+          <h2 class="p-title" id="play-title">8 Days in Sweden</h2>
+          <p class="kicker p-by" data-i18n="play.by">Obsimo, Monoko &amp; Inkko · Le jeu</p>
+          <p class="c-intro p-intro" data-i18n-html="play.intro">Obsimo, Monoko &amp; Inkko sont partis 8 jours en Suède et en sont revenus avec 10 morceaux. Avant la sortie de l'album le 3&nbsp;décembre, on a fait un jeu vidéo immersif pour le découvrir.</p>
+          <div class="p-how">
+            <div class="c-block" style="--i:0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/></svg><b data-i18n="play.pc">Sur un ordi</b><span data-i18n="play.pc2">Fait pour un grand écran, pas pour ton téléphone</span></div>
+            <div class="c-block" style="--i:1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="7" rx="1.5"/><rect x="17" y="14" width="4" height="7" rx="1.5"/></svg><b data-i18n="play.hp">Avec un casque</b><span data-i18n="play.hp2">Pour vraiment entendre l'album</span></div>
+          </div>
+          <a class="p-cta" href="https://www.8daysinsweden.com" target="_blank" rel="noopener"><span data-i18n="play.cta">Jouer au jeu</span> ↗</a>
+          <p class="p-mobile"><span data-i18n="play.mobile">Sur ton téléphone ? Le jeu est fait pour un ordi. Copie le lien et ouvre-le plus tard sur ton ordi.</span>
+            <button type="button" id="p-copy" data-i18n="play.copy">Copier le lien du jeu</button></p>
+        </div>
       </div>
     </section>
 
