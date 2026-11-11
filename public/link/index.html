@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Obsimo · Links</title>
-<meta name="description" content="Obsimo: new single −10°, listen on every platform, live shows, listening party and shop.">
+<meta name="description" content="Obsimo: new single Öppna, listen on every platform, live shows, listening party and shop.">
 <meta name="theme-color" content="#efefea">
 <meta property="og:title" content="Obsimo">
-<meta property="og:description" content="New single −10° out now. Listen, shows, shop.">
+<meta property="og:description" content="New single Öppna out now. Listen, shows, shop.">
 <meta property="og:image" content="https://www.obsimo.com/og-image.jpg">
 <meta property="og:url" content="https://www.obsimo.com/link/">
 <meta name="twitter:card" content="summary_large_image">
@@ -135,7 +135,7 @@ sh.position.set(0,ME_Y-ME_H/2+0.02,-0.02);scene.add(sh);
 /* ---------- Objets ---------- */
 function cover(){
   const back=tex(512,512,(x,w,h)=>{x.fillStyle="#efede8";x.fillRect(0,0,w,h);x.fillStyle="#111";x.font=`600 24px ${FONT}`;x.fillText("OBSIMO",40,64);
-    x.font=`600 140px ${FONT}`;x.fillText("−10°",36,330);});
+    x.font=`600 140px ${FONT}`;x.fillText("Öppna",36,330);});
   const e=new THREE.MeshStandardMaterial({color:0xefede8,roughness:0.6});
   return new THREE.Mesh(new THREE.BoxGeometry(1,1,0.03),[e,e,e,e,new THREE.MeshStandardMaterial({map:img(IMG.cover),roughness:0.45}),new THREE.MeshStandardMaterial({map:back,roughness:0.6})]);
 }
@@ -190,7 +190,7 @@ function mp3(){
     x.font=`600 30px ${FONT}`;x.fillText("OBSIMO",w/2,40);x.font=`500 20px ${FONT}`;x.fillText("OSR RECORDS",w/2,196);});
   const pl=new THREE.Mesh(new THREE.PlaneGeometry(0.62,0.255),new THREE.MeshBasicMaterial({map:pText,transparent:true,toneMapped:false}));pl.position.set(0.13,0,zf+0.001);g.add(pl);
   lcdDraw=(x,w,h,off)=>{x.fillStyle="#a9c2a4";x.fillRect(0,0,w,h);x.fillStyle="#1d2a1f";
-    x.font=`600 44px ${FONT}`;const t="  ▶ OBSIMO — −10°   ";const tw=x.measureText(t).width;
+    x.font=`600 44px ${FONT}`;const t="  ▶ OBSIMO — ÖPPNA   ";const tw=x.measureText(t).width;
     for(let k=-1;k<3;k++)x.fillText(t,-((off||0)%tw)+k*tw,82);
     x.font=`500 22px ${FONT}`;x.fillText("PLAY   02:41",18,124);x.fillStyle="rgba(0,0,0,.06)";for(let i=0;i<h;i+=3)x.fillRect(0,i,w,1);};
   const lc=document.createElement("canvas");lc.width=420;lc.height=140;lcdTex=new THREE.CanvasTexture(lc);lcdTex.encoding=THREE.sRGBEncoding;
@@ -223,14 +223,14 @@ const PLATFORMS=[
   {n:"SoundCloud",u:"https://soundcloud.com/obsimo"},
   {n:"Bandcamp",u:"https://obsimo.bandcamp.com"}];
 const SINGLE=[
-  {n:"Spotify",u:"https://open.spotify.com/album/3VQKWkMHGoHzWu0Xo1ONyT"},
-  {n:"Apple Music",u:"https://music.apple.com/album/6819230182"},
-  {n:"YouTube Music",u:"https://music.youtube.com/playlist?list=OLAK5uy_nDbmm3qm3SUmIKXNjj6i6k7pSxkGet5ro"},
-  {n:"Deezer",u:"https://www.deezer.com/album/1113999162"},
-  {n:"Tidal",u:"https://tidal.com/album/567231785"},
-  {n:"Beatport",u:"https://www.beatport.com/release/10/7574189"}];
+  {n:"Spotify",u:"https://open.spotify.com/album/2uGn2HY23RCcSViPiho4aN"},
+  {n:"Apple Music",u:"https://music.apple.com/song/o-ppna/6826313147"},
+  {n:"YouTube",u:"https://youtu.be/9REF0I_dVv0"},
+  {n:"Deezer",u:"https://link.deezer.com/s/34VCISfYhceMqiBSdL4Vp"},
+  {n:"Bandcamp",u:"https://obsimo.bandcamp.com"},
+  {n:"Beatport",u:"https://www.beatport.com/track/oppna/30740373"}];
 const items=[
-  {latest:true,kick:"New single · with Monoko & Inkkø",title:"−10°",cta:"Listen",make:cover,size:0.62,listen:{title:"Listen to −10° on",links:SINGLE}},
+  {latest:true,kick:"New single · with Monoko & Inkkø",title:"Öppna",cta:"Listen",make:cover,size:0.62,listen:{title:"Listen to Öppna on",links:SINGLE}},
   {kick:"Streaming",title:"Listen to my music",cta:"Pick your platform",make:mp3,size:0.6,listen:{title:"Listen to Obsimo on",links:PLATFORMS}},
   {kick:"Sat 28 Nov · 4 PM · Paris 18",title:"Listening Party",cta:"Book your free spot",url:"https://shotgun.live/events/listening-party-8-days-in-sweden-obsimo-monoko-inkko",make:flyer,size:0.6},
   {kick:"On tour",title:"Live shows",cta:"See all shows",url:"https://www.obsimo.com/#tour",make:()=>ticket({city:"Live",date:"See all shows"}),size:0.62},
