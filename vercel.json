@@ -1,29 +1,83 @@
 {
   "redirects": [
-    { "source": "/rider", "destination": "/rider/", "permanent": true },
-    { "source": "/ventes", "destination": "/ventes/", "permanent": true },
-    { "source": "/link", "destination": "/link/", "permanent": true }
+    {
+      "source": "/rider",
+      "destination": "/rider/",
+      "permanent": true
+    },
+    {
+      "source": "/ventes",
+      "destination": "/ventes/",
+      "permanent": true
+    },
+    {
+      "source": "/link",
+      "destination": "/link/",
+      "permanent": true
+    },
+    {
+      "source": "/live",
+      "destination": "/live/",
+      "permanent": true
+    }
   ],
   "rewrites": [
-    { "source": "/new", "destination": "/link/index.html" },
-    { "source": "/rider/(.*)", "destination": "https://obsimo-rider.vercel.app/$1" }
+    {
+      "source": "/new",
+      "destination": "/link/index.html"
+    },
+    {
+      "source": "/rider/(.*)",
+      "destination": "https://obsimo-rider.vercel.app/$1"
+    }
   ],
   "headers": [
     {
       "source": "/(.*)",
-      "missing": [{ "type": "host", "value": "www.obsimo.com" }],
-      "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+      "missing": [
+        {
+          "type": "host",
+          "value": "www.obsimo.com"
+        }
+      ],
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
     },
     {
       "source": "/ventes/(.*)",
-      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/live/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
     }
   ],
   "functions": {
-    "api/ventes.js": { "maxDuration": 300 },
-    "api/cron/sumup.js": { "maxDuration": 300 }
+    "api/ventes.js": {
+      "maxDuration": 300
+    },
+    "api/cron/sumup.js": {
+      "maxDuration": 300
+    }
   },
   "crons": [
-    { "path": "/api/cron/sumup", "schedule": "0 7 * * *" }
+    {
+      "path": "/api/cron/sumup",
+      "schedule": "0 7 * * *"
+    }
   ]
 }

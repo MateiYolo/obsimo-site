@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OBSIMO · Live 2026</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Obsimo live 2026 : la nouvelle scénographie en 3D et un morceau inédit.">
+<meta name="theme-color" content="#050506">
+<meta property="og:title" content="OBSIMO · Live 2026">
+<meta property="og:description" content="La nouvelle scéno en 3D + un inédit à écouter.">
+<meta property="og:image" content="https://www.obsimo.com/og-image.jpg">
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+} }
+</script>
+<style>
+:root{--bg:#050506;--ink:#f1efe9;--muted:#8d8a83;--line:#24242a;--led:#5fffc4;--font:"Space Grotesk",system-ui,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+button{font:inherit;color:inherit}
+
+/* ---------- Hero : la scène 3D plein écran ---------- */
+.hero{position:relative;height:100svh;min-height:560px;overflow:hidden}
+#stage{position:absolute;inset:0}
+#stage canvas{display:block;width:100%;height:100%;touch-action:pan-y;outline:none;opacity:0;transition:opacity 1.2s ease}
+#stage canvas.on{opacity:1}
+.hud{position:absolute;left:0;right:0;z-index:2;pointer-events:none;padding:0 clamp(16px,4vw,40px)}
+.hud > *{pointer-events:auto}
+.hud.top{top:calc(16px + env(safe-area-inset-top,0px));display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.brand .kicker{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.brand h1{margin:4px 0 0;font-size:clamp(34px,6vw,64px);line-height:.9;letter-spacing:-.045em;font-weight:600}
+.lang{display:flex;gap:2px;background:rgba(255,255,255,.06);border-radius:999px;padding:3px}
+.lang button{border:0;background:none;padding:6px 10px;border-radius:999px;font-size:12px;cursor:pointer;color:var(--muted)}
+.lang button[aria-pressed=true]{background:var(--ink);color:#000}
+
+.hud.bottom{bottom:calc(18px + env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+
+/* Player */
+.player{display:flex;align-items:center;gap:14px;background:rgba(12,12,14,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid var(--line);border-radius:20px;padding:12px 16px 12px 12px;width:min(520px,100%)}
+#play{flex:none;width:52px;height:52px;border-radius:50%;border:0;background:var(--led);color:#000;cursor:pointer;display:grid;place-items:center;
+  box-shadow:0 0 28px color-mix(in srgb,var(--led) 55%,transparent);transition:transform .2s, background .4s, box-shadow .4s}
+#play:hover{transform:scale(1.06)}
+#play svg{width:20px;height:20px}
+.pmeta{flex:1;min-width:0}
+.ptitle{display:flex;align-items:baseline;gap:8px;font-size:15px;font-weight:600;white-space:nowrap}
+.tag{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#000;background:var(--ink);border-radius:4px;padding:2px 5px;font-weight:600}
+.ptime{margin-left:auto;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;font-weight:400}
+#wave{display:block;width:100%;height:34px;margin-top:6px;cursor:pointer}
+
+/* Contrôles lumière */
+.controls{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.row{display:flex;align-items:center;gap:8px;background:rgba(12,12,14,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid var(--line);border-radius:999px;padding:4px 4px 4px 12px}
+.row .lbl{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.seg{display:flex;gap:2px}
+.seg button{border:0;background:none;padding:7px 11px;border-radius:999px;font-size:12px;cursor:pointer;color:#cfccc4}
+.seg button[aria-pressed=true]{background:var(--ink);color:#000}
+.swatches{display:flex;gap:6px;padding-right:6px}
+.swatches button{width:20px;height:20px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;background:var(--c)}
+.swatches button[aria-pressed=true]{border-color:var(--ink)}
+.hint{position:absolute;z-index:2;left:50%;transform:translateX(-50%);top:calc(50% + 160px);font-size:11px;color:var(--muted);letter-spacing:.06em;pointer-events:none;transition:opacity .6s}
+.scroll{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);text-decoration:none}
+
+/* ---------- Contenu ---------- */
+main{max-width:980px;margin:0 auto;padding:clamp(56px,10vw,120px) clamp(16px,4vw,40px) 40px}
+section{padding:0 0 clamp(56px,9vw,100px)}
+h2{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:500;margin:0 0 18px}
+.lead{font-size:clamp(22px,3.2vw,34px);line-height:1.18;letter-spacing:-.02em;font-weight:400;margin:0;max-width:34ch}
+.lead em{font-style:normal;color:var(--led)}
+p{line-height:1.55;color:#cfccc4}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.cell{background:var(--bg);padding:18px 18px 20px}
+.cell b{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:500;margin-bottom:8px}
+.cell span{font-size:16px;line-height:1.35}
+.cell.wide{grid-column:1/-1}
+.btn{display:inline-flex;align-items:center;gap:10px;margin-top:22px;padding:13px 20px;border-radius:999px;background:var(--ink);color:#000;text-decoration:none;font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+.btn.ghost{background:none;color:var(--ink);border:1px solid var(--line)}
+.contact{display:flex;flex-wrap:wrap;gap:10px 28px;font-size:clamp(18px,2.4vw,24px)}
+.contact a{text-decoration:none;border-bottom:1px solid var(--line)}
+.contact a:hover{border-color:var(--ink)}
+footer{max-width:980px;margin:0 auto;padding:24px clamp(16px,4vw,40px) 40px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
+
+@media (max-width:720px){
+  .hud.bottom{flex-direction:column-reverse;align-items:stretch}
+  .controls{align-items:stretch}
+  .row{justify-content:space-between}
+  .hint{top:auto;bottom:250px}
+  .grid{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){#stage canvas{transition:none}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div id="stage" aria-label="Scénographie du live en 3D"></div>
+
+  <div class="hud top">
+    <div class="brand">
+      <div class="kicker" data-i18n="kicker">Live 2026 — nouvelle scénographie</div>
+      <h1>OBSIMO</h1>
+    </div>
+    <div class="lang" role="group" aria-label="Langue">
+      <button type="button" data-lang="fr">FR</button>
+      <button type="button" data-lang="en">EN</button>
+    </div>
+  </div>
+
+  <p class="hint" id="hint" data-i18n="hint">Glisse pour tourner autour de la scène</p>
+
+  <div class="hud bottom">
+    <div class="player">
+      <button id="play" type="button" aria-label="Lecture">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path id="playIcon" d="M7 4.5v15l13-7.5z"/></svg>
+      </button>
+      <div class="pmeta">
+        <div class="ptitle"><span class="tag" data-i18n="unreleased">Inédit</span> <span>Gene</span><span class="ptime" id="time">0:00 / 3:30</span></div>
+        <canvas id="wave" aria-label="Progression du morceau"></canvas>
+      </div>
+      <audio id="audio" src="gene.mp3" preload="metadata"></audio>
+    </div>
+
+    <div class="controls">
+      <div class="row">
+        <span class="lbl" data-i18n="leds">LED</span>
+        <div class="seg" id="modes" role="group">
+          <button type="button" data-mode="down" data-i18n="down">Bas</button>
+          <button type="button" data-mode="up" data-i18n="up">Haut</button>
+          <button type="button" data-mode="both" data-i18n="both">Les deux</button>
+          <button type="button" data-mode="auto" aria-pressed="true">Auto</button>
+        </div>
+      </div>
+      <div class="row">
+        <span class="lbl" data-i18n="view">Vue</span>
+        <div class="seg" id="views" role="group">
+          <button type="button" data-view="public" aria-pressed="true" data-i18n="public">Public</button>
+          <button type="button" data-view="free">3D</button>
+        </div>
+        <div class="swatches" id="colors" role="group" aria-label="Couleur">
+          <button type="button" style="--c:#5fffc4" data-color="#5fffc4" aria-pressed="true" aria-label="Vert d'eau"></button>
+          <button type="button" style="--c:#f4efe6" data-color="#f4efe6" aria-label="Blanc"></button>
+          <button type="button" style="--c:#ff4b2b" data-color="#ff4b2b" aria-label="Rouge"></button>
+          <button type="button" style="--c:#4f7bff" data-color="#4f7bff" aria-label="Bleu"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- TEXTE PROVISOIRE : à remplacer par la vraie bio -->
+  <section>
+    <h2 data-i18n="liveTitle">Le live</h2>
+    <p class="lead" data-i18n-html="liveLead">Un live électronique en solo, entre machines, guitare et lumière. Andreï joue en <em>silhouette</em>, au milieu de ses flightcases, découpé par deux barres LED suspendues derrière lui.</p>
+    <p data-i18n="liveBody">Des moments calmes, presque intimes, dans la fumée. Puis des moments qui dansent, où la lumière part dans tous les sens. La musique d'Obsimo a été synchronisée pour Giorgio Armani, Red Bull, Elite et Emily in Paris (Netflix).</p>
+  </section>
+
+  <section>
+    <h2 data-i18n="techTitle">Sur scène</h2>
+    <div class="grid">
+      <div class="cell"><b data-i18n="team">Équipe</b><span data-i18n="teamV">1 à 4 personnes</span></div>
+      <div class="cell"><b data-i18n="setup">Installation + balance</b><span data-i18n="setupV">50 min minimum</span></div>
+      <div class="cell"><b data-i18n="stage">Plateau</b><span data-i18n="stageV">Flightcases (≈ 1 m de haut) + 2 barres LED suspendues derrière l'artiste</span></div>
+      <div class="cell"><b data-i18n="sound">Son</b><span data-i18n="soundV">2 DI mono actives ou 1 DI stéréo · 2 retours · 4 prises 230V</span></div>
+      <div class="cell wide"><b data-i18n="light">Lumière</b><span data-i18n="lightV">Pas de face : contre-jour, silhouette, fumée conseillée</span></div>
+    </div>
+    <a class="btn ghost" id="riderLink" href="/rider/fr/" data-i18n="rider">Voir la fiche technique complète →</a>
+  </section>
+
+  <section>
+    <h2>Contact</h2>
+    <div class="contact">
+      <a href="mailto:obsimomusic@gmail.com">obsimomusic@gmail.com</a>
+      <a href="tel:+33689818900">+33 6 89 81 89 00</a>
+    </div>
+  </section>
+</main>
+
+<footer><span>OBSIMO · OSR Records</span><span>2026</span></footer>
+
+<script type="module" src="live.js"></script>
+</body>
+</html>
