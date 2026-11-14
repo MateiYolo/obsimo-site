@@ -56,13 +56,17 @@ button{font:inherit;color:inherit}
 
 /* Contrôles lumière */
 .controls{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
-.row{display:flex;align-items:center;gap:8px;background:rgba(12,12,14,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+.row{display:flex;align-items:center;gap:6px;background:rgba(12,12,14,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   border:1px solid var(--line);border-radius:999px;padding:4px 4px 4px 12px}
 .row .lbl{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .seg{display:flex;gap:2px}
 .seg button{border:0;background:none;padding:7px 11px;border-radius:999px;font-size:12px;cursor:pointer;color:#cfccc4}
 .seg button[aria-pressed=true]{background:var(--ink);color:#000}
 .swatches{display:flex;gap:6px;padding-right:6px}
+.toggle{display:flex;align-items:center;gap:8px;border:0;background:none;padding:7px 12px 7px 9px;border-radius:999px;font-size:12px;cursor:pointer;color:#8d8a83}
+.toggle .led{width:9px;height:9px;border-radius:50%;background:#3a3a40;transition:background .3s, box-shadow .3s}
+.toggle[aria-pressed=true]{color:var(--ink);background:rgba(255,255,255,.08)}
+.toggle[aria-pressed=true] .led{background:var(--led);box-shadow:0 0 10px var(--led)}
 .swatches button{width:20px;height:20px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;background:var(--c)}
 .swatches button[aria-pressed=true]{border-color:var(--ink)}
 .hint{position:absolute;z-index:2;left:50%;transform:translateX(-50%);top:calc(50% + 160px);font-size:11px;color:var(--muted);letter-spacing:.06em;pointer-events:none;transition:opacity .6s}
@@ -113,7 +117,7 @@ footer{max-width:980px;margin:0 auto;padding:24px clamp(16px,4vw,40px) 40px;bord
     </div>
   </div>
 
-  <p class="hint" id="hint" data-i18n="hint">Glisse pour tourner autour de la scène</p>
+  <p class="hint" id="hint" data-i18n="hint">Glisse pour regarder autour</p>
 
   <div class="hud bottom">
     <div class="player">
@@ -129,25 +133,21 @@ footer{max-width:980px;margin:0 auto;padding:24px clamp(16px,4vw,40px) 40px;bord
 
     <div class="controls">
       <div class="row">
-        <span class="lbl" data-i18n="leds">LED</span>
-        <div class="seg" id="modes" role="group">
-          <button type="button" data-mode="down" data-i18n="down">Bas</button>
-          <button type="button" data-mode="up" data-i18n="up">Haut</button>
-          <button type="button" data-mode="both" data-i18n="both">Les deux</button>
-          <button type="button" data-mode="auto" aria-pressed="true">Auto</button>
+        <button type="button" class="toggle" id="showBtn" aria-pressed="true"><span class="led"></span><span data-i18n="lightshow">Show lumière</span></button>
+        <button type="button" class="toggle" id="smokeBtn" aria-pressed="true"><span class="led"></span><span data-i18n="smoke">Fumée</span></button>
+        <div class="swatches" id="colors" role="group" aria-label="Couleur des barres LED">
+          <button type="button" style="--c:#5fffc4" data-color="#5fffc4" aria-pressed="true" aria-label="Vert d'eau"></button>
+          <button type="button" style="--c:#f4efe6" data-color="#f4efe6" aria-label="Blanc"></button>
+          <button type="button" style="--c:#ff4b2b" data-color="#ff4b2b" aria-label="Rouge"></button>
+          <button type="button" style="--c:#4f7bff" data-color="#4f7bff" aria-label="Bleu"></button>
         </div>
       </div>
       <div class="row">
         <span class="lbl" data-i18n="view">Vue</span>
         <div class="seg" id="views" role="group">
-          <button type="button" data-view="public" aria-pressed="true" data-i18n="public">Public</button>
-          <button type="button" data-view="free">3D</button>
-        </div>
-        <div class="swatches" id="colors" role="group" aria-label="Couleur">
-          <button type="button" style="--c:#5fffc4" data-color="#5fffc4" aria-pressed="true" aria-label="Vert d'eau"></button>
-          <button type="button" style="--c:#f4efe6" data-color="#f4efe6" aria-label="Blanc"></button>
-          <button type="button" style="--c:#ff4b2b" data-color="#ff4b2b" aria-label="Rouge"></button>
-          <button type="button" style="--c:#4f7bff" data-color="#4f7bff" aria-label="Bleu"></button>
+          <button type="button" data-view="front" aria-pressed="true" data-i18n="front">Premier rang</button>
+          <button type="button" data-view="middle" data-i18n="middle">Milieu</button>
+          <button type="button" data-view="side" data-i18n="side">Côté</button>
         </div>
       </div>
     </div>
