@@ -98,7 +98,7 @@ body.open #bubble{opacity:0;pointer-events:none;transition-delay:0s}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-const IMG={me:"/link/me.webp",cover:"/link/cover-10.jpg",sleeve:"/link/life-balance-sleeve.jpg",disc:"/link/life-balance-disc.jpg",party:"/link/listening-party.jpg"};
+const IMG={me:"/link/me.webp",cover:"/link/cover-10.jpg",sleeve:"/link/life-balance-sleeve.jpg",disc:"/link/life-balance-disc.jpg",party:"/link/listening-party-6pm.jpg"};
 const cv=document.getElementById("c");
 const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
 renderer.setPixelRatio(Math.min(2,devicePixelRatio||1));
@@ -232,7 +232,7 @@ const SINGLE=[
 const items=[
   {latest:true,kick:"New single · with Monoko & Inkkø",title:"Öppna",cta:"Listen",make:cover,size:0.62,listen:{title:"Listen to Öppna on",links:SINGLE}},
   {kick:"Streaming",title:"Listen to my music",cta:"Pick your platform",make:mp3,size:0.6,listen:{title:"Listen to Obsimo on",links:PLATFORMS}},
-  {kick:"Sat 28 Nov · 4 PM · Paris 18",title:"Listening Party",cta:"Book your free spot",url:"https://shotgun.live/events/listening-party-8-days-in-sweden-obsimo-monoko-inkko",make:flyer,size:0.6},
+  {kick:"Sat 28 Nov · 6 PM · Paris 18",title:"Listening Party",cta:"Book your free spot",url:"https://shotgun.live/events/listening-party-8-days-in-sweden-obsimo-monoko-et-inkko",make:flyer,size:0.6},
   {kick:"On tour",title:"Live shows",cta:"See all shows",url:"https://www.obsimo.com/#tour",make:()=>ticket({city:"Live",date:"See all shows"}),size:0.62},
   {kick:"Vinyl & merch",title:"Shop",cta:"Visit the shop",url:"https://www.obsimo.com/",make:vinyl,size:0.6}
 ].map(it=>{const pivot=new THREE.Group(),spin=new THREE.Group();spin.add(it.make());spin.scale.setScalar(it.size);pivot.add(spin);scene.add(pivot);
