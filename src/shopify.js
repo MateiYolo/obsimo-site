@@ -43,7 +43,7 @@ query Products @inContext(language: ${LANG}) {
       id handle title description productType tags
       # photos of the product page, resized by Shopify's CDN (the originals can be 4000 px: slow to download and decode)
       images(first: 12) { nodes { url(transform: { maxWidth: 1200, preferredContentType: WEBP }) altText } }
-      variants(first: 1) { nodes { id availableForSale price { amount currencyCode } compareAtPrice { amount } } }
+      variants(first: 30) { nodes { id title availableForSale price { amount currencyCode } compareAtPrice { amount } } }
       metafields(identifiers: [${META}]) { key value }
     }
   }
@@ -61,7 +61,12 @@ export async function fetchProducts() {
 function toProduct(n) {
   const meta = Object.fromEntries((n.metafields || []).filter(Boolean).map((m) => [m.key, m.value]));
   const look = lookFor(n.handle, n.title);
-  const v = n.variants.nodes[0];
+  // a product with options (the vinyl postcard: one track per variant) lists them; the first one in stock is chosen
+  const all = n.variants.nodes;
+  const v = all.find((x) => x.availableForSale) || all[0];
+  const variants = all.length > 1
+    ? all.map((x) => ({ id: x.id, title: x.title, price: Number(x.price.amount), compareAt: Number(x.compareAtPrice?.amount || 0), available: x.availableForSale }))
+    : [];
   const [first, ...rest] = n.description.split(/(?<=[.!?])\s+/);
 
   let details = [];
@@ -80,6 +85,7 @@ function toProduct(n) {
     compareAt: Number(v?.compareAtPrice?.amount || 0), // "Prix avant réduction": shown crossed out (src/promo.js)
     variantId: v?.id,
     available: v?.availableForSale !== false,
+    variants,
     accent: look.accent || '#d9d6cc',
     audio: meta.preview_audio || null,
     model: look.model || {},

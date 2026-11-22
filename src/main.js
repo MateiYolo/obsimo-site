@@ -298,7 +298,7 @@ function openDetail(i, push = true) {
   $('#d-title').textContent = p.title;
   $('#d-lead').textContent = p.blurb;
   $('#d-desc').textContent = p.description;
-  showPrice(p);
+  showOptions(p);
   showPreorder(p);
   gallery.set(p.images, p.title);
   $('#acc').innerHTML = p.details
@@ -316,6 +316,30 @@ function openDetail(i, push = true) {
   hands.classList.remove('on', 'grab');
   $('#detail').setAttribute('aria-hidden', 'false');
   if (push) history.pushState({ detail: p.handle }, '', `#${p.handle}`);
+}
+
+// ---------- options: one chip per variant (the track of the vinyl postcard) ----------
+let chosen = null; // variant picked in the product page
+function showOptions(p) {
+  const box = $('#d-opts');
+  const vs = p.variants || [];
+  chosen = vs.find((v) => v.id === p.variantId) || vs[0] || null;
+  box.hidden = vs.length < 2;
+  if (vs.length < 2) return showPrice(p);
+  box.innerHTML = `<p class="kicker">${t('detail.option')}</p><div class="chips">${vs
+    .map((v) => `<button type="button" class="chip" data-v="${esc(v.id)}"${v.available ? '' : ' disabled'} aria-pressed="false">${esc(v.title)}${v.available ? '' : ` <i>${t('detail.soldOut')}</i>`}</button>`)
+    .join('')}</div>`;
+  const sync = () => {
+    box.querySelectorAll('.chip').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === chosen.id)));
+    showPrice({ ...p, price: chosen.price, compareAt: chosen.compareAt });
+  };
+  box.onclick = (e) => {
+    const b = e.target.closest('.chip:not([disabled])');
+    if (!b) return;
+    chosen = vs.find((v) => v.id === b.dataset.v);
+    sync();
+  };
+  sync();
 }
 
 // ---------- price: crossed-out original price during the sale (src/promo.js) ----------
@@ -401,7 +425,7 @@ attachRotate($('#d-drag'), () => current);
 
 function addToCart(btn) {
   const p = products[current];
-  cart.add(p);
+  cart.add(p, 1, chosen?.id || p.variantId);
   const label = btn.querySelector('span');
   const old = label.textContent;
   btn.classList.add('done');
@@ -411,7 +435,7 @@ function addToCart(btn) {
   cb.classList.remove('bump');
   void cb.offsetWidth;
   cb.classList.add('bump');
-  toast(t(isPreorder(p) ? 'toast.preordered' : 'toast.added', p.title));
+  toast(t(isPreorder(p) ? 'toast.preordered' : 'toast.added', chosen && p.variants?.length > 1 ? `${p.title} · ${chosen.title}` : p.title));
   setTimeout(() => {
     btn.classList.remove('done');
     label.textContent = old;
@@ -583,25 +607,27 @@ function renderCart() {
   $('#checkout').style.display = cart.count ? '' : 'none';
   $('#lines').innerHTML = cart.lines.length
     ? cart.lines
-        .map((l) => {
+        .map((l, i) => {
           const p = cart.product(l.id);
+          const v = cart.variant(l);
+          const opt = p.variants?.length > 1 ? ` · ${esc(v.title)}` : '';
           const thumb = p.model?.cover || p.model?.recto || p.images[0];
           return `<li>
             ${thumb ? `<img src="${thumb}" alt="">` : `<span class="sw" style="background:${p.accent}"></span>`}
-            <div><div class="t">${p.title}</div><div class="k">${p.kicker}</div>
-              <div class="qty"><button data-id="${l.id}" data-d="-1" aria-label="${t('cart.less')}">−</button><span>${l.qty}</span><button data-id="${l.id}" data-d="1" aria-label="${t('cart.more')}">+</button></div>
+            <div><div class="t">${p.title}${opt}</div><div class="k">${p.kicker}</div>
+              <div class="qty"><button data-i="${i}" data-d="-1" aria-label="${t('cart.less')}">−</button><span>${l.qty}</span><button data-i="${i}" data-d="1" aria-label="${t('cart.more')}">+</button></div>
             </div>
-            <div class="lp">${money(p.price * l.qty, p.currency)}</div>
+            <div class="lp">${money(v.price * l.qty, p.currency)}</div>
           </li>`;
         })
         .join('')
     : `<li class="empty">${t('cart.empty')}</li>`;
 }
 $('#lines').addEventListener('click', (e) => {
-  const b = e.target.closest('button[data-id]');
+  const b = e.target.closest('button[data-i]');
   if (!b) return;
-  const l = cart.lines.find((x) => x.id === b.dataset.id);
-  cart.set(l.id, l.qty + Number(b.dataset.d));
+  const i = Number(b.dataset.i);
+  cart.set(i, cart.lines[i].qty + Number(b.dataset.d));
 });
 
 $('#checkout').onclick = async () => {

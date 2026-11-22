@@ -570,3 +570,11 @@ body.detail #promo, body.on-page #promo { opacity: 0; pointer-events: none; }
 #snow-front { z-index: 4; filter: blur(1.5px); }
 body.detail #snow-back, body.on-page #snow-back { opacity: 0.45; }
 body.detail #snow-front, body.on-page #snow-front { opacity: 0; }
+.d-opts { margin: 24px 0 0; }
+.d-opts[hidden] { display: none; }
+.d-opts .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.d-opts .chip { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); font-size: 13px; transition: background 0.25s, border-color 0.25s, color 0.25s; }
+.d-opts .chip:hover:not([disabled]) { border-color: color-mix(in srgb, var(--fg) 45%, transparent); }
+.d-opts .chip[aria-pressed='true'] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.d-opts .chip[disabled] { opacity: 0.4; cursor: default; text-decoration: line-through; }
+.d-opts .chip i { font-style: normal; font-size: 11px; text-decoration: none; }

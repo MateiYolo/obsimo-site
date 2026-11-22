@@ -181,7 +181,7 @@ export function buildVinyl(p) {
   // the layout box is computed with the disc a little out (model.rest, cm; 0 = all the way in, e.g. behind a die-cut
   // window), so the object turns about the middle of its silhouette. In the product page it slides out until the middle of the label is at the mouth of the sleeve (half the label
   // shows); the whole thing is re-centred and scaled down as it gets wider, so it keeps its place and size on screen.
-  const REST = m.rest ?? 5, OPEN = SLEEVE.w / 2; // disc centre, cm
+  const REST = m.rest ?? 5, OPEN = Math.max(SLEEVE.w / 2, REST); // disc centre, cm (a record shown well out stays out)
   vinyl.group.position.x = REST;
   const root = normalise(inner);
   const holder = root.children[0];

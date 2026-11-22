@@ -98,15 +98,25 @@ async function handleOf(productId) {
 
 // Associe une ligne de commande à un produit : id Shopify déjà connu, sinon son handle (et l'id est retenu pour la
 // prochaine fois), sinon son titre.
+// A product archived and replaced (the old Life Balance vert → swirl) is only a fallback: when an active product
+// claims the same Shopify listing (its handle, e.g. the green listing reused for « Transparent édition 2 »), that one
+// gets the sale.
+const retired = (p) => !p.active && !!p.replaced_by;
 export function productFinder(products) {
+  const live = products.filter((p) => !retired(p));
   return async (li) => {
     const pid = li.product_id ? String(li.product_id) : null;
     if (pid) {
-      const known = products.find((p) => p.shopify_product_ids.includes(pid));
+      const known = live.find((p) => p.shopify_product_ids.includes(pid));
       if (known) return known;
       const handle = await handleOf(pid);
-      const byHandle = handle && products.find((p) => p.shopify_handles.includes(handle));
+      const byHandle = handle && (live.find((p) => p.shopify_handles.includes(handle)) || products.find((p) => p.shopify_handles.includes(handle)));
+      if (!byHandle) {
+        const old = products.find((p) => p.shopify_product_ids.includes(pid));
+        if (old) return old;
+      }
       if (byHandle) {
+        if (byHandle.shopify_product_ids.includes(pid)) return byHandle;
         byHandle.shopify_product_ids = [...byHandle.shopify_product_ids, pid];
         await q(db().from('merch_products').update({ shopify_product_ids: byHandle.shopify_product_ids }).eq('id', byHandle.id));
         return byHandle;
@@ -199,9 +209,12 @@ export async function pushStock(products, stock) {
   if (!loc) throw new Error('Shopify : aucun emplacement de stock');
   const quantities = [];
   const done = [];
+  // listings claimed by an active product: a retired product never pushes its replacement's stock onto them
+  const claimed = new Set(products.filter((p) => p.active).flatMap((p) => p.shopify_handles));
   for (const p of products) {
     const replaced = p.replaced_by && new Date(p.replaced_at) <= new Date();
     if (p.components?.length || !p.shopify_handles.length || (!p.active && !replaced)) continue;
+    if (!p.active && p.shopify_handles.every((h) => claimed.has(h))) continue;
     let item = p.shopify_inventory_item_id;
     if (!item) {
       for (const handle of p.shopify_handles) {

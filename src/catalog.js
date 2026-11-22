@@ -95,18 +95,18 @@ export const COPY = {
   },
   'life-balance-transparent-green': {
     fr: {
-      kicker: 'Vinyle · Vert transparent · 1er pressage · Derniers exemplaires',
+      kicker: 'Vinyle · Vert transparent · Édition limitée · Derniers exemplaires',
       title: 'Life Balance · Vert transparent',
-      blurb: 'Les derniers exemplaires du premier pressage de Life Balance, en vinyle vert transparent.',
+      blurb: 'Les derniers exemplaires de Life Balance en vinyle vert transparent.',
       description:
-        "Le premier pressage de LIFE BALANCE Extended (12 titres), sorti sur mon label OSR Records, avec la pochette et le design de mon frère Matei. Il n'en reste que quelques-uns : une fois partis, il n'y en aura plus.",
+        "LIFE BALANCE Extended (12 titres) en vinyle vert transparent, sorti sur mon label OSR Records, avec la pochette et le design de mon frère Matei. Une petite série non numérotée : il n'en reste que quelques-uns, une fois partis il n'y en aura plus.",
     },
     en: {
-      kicker: 'Vinyl · Transparent green · First pressing · Last copies',
+      kicker: 'Vinyl · Transparent green · Limited edition · Last copies',
       title: 'Life Balance · Transparent Green',
-      blurb: 'The last copies of the first pressing of Life Balance, on transparent green vinyl.',
+      blurb: 'The last copies of Life Balance on transparent green vinyl.',
       description:
-        'The first pressing of LIFE BALANCE Extended (12 tracks), released on my label OSR Records, with artwork and design by my brother Matei. Only a few left: once they are gone, they are gone.',
+        'LIFE BALANCE Extended (12 tracks) on transparent green vinyl, released on my label OSR Records, with artwork and design by my brother Matei. A small unnumbered run: only a few left, once they are gone, they are gone.',
     },
   },
   'hot-sauce-obsimo-x-piquhans-50ml': {
@@ -228,7 +228,8 @@ export const demoCatalog = [
     variantId: null,
     accent: '#2fae5a',
     audio: null,
-    model: { ...SLEEVE_LB, discClear: '#3fbf6a' },
+    // the record itself is the point: most of it out of the sleeve, a clear green pressing
+    model: { ...SLEEVE_LB, discClear: '#2fd36f', rest: 19 },
     images: [L('photo-sleeve.webp')],
   },
   {
@@ -263,7 +264,10 @@ export const demoCatalog = [
     id: 'demo-postcard',
     handle: 'carte-postale-vinyle',
     ...text('carte-postale-vinyle'),
-    price: 10,
+    price: 8,
+    compareAt: 10,
+    // one variant per track, like the Shopify listing
+    variants: ['Club Memories', 'Pyrocene', 'Humdrum', 'DK Luksus', 'Blockhouse', 'Blackout'].map((title, i) => ({ id: `demo-postcard-${i}`, title, price: 8, compareAt: 10, available: i !== 1 })),
     currency: 'EUR',
     variantId: null,
     ...POSTCARD,
@@ -285,7 +289,7 @@ const BUNDLE = lookOf('bundle-8-days-in-sweden-life-balance');
 const GIFT = lookOf('bundle-noel-life-balance-sauce-carte-postale');
 
 export const visuals = {
-  // Life Balance: the swirl, and the first pressing (transparent green) back on sale for its last copies. These two
+  // Life Balance: the swirl, and the transparent green pressing back on sale for its last copies. These two
   // handles are matched by title below (lookFor), the title says which pressing a listing is.
   'transparent-green-vinyl-life-balance-limited-edition': LIFE_BALANCE,
   'life-balance-vinyl-33-transparent-green': LIFE_BALANCE,
@@ -304,7 +308,7 @@ const has8dis = (t) => /8\s*days\s*in\s*sweden/i.test(t);
 const hasLb = (t) => /life\s*balance/i.test(t);
 // the Christmas bundle: the sauce with a record or the postcard, or a Christmas pack
 const isGift = (t) => (/sauce|piqu/i.test(t) && (hasLb(t) || has8dis(t) || /vinyl|carte|post\s*-?\s*card/i.test(t))) || (/no[eë]l|christmas|xmas/i.test(t) && /bundle|coffret|pack|lot/i.test(t));
-// the first pressing of Life Balance (transparent green), not the swirl
+// the transparent green Life Balance (an unnumbered surplus of the numbered first run), not the swirl
 const isLbGreen = (t) => hasLb(t) && /transparent|\bvert\b|green/i.test(t) && !/swirl/i.test(t) && !isGift(t) && !/bundle|coffret|pack|carte|post\s*-?\s*card/i.test(t);
 const byTitle = [
   [isGift, GIFT],
