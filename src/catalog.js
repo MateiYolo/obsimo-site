@@ -131,14 +131,14 @@ export const COPY = {
       title: 'Bundle de Noël',
       blurb: 'Le vinyle Life Balance, la sauce Obsimo x Piqu’Hans et une carte postale vinyle signée, avec des stickers, dans le même colis.',
       description:
-        "- Life Balance : le vinyle en swirl vert et blanc, LIFE BALANCE Extended, 12 titres, sorti sur mon label OSR Records\n- La sauce Obsimo x Piqu’Hans (50 ml) : curry vert, piquant 3/5, 100 % naturelle et végane, faite à Nantes\n- La carte postale vinyle : signée, elle se joue sur une platine (choisis ton morceau dans l'option)\n- Des stickers Obsimo\n\nUn cadeau à écouter et à goûter. Offre de Noël, jusqu'au 18 décembre.",
+        "- Life Balance : le vinyle en swirl vert et blanc, LIFE BALANCE Extended, 12 titres, sorti sur mon label OSR Records\n- La sauce Obsimo x Piqu’Hans (50 ml) : curry vert, piquant 3/5, 100 % naturelle et végane, faite à Nantes\n- La carte postale vinyle : signée, elle se joue sur une platine (choisis ton morceau dans l'option)\n- Des stickers Obsimo\n\nUn cadeau à écouter et à goûter. Offre de Noël, jusqu'au 15 décembre.",
     },
     en: {
       kicker: 'Christmas bundle · Record + hot sauce + postcard + stickers',
       title: 'Christmas Bundle',
       blurb: 'The Life Balance record, the Obsimo x Piqu’Hans hot sauce and a signed vinyl postcard, plus stickers, in one parcel.',
       description:
-        "- Life Balance: the record on green & white swirl, LIFE BALANCE Extended, 12 tracks, released on my label OSR Records\n- The Obsimo x Piqu’Hans hot sauce (50 ml): green curry, 3/5 heat, 100% natural & vegan, made in Nantes\n- The vinyl postcard: signed, it plays on a turntable (pick your track in the option)\n- Obsimo stickers\n\nA gift to listen to and to taste. Christmas offer, until December 18.",
+        "- Life Balance: the record on green & white swirl, LIFE BALANCE Extended, 12 tracks, released on my label OSR Records\n- The Obsimo x Piqu’Hans hot sauce (50 ml): green curry, 3/5 heat, 100% natural & vegan, made in Nantes\n- The vinyl postcard: signed, it plays on a turntable (pick your track in the option)\n- Obsimo stickers\n\nA gift to listen to and to taste. Christmas offer, until December 15.",
     },
   },
   'carte-postale-vinyle': {

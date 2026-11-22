@@ -10,7 +10,7 @@ import { t, locale } from './i18n.js';
 
 export const PROMO = {
   start: '2026-11-22T00:00:00+01:00',
-  end: '2026-12-18T23:59:59+01:00',
+  end: '2026-12-15T23:59:59+01:00',
   // the banner opens this product (the Christmas bundle), found by its look in src/catalog.js
   kind: 'gift',
 };
