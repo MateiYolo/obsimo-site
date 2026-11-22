@@ -47,7 +47,7 @@ function normalise(inner) {
 // files (src/hifi/baked.js), so building a record costs almost nothing on the main thread.
 // Model fields: cover, back, disc (top-down PNG of the pressing), label, labelB, varnishFront, varnishBack
 // (masks), dieCut (round window onto side A's label), sticker ({ art, x, y, h } in cm: a holographic sticker on the
-// front), rest (how far the disc sticks out at rest, cm), or plain colours: sleeve, edge, discFill (disc surface), discColor.
+// front), rest (how far the disc sticks out at rest, cm), or plain colours: sleeve, edge, discFill (disc surface), discColor, discClear (a clear coloured pressing, its tint).
 const images = new Map(); // url -> Promise<HTMLImageElement | null>, records of the same release share their files
 function image(url) {
   if (images.has(url)) return images.get(url);
@@ -154,7 +154,7 @@ export function buildVinyl(p) {
   const vinyl = new Vinyl(baked.grooves);
   vinyl.setDust(0);
   vinyl.group.rotation.x = Math.PI / 2; // side A faces the camera
-  vinyl.setStyle({ mode: 'solid', color: m.discFill || m.discColor || '#0b0b0b' });
+  vinyl.setStyle(m.discClear ? { mode: 'clear', tint: m.discClear } : { mode: 'solid', color: m.discFill || m.discColor || '#0b0b0b' });
   // die-cut window: the sleeve shows the part of this very record that sits behind the hole
   const syncWindow = () => m.dieCut && sleeve.syncDiscMaterial(vinyl.material);
   syncWindow();

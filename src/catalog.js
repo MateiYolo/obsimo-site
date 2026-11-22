@@ -93,6 +93,22 @@ export const COPY = {
         'Pressed in Europe, limited. Released on my own label OSR Records, with original artwork and design by my brother Matei.',
     },
   },
+  'life-balance-transparent-green': {
+    fr: {
+      kicker: 'Vinyle · Vert transparent · 1er pressage · Derniers exemplaires',
+      title: 'Life Balance · Vert transparent',
+      blurb: 'Les derniers exemplaires du premier pressage de Life Balance, en vinyle vert transparent.',
+      description:
+        "Le premier pressage de LIFE BALANCE Extended (12 titres), sorti sur mon label OSR Records, avec la pochette et le design de mon frère Matei. Il n'en reste que quelques-uns : une fois partis, il n'y en aura plus.",
+    },
+    en: {
+      kicker: 'Vinyl · Transparent green · First pressing · Last copies',
+      title: 'Life Balance · Transparent Green',
+      blurb: 'The last copies of the first pressing of Life Balance, on transparent green vinyl.',
+      description:
+        'The first pressing of LIFE BALANCE Extended (12 tracks), released on my label OSR Records, with artwork and design by my brother Matei. Only a few left: once they are gone, they are gone.',
+    },
+  },
   'hot-sauce-obsimo-x-piquhans-50ml': {
     fr: {
       kicker: 'Sauce piquante · 50 ml',
@@ -203,6 +219,19 @@ export const demoCatalog = [
     images: [L('photo-disc.webp'), L('photo-sleeve.webp')],
   },
   {
+    id: 'demo-life-balance-green',
+    handle: 'life-balance-transparent-green',
+    kind: 'vinyl',
+    ...text('life-balance-transparent-green'),
+    price: 25,
+    currency: 'EUR',
+    variantId: null,
+    accent: '#2fae5a',
+    audio: null,
+    model: { ...SLEEVE_LB, discClear: '#3fbf6a' },
+    images: [L('photo-sleeve.webp')],
+  },
+  {
     id: 'demo-bundle-noel',
     handle: 'bundle-noel-life-balance-sauce-carte-postale',
     kind: 'gift',
@@ -251,13 +280,16 @@ const lookOf = (handle) => {
   return { kind, accent, model, preorder };
 };
 const LIFE_BALANCE = lookOf('life-balance-swirl');
+const LB_GREEN = lookOf('life-balance-transparent-green');
 const BUNDLE = lookOf('bundle-8-days-in-sweden-life-balance');
 const GIFT = lookOf('bundle-noel-life-balance-sauce-carte-postale');
 
 export const visuals = {
-  // the two Life Balance listings on Shopify are the same green/cream swirl pressing
+  // Life Balance: the swirl, and the first pressing (transparent green) back on sale for its last copies. These two
+  // handles are matched by title below (lookFor), the title says which pressing a listing is.
   'transparent-green-vinyl-life-balance-limited-edition': LIFE_BALANCE,
   'life-balance-vinyl-33-transparent-green': LIFE_BALANCE,
+  'life-balance-transparent-green': LB_GREEN,
   'hot-sauce-obsimo-x-piquhans-50ml': PIQUHANS,
   '8-days-in-sweden-marble': lookOf('8-days-in-sweden-marble'),
   'bundle-8-days-in-sweden-life-balance': BUNDLE,
@@ -272,14 +304,19 @@ const has8dis = (t) => /8\s*days\s*in\s*sweden/i.test(t);
 const hasLb = (t) => /life\s*balance/i.test(t);
 // the Christmas bundle: the sauce with a record or the postcard, or a Christmas pack
 const isGift = (t) => (/sauce|piqu/i.test(t) && (hasLb(t) || has8dis(t) || /vinyl|carte|post\s*-?\s*card/i.test(t))) || (/no[eë]l|christmas|xmas/i.test(t) && /bundle|coffret|pack|lot/i.test(t));
+// the first pressing of Life Balance (transparent green), not the swirl
+const isLbGreen = (t) => hasLb(t) && /transparent|\bvert\b|green/i.test(t) && !/swirl/i.test(t) && !isGift(t) && !/bundle|coffret|pack|carte|post\s*-?\s*card/i.test(t);
 const byTitle = [
   [isGift, GIFT],
+  [isLbGreen, LB_GREEN],
   [(t) => /carte\s*postale|post\s*-?\s*card/i.test(t), POSTCARD],
   [(t) => (has8dis(t) && hasLb(t)) || (/bundle|coffret|pack|lot de/i.test(t) && /vinyl|8\s*days|life\s*balance/i.test(t)), BUNDLE],
   [has8dis, lookOf('8-days-in-sweden-marble')],
   [hasLb, LIFE_BALANCE],
 ];
-export const lookFor = (handle, title = '') => visuals[handle] || byTitle.find(([test]) => test(title))?.[1] || {};
+// the title wins for the two Life Balance pressings, whatever the handle (an old listing reused for the green one)
+export const lookFor = (handle, title = '') =>
+  (isLbGreen(title) && LB_GREEN) || visuals[handle] || byTitle.find(([test]) => test(title))?.[1] || {};
 
 // Order of the shop, whatever order Shopify returns: 8 Days in Sweden, Life Balance, the Christmas bundle, the hot sauce, the bundle,
 // the postcard, then anything else. Matched on the title so renamed handles keep their place.
@@ -287,7 +324,8 @@ const isBundle = (t) => !isGift(t) && (/bundle|coffret|pack|lot de/i.test(t) || 
 const isCard = (t) => !isGift(t) && /carte|post\s*-?\s*card|\bcards?\b/i.test(t);
 const ORDER = [
   (t) => has8dis(t) && !isBundle(t) && !isCard(t) && !isGift(t),
-  (t) => hasLb(t) && !isBundle(t) && !isCard(t) && !isGift(t),
+  (t) => hasLb(t) && !isBundle(t) && !isCard(t) && !isGift(t) && !isLbGreen(t),
+  isLbGreen,
   isGift,
   (t) => /sauce|piqu/i.test(t),
   isBundle,
@@ -301,13 +339,13 @@ export const sortProducts = (list) => [...list].sort((a, b) => rank(a) - rank(b)
 
 // The site's own texts (COPY) over a Shopify product, in the visitor's language. Same matching as the order above:
 // the handle, else the title (8 Days in Sweden, Life Balance, the hot sauce, the bundle, the postcard).
-const COPY_KEYS = ['8-days-in-sweden-marble', 'life-balance-swirl', 'bundle-noel-life-balance-sauce-carte-postale', 'hot-sauce-obsimo-x-piquhans-50ml', 'bundle-8-days-in-sweden-life-balance', 'carte-postale-vinyle'];
+const COPY_KEYS = ['8-days-in-sweden-marble', 'life-balance-swirl', 'life-balance-transparent-green', 'bundle-noel-life-balance-sauce-carte-postale', 'hot-sauce-obsimo-x-piquhans-50ml', 'bundle-8-days-in-sweden-life-balance', 'carte-postale-vinyle'];
 export const localize = (p) => ({ ...p, ...(COPY[p.handle] || COPY[COPY_KEYS[rank(p)]])?.[lang] });
 
-// Shopify has two Life Balance listings (the old "Life Balance Transparent Green" and the swirl): only the swirl is
-// shown. Kept: the listing titled swirl, else the ones not titled transparent, else not the old handle, else the
+// Life Balance: the transparent green first pressing has a listing of its own (isLbGreen, shown); if there are
+// several swirl listings, only one is shown. Kept: the listing titled swirl, else the ones not titled transparent, else not the old handle, else the
 // limited edition; never all of them dropped.
-const isLbSingle = (t) => hasLb(t) && !isBundle(t) && !isCard(t) && !isGift(t);
+const isLbSingle = (t) => hasLb(t) && !isBundle(t) && !isCard(t) && !isGift(t) && !isLbGreen(t);
 export const isLifeBalance = (p) => isLbSingle(p.title);
 const LB_KEEP = [
   (p) => /swirl/i.test(p.title),
