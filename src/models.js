@@ -47,7 +47,7 @@ function normalise(inner) {
 // files (src/hifi/baked.js), so building a record costs almost nothing on the main thread.
 // Model fields: cover, back, disc (top-down PNG of the pressing), label, labelB, varnishFront, varnishBack
 // (masks), dieCut (round window onto side A's label), sticker ({ art, x, y, h } in cm: a holographic sticker on the
-// front), rest (how far the disc sticks out at rest, cm), or plain colours: sleeve, edge, discFill (disc surface), discColor, discClear (a clear coloured pressing, its tint).
+// front), rest (how far the disc sticks out at rest, cm), or plain colours: sleeve, edge, discFill (disc surface), discColor, discClear (a clear coloured pressing, its tint), discSeeThrough (opacity of a see-through discColor pressing).
 const images = new Map(); // url -> Promise<HTMLImageElement | null>, records of the same release share their files
 function image(url) {
   if (images.has(url)) return images.get(url);
@@ -155,6 +155,16 @@ export function buildVinyl(p) {
   vinyl.setDust(0);
   vinyl.group.rotation.x = Math.PI / 2; // side A faces the camera
   vinyl.setStyle(m.discClear ? { mode: 'clear', tint: m.discClear } : { mode: 'solid', color: m.discFill || m.discColor || '#0b0b0b' });
+  if (m.discSeeThrough) {
+    // a see-through coloured pressing: the room behind shows through the vinyl (alpha rather than transmission,
+    // which only refracts what is drawn behind it and reads as solid against the dark page)
+    Object.assign(vinyl.material, { transmission: 0, transparent: true, opacity: m.discSeeThrough, depthWrite: false, roughness: 0.35, metalness: 0, specularIntensity: 0.12, envMapIntensity: 0.2, anisotropy: 0.3 });
+    vinyl.material.color.set(m.discColor);
+    // light passing through coloured vinyl: a little of its own colour, so it stays green on a dark page
+    vinyl.material.emissive?.set(m.discColor);
+    if (vinyl.material.emissive) vinyl.material.emissiveIntensity = 0.4;
+    vinyl.material.needsUpdate = true;
+  }
   // die-cut window: the sleeve shows the part of this very record that sits behind the hole
   const syncWindow = () => m.dieCut && sleeve.syncDiscMaterial(vinyl.material);
   syncWindow();
@@ -176,7 +186,9 @@ export function buildVinyl(p) {
   // the part of the record still in the sleeve is clipped away, so it can't poke through the warped board
   const clip = new THREE.Plane();
   const opening = new THREE.Plane(new THREE.Vector3(1, 0, 0), -(SLEEVE.w / 2 - 0.05));
-  vinyl.setClip(clip);
+  // a see-through record lies in front of the sleeve instead of in it: the board shows through the vinyl
+  if (m.discSeeThrough) vinyl.group.position.z = SLEEVE.t / 2 + 0.25;
+  else vinyl.setClip(clip);
 
   // the layout box is computed with the disc a little out (model.rest, cm; 0 = all the way in, e.g. behind a die-cut
   // window), so the object turns about the middle of its silhouette. In the product page it slides out until the middle of the label is at the mouth of the sleeve (half the label

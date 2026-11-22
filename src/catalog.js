@@ -270,8 +270,8 @@ export const demoCatalog = [
     variantId: null,
     accent: '#2fae5a',
     audio: null,
-    // the record itself is the point: most of it out of the sleeve, a green pressing (quite opaque in real life)
-    model: { ...SLEEVE_LB, discColor: '#13853f', rest: 19 },
+    // the record itself is the point: most of it out of the sleeve, a see-through green pressing
+    model: { ...SLEEVE_LB, discColor: '#0f8a3c', discSeeThrough: 0.5, rest: 13 },
     images: [L('photo-sleeve.webp')],
   },
 ];
