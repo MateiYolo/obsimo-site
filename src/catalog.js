@@ -219,20 +219,6 @@ export const demoCatalog = [
     images: [L('photo-disc.webp'), L('photo-sleeve.webp')],
   },
   {
-    id: 'demo-life-balance-green',
-    handle: 'life-balance-transparent-green',
-    kind: 'vinyl',
-    ...text('life-balance-transparent-green'),
-    price: 25,
-    currency: 'EUR',
-    variantId: null,
-    accent: '#2fae5a',
-    audio: null,
-    // the record itself is the point: most of it out of the sleeve, a clear green pressing
-    model: { ...SLEEVE_LB, discClear: '#2fd36f', rest: 19 },
-    images: [L('photo-sleeve.webp')],
-  },
-  {
     id: 'demo-bundle-noel',
     handle: 'bundle-noel-life-balance-sauce-carte-postale',
     kind: 'gift',
@@ -273,6 +259,20 @@ export const demoCatalog = [
     ...POSTCARD,
     audio: null,
     images: [P('photo-verso.webp')],
+  },
+  {
+    id: 'demo-life-balance-green',
+    handle: 'life-balance-transparent-green',
+    kind: 'vinyl',
+    ...text('life-balance-transparent-green'),
+    price: 25,
+    currency: 'EUR',
+    variantId: null,
+    accent: '#2fae5a',
+    audio: null,
+    // the record itself is the point: most of it out of the sleeve, a green pressing (quite opaque in real life)
+    model: { ...SLEEVE_LB, discColor: '#13853f', rest: 19 },
+    images: [L('photo-sleeve.webp')],
   },
 ];
 
@@ -322,28 +322,30 @@ const byTitle = [
 export const lookFor = (handle, title = '') =>
   (isLbGreen(title) && LB_GREEN) || visuals[handle] || byTitle.find(([test]) => test(title))?.[1] || {};
 
-// Order of the shop, whatever order Shopify returns: 8 Days in Sweden, Life Balance, the Christmas bundle, the hot sauce, the bundle,
+// Order of the shop, whatever order Shopify returns (see ORDER): 8 Days in Sweden, Life Balance, the hot sauce, the postcard, the bundles,
 // the postcard, then anything else. Matched on the title so renamed handles keep their place.
 const isBundle = (t) => !isGift(t) && (/bundle|coffret|pack|lot de/i.test(t) || (has8dis(t) && hasLb(t)));
 const isCard = (t) => !isGift(t) && /carte|post\s*-?\s*card|\bcards?\b/i.test(t);
+// the products on their own first, then the bundles, the transparent green Life Balance (last copies) at the very end
 const ORDER = [
   (t) => has8dis(t) && !isBundle(t) && !isCard(t) && !isGift(t),
   (t) => hasLb(t) && !isBundle(t) && !isCard(t) && !isGift(t) && !isLbGreen(t),
-  isLbGreen,
-  isGift,
-  (t) => /sauce|piqu/i.test(t),
-  isBundle,
+  (t) => /sauce|piqu/i.test(t) && !isGift(t),
   isCard,
+  isGift,
+  isBundle,
+  isLbGreen,
 ];
 const rank = (p) => {
   const i = ORDER.findIndex((test) => test(p.title));
-  return i < 0 ? ORDER.length : i;
+  if (i >= 0) return i;
+  return p.kind === 'postcard' ? ORDER.indexOf(isCard) : ORDER.length; // a postcard named after its track only
 };
 export const sortProducts = (list) => [...list].sort((a, b) => rank(a) - rank(b));
 
 // The site's own texts (COPY) over a Shopify product, in the visitor's language. Same matching as the order above:
 // the handle, else the title (8 Days in Sweden, Life Balance, the hot sauce, the bundle, the postcard).
-const COPY_KEYS = ['8-days-in-sweden-marble', 'life-balance-swirl', 'life-balance-transparent-green', 'bundle-noel-life-balance-sauce-carte-postale', 'hot-sauce-obsimo-x-piquhans-50ml', 'bundle-8-days-in-sweden-life-balance', 'carte-postale-vinyle'];
+const COPY_KEYS = ['8-days-in-sweden-marble', 'life-balance-swirl', 'hot-sauce-obsimo-x-piquhans-50ml', 'carte-postale-vinyle', 'bundle-noel-life-balance-sauce-carte-postale', 'bundle-8-days-in-sweden-life-balance', 'life-balance-transparent-green'];
 export const localize = (p) => ({ ...p, ...(COPY[p.handle] || COPY[COPY_KEYS[rank(p)]])?.[lang] });
 
 // Life Balance: the transparent green first pressing has a listing of its own (isLbGreen, shown); if there are
