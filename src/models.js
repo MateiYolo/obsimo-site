@@ -86,7 +86,8 @@ const uploadOnce = (t) => {
 // Starts downloading the files of the records right away (while the page waits for its web fonts); buildVinyl then
 // picks up the same promises.
 export function prefetch(products) {
-  const records = products.flatMap(({ kind, model }) => (kind === 'vinyl' ? [model] : kind === 'bundle' ? model.records : []));
+  const records = products.flatMap(({ kind, model }) =>
+    kind === 'vinyl' ? [model] : kind === 'bundle' ? model.records : kind === 'gift' ? [model.record] : []);
   for (const m of records) {
     baked ||= loadBakedMaps(image);
     for (const url of [m.cover, m.back, m.disc, m.label, m.labelB, m.sticker?.art]) if (url) image(url);
@@ -669,10 +670,63 @@ export function buildPostcard(p) {
   return { root, kind: 'postcard', update() {} };
 }
 
+// ---------- gift bundle ----------
+// The Christmas bundle: one record standing at the back, the record postcard leaning against it on the left and the
+// hot sauce in front on the right, all three standing on the same floor. Each part is the model of the product on its
+// own; the postcard and the bottle are drawn a little larger than life next to the 31 cm sleeve, so they still read.
+// It keeps facing the viewer and each part sways on its own; in the product page they move apart a little.
+// Model fields: record (the vinyl's model), postcard and sauce (the models of those products).
+export function buildGift(p) {
+  const inner = new THREE.Group();
+  const FLOOR = -0.47;
+  const rec = buildVinyl({ ...p, model: p.model.record });
+  const f = 1 / (SLEEVE.w * rec.perCm); // sleeve width = 1
+  rec.root.scale.setScalar(f);
+  rec.root.position.x = -rec.sleeveX * f;
+  const card = buildPostcard({ ...p, model: p.model.postcard });
+  const sauce = buildSauce({ ...p, model: p.model.sauce });
+  // sizes (largest side, sleeve = 1) and height of each part, for the floor
+  const CARD_W = 0.6, CARD_H = CARD_W * (CARD.h / CARD.w), BOTTLE_H = 0.52;
+  card.root.scale.setScalar(CARD_W);
+  sauce.root.scale.setScalar(BOTTLE_H);
+  const parts = [
+    { model: rec, at: { x: 0.04, y: FLOOR + 0.5, z: -0.16, turn: -0.16, lean: 0, phase: 0, out: [0.05, 0.03, -0.12] } },
+    { model: card, at: { x: -0.4, y: FLOOR + CARD_H / 2 + 0.02, z: 0.14, turn: 0.42, lean: 0.1, phase: 1.7, out: [-0.2, 0.02, 0.05] } },
+    { model: sauce, at: { x: 0.42, y: FLOOR + BOTTLE_H / 2, z: 0.24, turn: -0.5, lean: 0, phase: 3.1, out: [0.2, 0, 0.04] } },
+  ].map(({ model, at }) => {
+    const pivot = new THREE.Group();
+    pivot.add(model.root);
+    inner.add(pivot);
+    return { model, pivot, at };
+  });
+  let t = 0;
+  const place = (open, sway = 0) => {
+    for (const { pivot, at } of parts) {
+      pivot.position.set(at.x + at.out[0] * open, at.y + at.out[1] * open, at.z + at.out[2] * open);
+      pivot.rotation.y = at.turn * (1 - 0.4 * open) + sway * 0.1 * Math.sin(t * 0.7 + at.phase);
+      pivot.rotation.z = at.lean + sway * 0.02 * Math.sin(t * 0.5 + at.phase);
+    }
+  };
+  place(0);
+  const root = normalise(inner);
+  return {
+    root,
+    kind: 'gift',
+    faceFront: true,
+    update(dt, s) {
+      t += dt;
+      place(s.detail, 1 - s.detail * 0.7);
+      rec.update(dt, { ...s, detail: 0 }); // the record stays in its sleeve
+      sauce.update(dt, s);
+    },
+  };
+}
+
 export function buildModel(p) {
   if (p.kind === 'vinyl') return buildVinyl(p);
   if (p.kind === 'postcard') return buildPostcard(p);
   if (p.kind === 'bundle') return buildBundle(p);
+  if (p.kind === 'gift') return buildGift(p);
   if (p.kind === 'sauce') return buildSauce(p);
   return buildCard(p);
 }

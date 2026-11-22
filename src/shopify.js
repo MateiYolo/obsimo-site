@@ -43,7 +43,7 @@ query Products @inContext(language: ${LANG}) {
       id handle title description productType tags
       # photos of the product page, resized by Shopify's CDN (the originals can be 4000 px: slow to download and decode)
       images(first: 12) { nodes { url(transform: { maxWidth: 1200, preferredContentType: WEBP }) altText } }
-      variants(first: 1) { nodes { id availableForSale price { amount currencyCode } } }
+      variants(first: 1) { nodes { id availableForSale price { amount currencyCode } compareAtPrice { amount } } }
       metafields(identifiers: [${META}]) { key value }
     }
   }
@@ -77,6 +77,7 @@ function toProduct(n) {
     description: rest.join(' ') || n.description,
     price: Number(v?.price.amount || 0),
     currency: v?.price.currencyCode || 'EUR',
+    compareAt: Number(v?.compareAtPrice?.amount || 0), // "Prix avant réduction": shown crossed out (src/promo.js)
     variantId: v?.id,
     available: v?.availableForSale !== false,
     accent: look.accent || '#d9d6cc',

@@ -125,6 +125,22 @@ export const COPY = {
         "Life Balance: special edition of Obsimo’s new album, LIFE BALANCE Extended, featuring 12 tracks. Pressed in Europe, limited. Released on my own label OSR Records, with original artwork and design by my brother Matei.\n\n8 days in Sweden: Obsimo, Monoko and Inkko spent 8 days in a cabin in Sweden in the dead of winter. Right next to Lake Vänern, Sweden's largest lake, completely frozen over at -10°C. Between sessions they'd walk out onto the ice, come back, make music by the fireplace. 10 tracks of electronic music came out of it. The album is called 8 Days in Sweden, available on vinyl.",
     },
   },
+  'bundle-noel-life-balance-sauce-carte-postale': {
+    fr: {
+      kicker: 'Bundle de Noël · Vinyle + sauce + carte postale + stickers',
+      title: 'Bundle de Noël',
+      blurb: 'Le vinyle Life Balance, la sauce Obsimo x Piqu’Hans et une carte postale vinyle signée, avec des stickers, dans le même colis.',
+      description:
+        "- Life Balance : le vinyle en swirl vert et blanc, LIFE BALANCE Extended, 12 titres, sorti sur mon label OSR Records\n- La sauce Obsimo x Piqu’Hans (50 ml) : curry vert, piquant 3/5, 100 % naturelle et végane, faite à Nantes\n- La carte postale vinyle : signée, elle se joue sur une platine (choisis ton morceau dans l'option)\n- Des stickers Obsimo\n\nUn cadeau à écouter et à goûter. Offre de Noël, jusqu'au 18 décembre.",
+    },
+    en: {
+      kicker: 'Christmas bundle · Record + hot sauce + postcard + stickers',
+      title: 'Christmas Bundle',
+      blurb: 'The Life Balance record, the Obsimo x Piqu’Hans hot sauce and a signed vinyl postcard, plus stickers, in one parcel.',
+      description:
+        "- Life Balance: the record on green & white swirl, LIFE BALANCE Extended, 12 tracks, released on my label OSR Records\n- The Obsimo x Piqu’Hans hot sauce (50 ml): green curry, 3/5 heat, 100% natural & vegan, made in Nantes\n- The vinyl postcard: signed, it plays on a turntable (pick your track in the option)\n- Obsimo stickers\n\nA gift to listen to and to taste. Christmas offer, until December 18.",
+    },
+  },
   'carte-postale-vinyle': {
     fr: {
       kicker: 'Carte postale vinyle · Signée · Édition limitée',
@@ -187,6 +203,20 @@ export const demoCatalog = [
     images: [L('photo-disc.webp'), L('photo-sleeve.webp')],
   },
   {
+    id: 'demo-bundle-noel',
+    handle: 'bundle-noel-life-balance-sauce-carte-postale',
+    kind: 'gift',
+    ...text('bundle-noel-life-balance-sauce-carte-postale'),
+    price: 30,
+    compareAt: 38,
+    currency: 'EUR',
+    variantId: null,
+    accent: '#c9503f',
+    audio: null,
+    model: { record: { ...SLEEVE_LB, disc: L('disc.webp') }, sauce: PIQUHANS.model, postcard: POSTCARD.model },
+    images: [L('photo-sleeve.webp'), L('photo-disc.webp'), P('photo-verso.webp')],
+  },
+  {
     id: 'demo-bundle-vinyls',
     handle: 'bundle-8-days-in-sweden-life-balance',
     kind: 'bundle',
@@ -222,6 +252,7 @@ const lookOf = (handle) => {
 };
 const LIFE_BALANCE = lookOf('life-balance-swirl');
 const BUNDLE = lookOf('bundle-8-days-in-sweden-life-balance');
+const GIFT = lookOf('bundle-noel-life-balance-sauce-carte-postale');
 
 export const visuals = {
   // the two Life Balance listings on Shopify are the same green/cream swirl pressing
@@ -231,6 +262,7 @@ export const visuals = {
   '8-days-in-sweden-marble': lookOf('8-days-in-sweden-marble'),
   'bundle-8-days-in-sweden-life-balance': BUNDLE,
   'carte-postale-vinyle': POSTCARD,
+  'bundle-noel-life-balance-sauce-carte-postale': GIFT,
 };
 
 // When the Shopify handle isn't in the table above (a listing renamed, or created with another handle), the title
@@ -238,7 +270,10 @@ export const visuals = {
 // gets the two records, then any "8 Days in Sweden" or "Life Balance" listing gets its record.
 const has8dis = (t) => /8\s*days\s*in\s*sweden/i.test(t);
 const hasLb = (t) => /life\s*balance/i.test(t);
+// the Christmas bundle: the sauce with a record or the postcard, or a Christmas pack
+const isGift = (t) => (/sauce|piqu/i.test(t) && (hasLb(t) || has8dis(t) || /vinyl|carte|post\s*-?\s*card/i.test(t))) || (/no[eë]l|christmas|xmas/i.test(t) && /bundle|coffret|pack|lot/i.test(t));
 const byTitle = [
+  [isGift, GIFT],
   [(t) => /carte\s*postale|post\s*-?\s*card/i.test(t), POSTCARD],
   [(t) => (has8dis(t) && hasLb(t)) || (/bundle|coffret|pack|lot de/i.test(t) && /vinyl|8\s*days|life\s*balance/i.test(t)), BUNDLE],
   [has8dis, lookOf('8-days-in-sweden-marble')],
@@ -246,13 +281,14 @@ const byTitle = [
 ];
 export const lookFor = (handle, title = '') => visuals[handle] || byTitle.find(([test]) => test(title))?.[1] || {};
 
-// Order of the shop, whatever order Shopify returns: 8 Days in Sweden, Life Balance, the hot sauce, the bundle,
+// Order of the shop, whatever order Shopify returns: 8 Days in Sweden, Life Balance, the Christmas bundle, the hot sauce, the bundle,
 // the postcard, then anything else. Matched on the title so renamed handles keep their place.
-const isBundle = (t) => /bundle|coffret|pack|lot de/i.test(t) || (has8dis(t) && hasLb(t));
-const isCard = (t) => /carte|post\s*-?\s*card|\bcards?\b/i.test(t);
+const isBundle = (t) => !isGift(t) && (/bundle|coffret|pack|lot de/i.test(t) || (has8dis(t) && hasLb(t)));
+const isCard = (t) => !isGift(t) && /carte|post\s*-?\s*card|\bcards?\b/i.test(t);
 const ORDER = [
-  (t) => has8dis(t) && !isBundle(t) && !isCard(t),
-  (t) => hasLb(t) && !isBundle(t) && !isCard(t),
+  (t) => has8dis(t) && !isBundle(t) && !isCard(t) && !isGift(t),
+  (t) => hasLb(t) && !isBundle(t) && !isCard(t) && !isGift(t),
+  isGift,
   (t) => /sauce|piqu/i.test(t),
   isBundle,
   isCard,
@@ -265,13 +301,13 @@ export const sortProducts = (list) => [...list].sort((a, b) => rank(a) - rank(b)
 
 // The site's own texts (COPY) over a Shopify product, in the visitor's language. Same matching as the order above:
 // the handle, else the title (8 Days in Sweden, Life Balance, the hot sauce, the bundle, the postcard).
-const COPY_KEYS = ['8-days-in-sweden-marble', 'life-balance-swirl', 'hot-sauce-obsimo-x-piquhans-50ml', 'bundle-8-days-in-sweden-life-balance', 'carte-postale-vinyle'];
+const COPY_KEYS = ['8-days-in-sweden-marble', 'life-balance-swirl', 'bundle-noel-life-balance-sauce-carte-postale', 'hot-sauce-obsimo-x-piquhans-50ml', 'bundle-8-days-in-sweden-life-balance', 'carte-postale-vinyle'];
 export const localize = (p) => ({ ...p, ...(COPY[p.handle] || COPY[COPY_KEYS[rank(p)]])?.[lang] });
 
 // Shopify has two Life Balance listings (the old "Life Balance Transparent Green" and the swirl): only the swirl is
 // shown. Kept: the listing titled swirl, else the ones not titled transparent, else not the old handle, else the
 // limited edition; never all of them dropped.
-const isLbSingle = (t) => hasLb(t) && !isBundle(t) && !isCard(t);
+const isLbSingle = (t) => hasLb(t) && !isBundle(t) && !isCard(t) && !isGift(t);
 export const isLifeBalance = (p) => isLbSingle(p.title);
 const LB_KEEP = [
   (p) => /swirl/i.test(p.title),

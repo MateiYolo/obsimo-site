@@ -9,6 +9,7 @@ import { TourTitle } from './tourTitle.js';
 import { Gallery, Lightbox } from './gallery.js';
 import { OsrLogo } from './osrLogo.js';
 import { t, locale, lang, applyStatic, switchLang } from './i18n.js';
+import { mountBanner, discounted, left, endDay, PROMO } from './promo.js';
 
 const $ = (s) => document.querySelector(s);
 const body = document.body;
@@ -98,6 +99,9 @@ async function boot() {
     if (el.classList.contains('lb')) attachHands(el);
     el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(i); } });
   });
+
+  const gift = products.findIndex((p) => p.kind === PROMO.kind);
+  mountBanner($('#promo'), gift >= 0 ? () => openDetail(gift) : null);
 
   stage = new Stage($('#gl'), products, slots);
   if (!loading) setTimeout(ready); // every file already came in during the font wait
@@ -292,7 +296,7 @@ function openDetail(i, push = true) {
   $('#d-title').textContent = p.title;
   $('#d-lead').textContent = p.blurb;
   $('#d-desc').textContent = p.description;
-  $('#d-price').textContent = money(p.price, p.currency);
+  showPrice(p);
   showPreorder(p);
   gallery.set(p.images, p.title);
   $('#acc').innerHTML = p.details
@@ -310,6 +314,25 @@ function openDetail(i, push = true) {
   hands.classList.remove('on', 'grab');
   $('#detail').setAttribute('aria-hidden', 'false');
   if (push) history.pushState({ detail: p.handle }, '', `#${p.handle}`);
+}
+
+// ---------- price: crossed-out original price during the sale (src/promo.js) ----------
+let promoTimer = 0;
+function showPrice(p) {
+  clearInterval(promoTimer);
+  const line = $('#d-promo');
+  const on = discounted(p);
+  const pct = on ? Math.round((1 - p.price / p.compareAt) * 100) : 0;
+  $('#d-price').innerHTML = on
+    ? `<s class="was" aria-label="${esc(money(p.compareAt, p.currency))}">${money(p.compareAt, p.currency)}</s> ${money(p.price, p.currency)}`
+    : money(p.price, p.currency);
+  line.hidden = !on;
+  if (!on) return;
+  line.innerHTML = `<span class="pr-pill">${t('promo.save', pct)}</span><span>${t('promo.endsOn', endDay())}</span><span class="pr-left"><i>${t('promo.ends')}</i> <b></b></span>`;
+  const b = line.querySelector('b');
+  const tick = () => (discounted(p) ? (b.textContent = left()) : showPrice(p)); // sale over: back to the plain price
+  tick();
+  promoTimer = setInterval(tick, 1000);
 }
 
 // ---------- pre-order: countdown to the release + golden ticket ----------
@@ -350,6 +373,7 @@ function showPreorder(p) {
 
 function closeDetail() {
   clearInterval(preTimer);
+  clearInterval(promoTimer);
   current = -1;
   stage.detailTarget = 0;
   root.classList.remove('lock');

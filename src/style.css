@@ -536,3 +536,32 @@ body.play .c-block { opacity: 1; transform: none; transition: opacity 0.6s var(-
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* ---------- Christmas sale (src/promo.js) ---------- */
+#promo {
+  position: absolute; z-index: 3; left: 50%; top: calc(var(--top) + 9vh); transform: translateX(-50%);
+  width: max-content; max-width: calc(100vw - 2 * var(--gutter));
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 12px;
+  padding: 9px 18px; border-radius: 999px; text-align: center;
+  border: 1px solid color-mix(in srgb, #d24a3c 55%, var(--line));
+  background: color-mix(in srgb, #d24a3c 14%, color-mix(in srgb, var(--bg) 70%, transparent));
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  font-size: 12px; line-height: 1.35;
+  transition: opacity 0.5s var(--ease), border-color 0.3s, background 0.3s;
+}
+#promo[hidden] { display: none; }
+#promo:not(.static):hover { background: color-mix(in srgb, #d24a3c 24%, var(--bg)); }
+#promo.static { cursor: default; }
+#promo .pr-k { text-transform: uppercase; letter-spacing: 0.14em; font-size: 10px; font-weight: 600; color: #f08a7c; }
+#promo .pr-c, .d-promo .pr-left { font-variant-numeric: tabular-nums; white-space: nowrap; }
+#promo .pr-c i, .d-promo i { font-style: normal; color: var(--muted); }
+#promo .pr-c b, .d-promo b { font-weight: 500; }
+body.detail #promo, body.on-page #promo { opacity: 0; pointer-events: none; }
+
+.price .was { color: var(--muted); font-size: 0.62em; text-decoration-thickness: 1px; margin-right: 4px; vertical-align: 0.18em; }
+.d-promo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 18px 0 0; font-size: 12px; }
+.d-promo[hidden] { display: none; }
+.d-promo .pr-pill { padding: 3px 9px; border-radius: 999px; background: #d24a3c; color: #fff; font-weight: 600; font-size: 11px; letter-spacing: 0.04em; }
+@media (max-width: 600px) {
+  #promo { top: calc(var(--top) + 72px); padding: 7px 14px; gap: 2px 10px; font-size: 11px; }
+}
