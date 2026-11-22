@@ -10,6 +10,7 @@ import { Gallery, Lightbox } from './gallery.js';
 import { OsrLogo } from './osrLogo.js';
 import { t, locale, lang, applyStatic, switchLang } from './i18n.js';
 import { mountBanner, discounted, left, endDay, PROMO } from './promo.js';
+import { snow } from './snow.js';
 
 const $ = (s) => document.querySelector(s);
 const body = document.body;
@@ -102,6 +103,7 @@ async function boot() {
 
   const gift = products.findIndex((p) => p.kind === PROMO.kind);
   mountBanner($('#promo'), gift >= 0 ? () => openDetail(gift) : null);
+  snow();
 
   stage = new Stage($('#gl'), products, slots);
   if (!loading) setTimeout(ready); // every file already came in during the font wait
