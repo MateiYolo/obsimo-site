@@ -1,7 +1,7 @@
 // Fiche produit, en panneau latéral : prix, coût (et marge unitaire), reversement, noms en caisse, handles Shopify, chiffres de vente.
 
 import { useMemo, useState } from 'react'
-import { X } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -52,6 +52,44 @@ function TagInput({ id, value, onChange, placeholder }) {
   )
 }
 
+// Contenu d'un pack : un produit et une quantité par ligne. Un pack vendu sort ses composants du stock, et son prix
+// se répartit entre eux au prorata de leurs prix (reversement au frère, remboursement des frais).
+function PackEditor({ value, onChange, products, self }) {
+  const choices = products.filter((x) => x.id !== self && !x.components.length && (x.active || value.some((c) => c.product_id === x.id)))
+  const setLine = (i, patch) => onChange(value.map((c, j) => (j === i ? { ...c, ...patch } : c)))
+  return (
+    <div className="rounded-lg border p-3 text-sm">
+      <p className="mb-1 text-xs font-medium text-muted-foreground">Contenu du pack</p>
+      <p className="mb-3 text-xs text-muted-foreground">Laisse vide si ce n’est pas un pack. Chaque pack vendu sort ces produits du stock.</p>
+      <ul className="space-y-2">
+        {value.map((c, i) => (
+          <li key={i} className="flex items-center gap-2">
+            <Select value={c.product_id} onValueChange={(v) => setLine(i, { product_id: v })}>
+              <SelectTrigger className="h-8 min-w-0 flex-1 text-[13px]" aria-label="Produit du pack">
+                <SelectValue placeholder="Produit" />
+              </SelectTrigger>
+              <SelectContent>
+                {choices.map((x) => (
+                  <SelectItem key={x.id} value={x.id}>
+                    {x.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input type="number" min="1" inputMode="numeric" value={c.qty} onChange={(e) => setLine(i, { qty: Math.max(1, Number(e.target.value) || 1) })} className="h-8 w-16 text-[13px]" aria-label="Quantité" />
+            <Button type="button" variant="ghost" size="icon" className="size-8" onClick={() => onChange(value.filter((_, j) => j !== i))} aria-label="Retirer du pack">
+              <X className="size-3.5" />
+            </Button>
+          </li>
+        ))}
+      </ul>
+      <Button type="button" variant="outline" size="sm" className="mt-3" onClick={() => onChange([...value, { product_id: '', qty: 1 }])}>
+        <Plus /> Ajouter un produit
+      </Button>
+    </div>
+  )
+}
+
 export function ProductSheet({ id, onClose }) {
   const { data: d, run } = useStore()
   const p = d.products.find((x) => x.id === id) || EMPTY
@@ -92,7 +130,8 @@ export function ProductSheet({ id, onClose }) {
             royalty_after_units: Number(form.after) || 0,
             sumup_names: form.sumup_names,
             shopify_handles: form.shopify_handles,
-            components: p.components,
+            // a line left without a product is dropped; a share_cents already set on a line is kept
+            components: form.components.filter((c) => c.product_id).map((c) => ({ ...c, qty: Math.max(1, Number(c.qty) || 1) })),
             active: form.active,
           }),
         isNew ? 'Produit créé' : 'Produit enregistré',
@@ -192,19 +231,7 @@ export function ProductSheet({ id, onClose }) {
             <Field label="Handles Shopify" hint="La fin de l’URL du produit sur le site.">
               {(fid) => <TagInput id={fid} value={form.shopify_handles} onChange={set('shopify_handles')} placeholder="ex. vinyle-8-days-in-sweden" />}
             </Field>
-            {p.components.length > 0 && (
-              <div className="rounded-lg border p-3 text-sm">
-                <p className="mb-2 text-xs font-medium text-muted-foreground">Contenu du pack</p>
-                <ul className="space-y-1">
-                  {p.components.map((c) => (
-                    <li key={c.product_id} className="flex justify-between">
-                      <span>{d.products.find((x) => x.id === c.product_id)?.name || c.product_id}</span>
-                      <span className="num text-muted-foreground">× {c.qty}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <PackEditor value={form.components} onChange={set('components')} products={d.products} self={id} />
             <Label className="flex items-start gap-3 rounded-lg border p-3 font-normal">
               <Checkbox checked={form.active} onCheckedChange={(v) => set('active')(!!v)} className="mt-0.5" />
               <span>
