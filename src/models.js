@@ -162,7 +162,7 @@ export function buildVinyl(p) {
     vinyl.material.color.set(m.discColor);
     // light passing through coloured vinyl: a little of its own colour, so it stays green on a dark page
     vinyl.material.emissive?.set(m.discColor);
-    if (vinyl.material.emissive) vinyl.material.emissiveIntensity = 0.4;
+    if (vinyl.material.emissive) vinyl.material.emissiveIntensity = 0.55;
     vinyl.material.needsUpdate = true;
   }
   // die-cut window: the sleeve shows the part of this very record that sits behind the hole
@@ -186,9 +186,7 @@ export function buildVinyl(p) {
   // the part of the record still in the sleeve is clipped away, so it can't poke through the warped board
   const clip = new THREE.Plane();
   const opening = new THREE.Plane(new THREE.Vector3(1, 0, 0), -(SLEEVE.w / 2 - 0.05));
-  // a see-through record lies in front of the sleeve instead of in it: the board shows through the vinyl
-  if (m.discSeeThrough) vinyl.group.position.z = SLEEVE.t / 2 + 0.25;
-  else vinyl.setClip(clip);
+  vinyl.setClip(clip);
 
   // the layout box is computed with the disc a little out (model.rest, cm; 0 = all the way in, e.g. behind a die-cut
   // window), so the object turns about the middle of its silhouette. In the product page it slides out until the middle of the label is at the mouth of the sleeve (half the label

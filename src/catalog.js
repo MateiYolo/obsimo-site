@@ -271,7 +271,7 @@ export const demoCatalog = [
     accent: '#2fae5a',
     audio: null,
     // the record itself is the point: most of it out of the sleeve, a see-through green pressing
-    model: { ...SLEEVE_LB, discColor: '#0f8a3c', discSeeThrough: 0.5, rest: 13 },
+    model: { ...SLEEVE_LB, discColor: '#12a046', discSeeThrough: 0.55, rest: 17 },
     images: [L('photo-sleeve.webp')],
   },
 ];
