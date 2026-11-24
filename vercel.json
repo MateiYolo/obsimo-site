@@ -19,6 +19,31 @@
       "source": "/live",
       "destination": "/live/",
       "permanent": true
+    },
+    {
+      "source": "/suede",
+      "destination": "/suede/",
+      "permanent": true
+    },
+    {
+      "source": "/su%C3%A8de",
+      "destination": "/suede/",
+      "permanent": true
+    },
+    {
+      "source": "/su%C3%A8de/",
+      "destination": "/suede/",
+      "permanent": true
+    },
+    {
+      "source": "/sweden",
+      "destination": "/suede/?lang=en",
+      "permanent": false
+    },
+    {
+      "source": "/press",
+      "destination": "/suede/",
+      "permanent": false
     }
   ],
   "rewrites": [
@@ -58,6 +83,15 @@
     },
     {
       "source": "/live/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/suede/(.*)",
       "headers": [
         {
           "key": "X-Robots-Tag",
